@@ -1,0 +1,1054 @@
+// TIG Carrier Intelligence — Milestone 1 data foundation.
+// Contract: docs/DATA_MODEL.md. Deviations are recorded in docs/DECISIONS.md.
+// Tables and columns are snake_case in Postgres (@@map / @map); Prisma fields are camelCase.
+// Constraints Prisma cannot express (date-order CHECKs, exclusion constraints, partial
+// unique indexes, trigram indexes, the append-only audit trigger) live in the SQL
+// migration `*_constraints`. P&C only: no life, health, benefits, disability or LTC tables.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Extensions pg_trgm and btree_gist are created in the constraints migration.
+}
+
+// ───────────────────────────── Enums ─────────────────────────────
+
+enum UserStatus {
+  INVITED
+  ACTIVE
+  DEACTIVATED
+}
+
+enum OrganizationType {
+  INSURER
+  GROUP
+  MGA
+  MGU
+  WHOLESALER
+  PROGRAM_ADMIN
+  GENERAL_AGENCY
+  AGENCY
+  OTHER
+}
+
+enum OrganizationStatus {
+  PROSPECT
+  ACTIVE
+  INACTIVE
+}
+
+enum OrganizationRelationshipType {
+  GROUP_MEMBER
+  WRITING_COMPANY_OF
+  MGA_FOR
+  MGU_FOR
+  WHOLESALER_FOR
+  PROGRAM_ADMIN_FOR
+  GENERAL_AGENT_FOR
+  OTHER
+}
+
+enum ActiveStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum DistributionType {
+  DIRECT
+  WHOLESALE
+  MGA
+  PROGRAM
+  AGGREGATOR
+  OTHER
+}
+
+enum AccessStatus {
+  AVAILABLE
+  RESTRICTED
+  CLOSED
+  UNKNOWN
+}
+
+enum TerritoryType {
+  COUNTRY
+  STATE
+  COUNTY
+  POSTAL_CODE
+}
+
+enum AppointmentStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  TERMINATED
+}
+
+enum AgencyCodeType {
+  MASTER
+  PRODUCER
+  SUB_CODE
+  LOCATION
+  OTHER
+}
+
+enum ContactRole {
+  UNDERWRITER
+  MARKETING_REP
+  REGIONAL_MANAGER
+  PRODUCT_MANAGER
+  SERVICE
+  CLAIMS
+  OTHER
+}
+
+enum ActivityType {
+  NOTE
+  CALL
+  MEETING
+  EMAIL
+  VISIT
+  OTHER
+}
+
+enum Classification {
+  GENERAL
+  INTERNAL
+  RESTRICTED
+}
+
+enum ApprovalStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  RETIRED
+}
+
+enum AppetiteOutcome {
+  PREFERRED
+  ACCEPTED
+  REFERRAL
+  PROHIBITED
+  UNKNOWN
+}
+
+enum RuleOperator {
+  EQ
+  NEQ
+  IN
+  NOT_IN
+  LT
+  LTE
+  GT
+  GTE
+  BETWEEN
+  EXISTS
+}
+
+enum AttributeDataType {
+  TEXT
+  INTEGER
+  NUMBER
+  MONEY
+  BOOLEAN
+  DATE
+  ENUM
+}
+
+enum IndustryCodeSystem {
+  NAICS
+  SIC
+  ISO_GL
+  NCCI
+  CARRIER_SPECIFIC
+  OTHER
+}
+
+enum TransactionType {
+  NEW
+  RENEWAL
+  ENDORSEMENT
+  OTHER
+}
+
+enum CommissionBasis {
+  RATE
+  FLAT
+  TIERED
+}
+
+enum DocumentType {
+  APPETITE_GUIDE
+  BULLETIN
+  UNDERWRITING_GUIDELINES
+  AGREEMENT
+  COMMISSION_SCHEDULE
+  APPLICATION
+  OTHER
+}
+
+enum DocumentStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum RecordType {
+  ORGANIZATION
+  CARRIER_PRODUCT
+  MARKET_CHANNEL
+  AGENCY_APPOINTMENT
+  AGENCY_CODE
+  CARRIER_PORTAL
+  CONTACT
+  CONTACT_ASSIGNMENT
+  APPETITE_PROFILE
+  APPETITE_RULE
+  UNDERWRITING_REQUIREMENT
+  COVERAGE_CAPABILITY
+  COMMISSION_AGREEMENT
+  COMMISSION_SCHEDULE
+  DOCUMENT
+}
+
+/// Where a business value came from. AI_EXTRACTED is reserved for the P2 extraction
+/// feature; nothing writes it in the MVP.
+enum SourceKind {
+  DOCUMENT
+  IMPORT
+  USER_ENTERED
+  AI_EXTRACTED
+}
+
+enum ChangeRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+
+enum ImportStatus {
+  UPLOADED
+  PREVIEWED
+  COMMITTED
+  FAILED
+  UNDONE
+}
+
+// ─────────────────────── Identity & agency ───────────────────────
+
+model User {
+  id              String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Subject claim from the identity provider; null until the user first signs in.
+  identitySubject String?    @unique @map("identity_subject")
+  name            String
+  email           String     @unique
+  status          UserStatus @default(INVITED)
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  roleScopes            UserRoleScope[]
+  ownedOrganizations    Organization[]         @relation("OrganizationOwner")
+  ownedProfiles         AppetiteProfile[]      @relation("ProfileOwner")
+  approvedProfiles      AppetiteProfile[]      @relation("ProfileApprover")
+  approvedAgreements    CommissionAgreement[]  @relation("AgreementApprover")
+  approvedSchedules     CommissionSchedule[]   @relation("ScheduleApprover")
+  assignedCodes         AgencyCode[]
+  activities            RelationshipActivity[]
+  ownedDocuments        Document[]
+  uploadedVersions      DocumentVersion[]
+  proposedChanges       ChangeRequest[]        @relation("ChangeProposer")
+  reviewedChanges       ChangeRequest[]        @relation("ChangeReviewer")
+  verifications         VerificationEvent[]
+  auditEvents           AuditEvent[]
+  importJobs            ImportJob[]
+  recordSources         RecordSource[]
+  settingsUpdated       AppSetting[]
+
+  @@map("users")
+}
+
+model Role {
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String           @unique
+  description String
+  permissions RolePermission[]
+  userScopes  UserRoleScope[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String           @unique
+  description String
+  roles       RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String     @map("role_id") @db.Uuid
+  permissionId String     @map("permission_id") @db.Uuid
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Restrict)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+model AgencyEntity {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String       @unique @map("organization_id") @db.Uuid
+  domicileState  String?      @map("domicile_state") @db.Char(2)
+  status         ActiveStatus @default(ACTIVE)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  organization  Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  businessUnits BusinessUnit[]
+  userScopes    UserRoleScope[]
+  appointments  AgencyAppointment[]
+  agreements    CommissionAgreement[]
+
+  @@map("agency_entities")
+}
+
+model BusinessUnit {
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  agencyEntityId String?         @map("agency_entity_id") @db.Uuid
+  agencyEntity   AgencyEntity?   @relation(fields: [agencyEntityId], references: [id], onDelete: Restrict)
+  userScopes     UserRoleScope[]
+
+  @@index([agencyEntityId])
+  @@map("business_units")
+}
+
+/// A role granted to a user, optionally narrowed to an agency entity, business unit or
+/// line. All-null scope columns mean "all". See DECISIONS D1 (everyone sees everything
+/// for now; the table exists so restrictions can be switched on later).
+model UserRoleScope {
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String          @map("user_id") @db.Uuid
+  roleId         String          @map("role_id") @db.Uuid
+  agencyEntityId String?         @map("agency_entity_id") @db.Uuid
+  businessUnitId String?         @map("business_unit_id") @db.Uuid
+  lineId         String?         @map("line_id") @db.Uuid
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           Role            @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  agencyEntity   AgencyEntity?   @relation(fields: [agencyEntityId], references: [id], onDelete: Restrict)
+  businessUnit   BusinessUnit?   @relation(fields: [businessUnitId], references: [id], onDelete: Restrict)
+  line           LineOfBusiness? @relation(fields: [lineId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([roleId])
+  @@index([agencyEntityId])
+  @@index([businessUnitId])
+  @@index([lineId])
+  @@map("user_role_scopes")
+}
+
+// ─────────────────────── Market structure ───────────────────────
+
+model Organization {
+  id          String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  legalName   String             @map("legal_name")
+  displayName String             @map("display_name")
+  type        OrganizationType
+  parentId    String?            @map("parent_id") @db.Uuid
+  status      OrganizationStatus @default(ACTIVE)
+  ownerUserId String?            @map("owner_user_id") @db.Uuid
+  website     String?
+  /// Soft archive: archived organizations stay referenced by history; never hard-deleted.
+  archivedAt  DateTime?          @map("archived_at") @db.Timestamptz(6)
+  createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  parent           Organization?              @relation("OrganizationParent", fields: [parentId], references: [id], onDelete: Restrict)
+  children         Organization[]             @relation("OrganizationParent")
+  owner            User?                      @relation("OrganizationOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+  identifiers      OrganizationIdentifier[]
+  relationshipsOut OrganizationRelationship[] @relation("RelationshipFrom")
+  relationshipsIn  OrganizationRelationship[] @relation("RelationshipTo")
+  agencyEntity     AgencyEntity?
+  carrierProducts  CarrierProduct[]
+  channelsAsIntermediary MarketChannel[]
+  portals          CarrierPortal[]
+  contactAssignments ContactAssignment[]
+  activities       RelationshipActivity[]
+
+  @@index([parentId])
+  @@index([ownerUserId])
+  @@index([type, status])
+  // Trigram indexes are created in the constraints migration (needs pg_trgm first).
+  @@index([displayName(ops: raw("gin_trgm_ops"))], type: Gin, map: "organizations_display_name_trgm")
+  @@index([legalName(ops: raw("gin_trgm_ops"))], type: Gin, map: "organizations_legal_name_trgm")
+  @@map("organizations")
+}
+
+model OrganizationIdentifier {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  /// e.g. NAIC, FEIN, AM_BEST_ID. Free text so new identifier types need no migration.
+  type           String
+  value          String
+  jurisdiction   String?
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  // Uniqueness of (type, value, jurisdiction) treating null jurisdiction as one value
+  // is a partial index in the constraints migration.
+  @@index([organizationId])
+  @@map("organization_identifiers")
+}
+
+model OrganizationRelationship {
+  id               String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fromOrgId        String                       @map("from_org_id") @db.Uuid
+  toOrgId          String                       @map("to_org_id") @db.Uuid
+  relationshipType OrganizationRelationshipType @map("relationship_type")
+  effectiveFrom    DateTime?                    @map("effective_from") @db.Date
+  effectiveTo      DateTime?                    @map("effective_to") @db.Date
+  createdAt        DateTime                     @default(now()) @map("created_at") @db.Timestamptz(6)
+  fromOrg          Organization                 @relation("RelationshipFrom", fields: [fromOrgId], references: [id], onDelete: Restrict)
+  toOrg            Organization                 @relation("RelationshipTo", fields: [toOrgId], references: [id], onDelete: Restrict)
+
+  @@index([fromOrgId])
+  @@index([toOrgId])
+  @@map("organization_relationships")
+}
+
+/// P&C line taxonomy (seeded). Life, health, benefits, disability and LTC are excluded.
+model LineOfBusiness {
+  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code      String           @unique
+  name      String
+  parentId  String?          @map("parent_id") @db.Uuid
+  sortOrder Int              @default(0) @map("sort_order")
+  active    Boolean          @default(true)
+  parent    LineOfBusiness?  @relation("LineParent", fields: [parentId], references: [id], onDelete: Restrict)
+  children  LineOfBusiness[] @relation("LineParent")
+  products  InsuranceProduct[]
+  userScopes UserRoleScope[]
+
+  @@index([parentId])
+  @@map("lines_of_business")
+}
+
+model InsuranceProduct {
+  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lineId      String         @map("line_id") @db.Uuid
+  code        String
+  name        String
+  productType String?        @map("product_type")
+  line        LineOfBusiness @relation(fields: [lineId], references: [id], onDelete: Restrict)
+  carrierProducts      CarrierProduct[]
+  authorizations       AppointmentAuthorization[]
+  specialties          ContactSpecialty[]
+  attributeDefinitions RiskAttributeDefinition[]
+  commissionSchedules  CommissionSchedule[]
+
+  @@unique([lineId, code])
+  @@map("insurance_products")
+}
+
+/// A product as offered by one writing company. One insurance product can have many
+/// writing companies; each carrier product can have many market channels.
+model CarrierProduct {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  writingCompanyId String           @map("writing_company_id") @db.Uuid
+  productId        String           @map("product_id") @db.Uuid
+  programName      String?          @map("program_name")
+  status           ActiveStatus     @default(ACTIVE)
+  archivedAt       DateTime?        @map("archived_at") @db.Timestamptz(6)
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  writingCompany   Organization     @relation(fields: [writingCompanyId], references: [id], onDelete: Restrict)
+  product          InsuranceProduct @relation(fields: [productId], references: [id], onDelete: Restrict)
+  channels         MarketChannel[]
+  appetiteProfiles AppetiteProfile[]
+  requirements     UnderwritingRequirement[]
+  coverages        CoverageCapability[]
+
+  @@index([writingCompanyId])
+  @@index([productId])
+  @@map("carrier_products")
+}
+
+/// How TIG reaches a carrier product: direct, or through an intermediary (wholesaler,
+/// MGA, program administrator...).
+model MarketChannel {
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  carrierProductId  String           @map("carrier_product_id") @db.Uuid
+  intermediaryOrgId String?          @map("intermediary_org_id") @db.Uuid
+  distributionType  DistributionType @map("distribution_type")
+  accessStatus      AccessStatus     @default(UNKNOWN) @map("access_status")
+  archivedAt        DateTime?        @map("archived_at") @db.Timestamptz(6)
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  carrierProduct    CarrierProduct   @relation(fields: [carrierProductId], references: [id], onDelete: Restrict)
+  intermediary      Organization?    @relation(fields: [intermediaryOrgId], references: [id], onDelete: Restrict)
+  appointments       AgencyAppointment[]
+  contactAssignments ContactAssignment[]
+  appetiteProfiles   AppetiteProfile[]
+  agreements         CommissionAgreement[]
+
+  @@index([carrierProductId])
+  @@index([intermediaryOrgId])
+  @@map("market_channels")
+}
+
+model Territory {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  countryCode   String        @map("country_code") @db.Char(2)
+  stateCode     String?       @map("state_code") @db.Char(2)
+  countyFips    String?       @map("county_fips") @db.Char(5)
+  postalCode    String?       @map("postal_code")
+  territoryType TerritoryType @map("territory_type")
+  name          String
+  authorizations     AppointmentAuthorization[]
+  contactAssignments ContactAssignment[]
+  ruleTerritories    AppetiteRuleTerritory[]
+  commissionSchedules CommissionSchedule[]
+
+  // Natural-key uniqueness (nulls normalized) is in the constraints migration.
+  @@index([stateCode])
+  @@map("territories")
+}
+
+// ───────────────────── Appointments & access ─────────────────────
+
+model AgencyAppointment {
+  id                      String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  agencyEntityId          String            @map("agency_entity_id") @db.Uuid
+  marketChannelId         String            @map("market_channel_id") @db.Uuid
+  appointmentType         String            @map("appointment_type")
+  status                  AppointmentStatus @default(PENDING)
+  effectiveFrom           DateTime?         @map("effective_from") @db.Date
+  effectiveTo             DateTime?         @map("effective_to") @db.Date
+  sourceDocumentVersionId String?           @map("source_document_version_id") @db.Uuid
+  createdAt               DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  agencyEntity            AgencyEntity      @relation(fields: [agencyEntityId], references: [id], onDelete: Restrict)
+  marketChannel           MarketChannel     @relation(fields: [marketChannelId], references: [id], onDelete: Restrict)
+  sourceDocumentVersion   DocumentVersion?  @relation(fields: [sourceDocumentVersionId], references: [id], onDelete: Restrict)
+  authorizations          AppointmentAuthorization[]
+  codes                   AgencyCode[]
+
+  @@index([agencyEntityId])
+  @@index([marketChannelId])
+  @@index([sourceDocumentVersionId])
+  @@index([status, effectiveTo])
+  @@map("agency_appointments")
+}
+
+model AppointmentAuthorization {
+  id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  appointmentId String            @map("appointment_id") @db.Uuid
+  territoryId   String            @map("territory_id") @db.Uuid
+  productId     String            @map("product_id") @db.Uuid
+  authorityType String            @map("authority_type")
+  appointment   AgencyAppointment @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  territory     Territory         @relation(fields: [territoryId], references: [id], onDelete: Restrict)
+  product       InsuranceProduct  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([appointmentId])
+  @@index([territoryId])
+  @@index([productId])
+  @@map("appointment_authorizations")
+}
+
+/// Agency and producer codes. Historical codes are kept (effective-dated); overlapping
+/// ACTIVE duplicates are blocked by an exclusion constraint.
+model AgencyCode {
+  id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  appointmentId  String            @map("appointment_id") @db.Uuid
+  codeType       AgencyCodeType    @map("code_type")
+  codeValue      String            @map("code_value")
+  /// Producer the code is assigned to, when it is a producer code (added; see DECISIONS).
+  assignedUserId String?           @map("assigned_user_id") @db.Uuid
+  effectiveFrom  DateTime          @map("effective_from") @db.Date
+  effectiveTo    DateTime?         @map("effective_to") @db.Date
+  status         ActiveStatus      @default(ACTIVE)
+  notes          String?
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  appointment    AgencyAppointment @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  assignedUser   User?             @relation(fields: [assignedUserId], references: [id], onDelete: Restrict)
+
+  @@index([appointmentId])
+  @@index([assignedUserId])
+  @@map("agency_codes")
+}
+
+/// Carrier portal links. Passwords and other credentials are NEVER stored: only a URL,
+/// instructions, and an optional pointer to where the login lives in the password manager.
+model CarrierPortal {
+  id                       String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId           String       @map("organization_id") @db.Uuid
+  name                     String
+  url                      String
+  accessInstructions       String?      @map("access_instructions")
+  credentialVaultReference String?      @map("credential_vault_reference")
+  createdAt                DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organization             Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@map("carrier_portals")
+}
+
+// ───────────────────── People & relationships ─────────────────────
+
+model Contact {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firstName   String       @map("first_name")
+  lastName    String       @map("last_name")
+  email       String?
+  officePhone String?      @map("office_phone")
+  mobilePhone String?      @map("mobile_phone")
+  status      ActiveStatus @default(ACTIVE)
+  verifiedAt  DateTime?    @map("verified_at") @db.Timestamptz(6)
+  archivedAt  DateTime?    @map("archived_at") @db.Timestamptz(6)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  assignments ContactAssignment[] @relation("AssignmentContact")
+  backupFor   ContactAssignment[] @relation("AssignmentBackup")
+  activities  RelationshipActivity[]
+
+  @@index([email])
+  @@map("contacts")
+}
+
+model ContactAssignment {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contactId       String         @map("contact_id") @db.Uuid
+  organizationId  String         @map("organization_id") @db.Uuid
+  marketChannelId String?        @map("market_channel_id") @db.Uuid
+  territoryId     String?        @map("territory_id") @db.Uuid
+  title           String?
+  role            ContactRole
+  authorityNotes  String?        @map("authority_notes")
+  backupContactId String?        @map("backup_contact_id") @db.Uuid
+  effectiveFrom   DateTime?      @map("effective_from") @db.Date
+  effectiveTo     DateTime?      @map("effective_to") @db.Date
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  contact         Contact        @relation("AssignmentContact", fields: [contactId], references: [id], onDelete: Restrict)
+  organization    Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  marketChannel   MarketChannel? @relation(fields: [marketChannelId], references: [id], onDelete: Restrict)
+  territory       Territory?     @relation(fields: [territoryId], references: [id], onDelete: Restrict)
+  backupContact   Contact?       @relation("AssignmentBackup", fields: [backupContactId], references: [id], onDelete: Restrict)
+  specialties     ContactSpecialty[]
+
+  @@index([contactId])
+  @@index([organizationId])
+  @@index([marketChannelId])
+  @@index([territoryId])
+  @@index([backupContactId])
+  @@map("contact_assignments")
+}
+
+model ContactSpecialty {
+  id                  String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contactAssignmentId String            @map("contact_assignment_id") @db.Uuid
+  productId           String            @map("product_id") @db.Uuid
+  industryCode        String?           @map("industry_code")
+  contactAssignment   ContactAssignment @relation(fields: [contactAssignmentId], references: [id], onDelete: Cascade)
+  product             InsuranceProduct  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([contactAssignmentId])
+  @@index([productId])
+  @@map("contact_specialties")
+}
+
+/// Notes, calls, meetings and other relationship activity.
+model RelationshipActivity {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String         @map("organization_id") @db.Uuid
+  contactId      String?        @map("contact_id") @db.Uuid
+  ownerUserId    String         @map("owner_user_id") @db.Uuid
+  type           ActivityType
+  occurredAt     DateTime       @map("occurred_at") @db.Timestamptz(6)
+  notes          String
+  classification Classification @default(GENERAL)
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  contact        Contact?       @relation(fields: [contactId], references: [id], onDelete: Restrict)
+  owner          User           @relation(fields: [ownerUserId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, occurredAt])
+  @@index([contactId])
+  @@index([ownerUserId])
+  @@map("relationship_activities")
+}
+
+// ─────────────────────────── Appetite ───────────────────────────
+
+/// A versioned appetite profile for one carrier product (optionally one channel).
+/// APPROVED requires owner, approver and effective_from (CHECK in constraints migration);
+/// a source is required by the service layer (Milestone 4) via record_sources.
+model AppetiteProfile {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  carrierProductId String         @map("carrier_product_id") @db.Uuid
+  marketChannelId  String?        @map("market_channel_id") @db.Uuid
+  version          Int
+  status           ApprovalStatus @default(DRAFT)
+  effectiveFrom    DateTime?      @map("effective_from") @db.Date
+  effectiveTo      DateTime?      @map("effective_to") @db.Date
+  ownerUserId      String?        @map("owner_user_id") @db.Uuid
+  approvedById     String?        @map("approved_by") @db.Uuid
+  approvedAt       DateTime?      @map("approved_at") @db.Timestamptz(6)
+  verifiedAt       DateTime?      @map("verified_at") @db.Timestamptz(6)
+  nextReviewAt     DateTime?      @map("next_review_at") @db.Timestamptz(6)
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  carrierProduct   CarrierProduct @relation(fields: [carrierProductId], references: [id], onDelete: Restrict)
+  marketChannel    MarketChannel? @relation(fields: [marketChannelId], references: [id], onDelete: Restrict)
+  owner            User?          @relation("ProfileOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+  approvedBy       User?          @relation("ProfileApprover", fields: [approvedById], references: [id], onDelete: Restrict)
+  rules            AppetiteRule[]
+
+  // Unique (carrier_product, channel, version) with null channel normalized: constraints migration.
+  @@index([carrierProductId])
+  @@index([marketChannelId])
+  @@index([ownerUserId])
+  @@index([approvedById])
+  @@index([status, nextReviewAt])
+  @@map("appetite_profiles")
+}
+
+model RiskAttributeDefinition {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId        String            @map("product_id") @db.Uuid
+  key              String
+  label            String
+  dataType         AttributeDataType @map("data_type")
+  unit             String?
+  validationSchema Json?             @map("validation_schema")
+  searchable       Boolean           @default(true)
+  product          InsuranceProduct  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  rules            AppetiteRule[]
+
+  @@unique([productId, key])
+  @@map("risk_attribute_definitions")
+}
+
+/// One appetite statement. A rule with no attribute applies to its territories and
+/// industries as a whole (e.g. "TN roofing contractors: REFERRAL"). UNKNOWN is distinct
+/// from ACCEPTED; a missing rule is never treated as eligible.
+model AppetiteRule {
+  id                    String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profileId             String                   @map("profile_id") @db.Uuid
+  attributeDefinitionId String?                  @map("attribute_definition_id") @db.Uuid
+  operator              RuleOperator?
+  typedValue            Json?                    @map("typed_value")
+  outcome               AppetiteOutcome          @default(UNKNOWN)
+  priority              Int                      @default(100)
+  effectiveFrom         DateTime?                @map("effective_from") @db.Date
+  effectiveTo           DateTime?                @map("effective_to") @db.Date
+  rationale             String?
+  createdAt             DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  profile               AppetiteProfile          @relation(fields: [profileId], references: [id], onDelete: Restrict)
+  attributeDefinition   RiskAttributeDefinition? @relation(fields: [attributeDefinitionId], references: [id], onDelete: Restrict)
+  territories           AppetiteRuleTerritory[]
+  industries            AppetiteRuleIndustry[]
+
+  @@index([profileId, outcome])
+  @@index([attributeDefinitionId])
+  @@map("appetite_rules")
+}
+
+model AppetiteRuleTerritory {
+  ruleId      String       @map("rule_id") @db.Uuid
+  territoryId String       @map("territory_id") @db.Uuid
+  rule        AppetiteRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  territory   Territory    @relation(fields: [territoryId], references: [id], onDelete: Restrict)
+
+  @@id([ruleId, territoryId])
+  @@index([territoryId])
+  @@map("appetite_rule_territories")
+}
+
+model AppetiteRuleIndustry {
+  id                   String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ruleId               String             @map("rule_id") @db.Uuid
+  classificationSystem IndustryCodeSystem @map("classification_system")
+  code                 String
+  rule                 AppetiteRule       @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@unique([ruleId, classificationSystem, code])
+  @@index([classificationSystem, code])
+  @@map("appetite_rule_industries")
+}
+
+model UnderwritingRequirement {
+  id                      String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  carrierProductId        String           @map("carrier_product_id") @db.Uuid
+  condition               Json?
+  requirementType         String           @map("requirement_type")
+  description             String
+  sourceDocumentVersionId String?          @map("source_document_version_id") @db.Uuid
+  createdAt               DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  carrierProduct          CarrierProduct   @relation(fields: [carrierProductId], references: [id], onDelete: Restrict)
+  sourceDocumentVersion   DocumentVersion? @relation(fields: [sourceDocumentVersionId], references: [id], onDelete: Restrict)
+
+  @@index([carrierProductId])
+  @@index([sourceDocumentVersionId])
+  @@map("underwriting_requirements")
+}
+
+model CoverageCapability {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  carrierProductId String         @map("carrier_product_id") @db.Uuid
+  coverageCode     String         @map("coverage_code")
+  minLimit         Decimal?       @map("min_limit") @db.Decimal(18, 2)
+  maxLimit         Decimal?       @map("max_limit") @db.Decimal(18, 2)
+  currency         String         @default("USD") @db.Char(3)
+  carrierProduct   CarrierProduct @relation(fields: [carrierProductId], references: [id], onDelete: Restrict)
+
+  @@index([carrierProductId])
+  @@map("coverage_capabilities")
+}
+
+// ─────────────────────────── Finance ───────────────────────────
+
+model CommissionAgreement {
+  id                      String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  agencyEntityId          String           @map("agency_entity_id") @db.Uuid
+  marketChannelId         String           @map("market_channel_id") @db.Uuid
+  status                  ApprovalStatus   @default(DRAFT)
+  agreementRef            String?          @map("agreement_ref")
+  /// Required once APPROVED (CHECK); drafts may not have the document yet.
+  sourceDocumentVersionId String?          @map("source_document_version_id") @db.Uuid
+  approvedById            String?          @map("approved_by") @db.Uuid
+  approvedAt              DateTime?        @map("approved_at") @db.Timestamptz(6)
+  /// Contingency / profit-sharing terms as staff describe them. No payout math (P2).
+  contingencyNotes        String?          @map("contingency_notes")
+  notes                   String?
+  createdAt               DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  agencyEntity            AgencyEntity     @relation(fields: [agencyEntityId], references: [id], onDelete: Restrict)
+  marketChannel           MarketChannel    @relation(fields: [marketChannelId], references: [id], onDelete: Restrict)
+  sourceDocumentVersion   DocumentVersion? @relation(fields: [sourceDocumentVersionId], references: [id], onDelete: Restrict)
+  approvedBy              User?            @relation("AgreementApprover", fields: [approvedById], references: [id], onDelete: Restrict)
+  schedules               CommissionSchedule[]
+
+  @@index([agencyEntityId])
+  @@index([marketChannelId])
+  @@index([sourceDocumentVersionId])
+  @@index([approvedById])
+  @@map("commission_agreements")
+}
+
+/// Effective-dated commission rates. `rate` is a decimal fraction (0.125 = 12.5%).
+/// Overlapping APPROVED schedules with the same scope are blocked by an exclusion constraint.
+model CommissionSchedule {
+  id              String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  agreementId     String              @map("agreement_id") @db.Uuid
+  productId       String              @map("product_id") @db.Uuid
+  territoryId     String?             @map("territory_id") @db.Uuid
+  transactionType TransactionType     @map("transaction_type")
+  basis           CommissionBasis
+  rate            Decimal?            @db.Decimal(9, 6)
+  flatAmount      Decimal?            @map("flat_amount") @db.Decimal(18, 2)
+  currency        String              @default("USD") @db.Char(3)
+  effectiveFrom   DateTime            @map("effective_from") @db.Date
+  effectiveTo     DateTime?           @map("effective_to") @db.Date
+  status          ApprovalStatus      @default(DRAFT)
+  approvedById    String?             @map("approved_by") @db.Uuid
+  approvedAt      DateTime?           @map("approved_at") @db.Timestamptz(6)
+  notes           String?
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  agreement       CommissionAgreement @relation(fields: [agreementId], references: [id], onDelete: Restrict)
+  product         InsuranceProduct    @relation(fields: [productId], references: [id], onDelete: Restrict)
+  territory       Territory?          @relation(fields: [territoryId], references: [id], onDelete: Restrict)
+  approvedBy      User?               @relation("ScheduleApprover", fields: [approvedById], references: [id], onDelete: Restrict)
+  tiers           CommissionTier[]
+
+  @@index([agreementId, effectiveFrom])
+  @@index([productId])
+  @@index([territoryId])
+  @@index([approvedById])
+  @@map("commission_schedules")
+}
+
+model CommissionTier {
+  id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  scheduleId   String             @map("schedule_id") @db.Uuid
+  thresholdMin Decimal            @map("threshold_min") @db.Decimal(18, 2)
+  thresholdMax Decimal?           @map("threshold_max") @db.Decimal(18, 2)
+  rate         Decimal?           @db.Decimal(9, 6)
+  flatAmount   Decimal?           @map("flat_amount") @db.Decimal(18, 2)
+  schedule     CommissionSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@index([scheduleId])
+  @@map("commission_tiers")
+}
+
+// ───────────────────── Documents, approvals, audit ─────────────────────
+
+model Document {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title          String
+  documentType   DocumentType   @map("document_type")
+  classification Classification @default(INTERNAL)
+  ownerUserId    String?        @map("owner_user_id") @db.Uuid
+  status         DocumentStatus @default(ACTIVE)
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  owner          User?          @relation(fields: [ownerUserId], references: [id], onDelete: Restrict)
+  versions       DocumentVersion[]
+
+  @@index([ownerUserId])
+  @@map("documents")
+}
+
+/// Stored privately by object key; never a public URL.
+model DocumentVersion {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  documentId    String   @map("document_id") @db.Uuid
+  versionNumber Int      @map("version_number")
+  objectKey     String   @unique @map("object_key")
+  sha256        String   @db.Char(64)
+  mimeType      String   @map("mime_type")
+  sizeBytes     BigInt   @map("size_bytes")
+  uploadedById  String   @map("uploaded_by") @db.Uuid
+  uploadedAt    DateTime @default(now()) @map("uploaded_at") @db.Timestamptz(6)
+  document      Document @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  uploadedBy    User     @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  appointments  AgencyAppointment[]
+  requirements  UnderwritingRequirement[]
+  agreements    CommissionAgreement[]
+  recordSources RecordSource[]
+
+  @@unique([documentId, versionNumber])
+  @@index([uploadedById])
+  @@index([sha256])
+  @@map("document_versions")
+}
+
+/// Provenance for any business record (polymorphic; record existence is validated by
+/// the service layer). Extended from the blueprint with source_kind, import job and
+/// confidence so imported and (later) AI-extracted values are never blurred with
+/// document-sourced or user-entered ones.
+model RecordSource {
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recordType        RecordType       @map("record_type")
+  recordId          String           @map("record_id") @db.Uuid
+  sourceKind        SourceKind       @map("source_kind")
+  documentVersionId String?          @map("document_version_id") @db.Uuid
+  importJobId       String?          @map("import_job_id") @db.Uuid
+  pageOrSection     String?          @map("page_or_section")
+  sourceNote        String?          @map("source_note")
+  /// Only for AI_EXTRACTED (P2): model confidence 0..1.
+  confidence        Decimal?         @db.Decimal(4, 3)
+  createdById       String           @map("created_by") @db.Uuid
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  documentVersion   DocumentVersion? @relation(fields: [documentVersionId], references: [id], onDelete: Restrict)
+  importJob         ImportJob?       @relation(fields: [importJobId], references: [id], onDelete: Restrict)
+  createdBy         User             @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([recordType, recordId])
+  @@index([documentVersionId])
+  @@index([importJobId])
+  @@index([createdById])
+  @@map("record_sources")
+}
+
+model ChangeRequest {
+  id            String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recordType    RecordType          @map("record_type")
+  /// Null when the change request proposes a new record.
+  recordId      String?             @map("record_id") @db.Uuid
+  proposedPatch Json                @map("proposed_patch")
+  status        ChangeRequestStatus @default(PENDING)
+  proposedById  String              @map("proposed_by") @db.Uuid
+  reviewedById  String?             @map("reviewed_by") @db.Uuid
+  reviewedAt    DateTime?           @map("reviewed_at") @db.Timestamptz(6)
+  rationale     String?
+  createdAt     DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  proposedBy    User                @relation("ChangeProposer", fields: [proposedById], references: [id], onDelete: Restrict)
+  reviewedBy    User?               @relation("ChangeReviewer", fields: [reviewedById], references: [id], onDelete: Restrict)
+
+  @@index([status, createdAt])
+  @@index([recordType, recordId])
+  @@index([proposedById])
+  @@index([reviewedById])
+  @@map("change_requests")
+}
+
+model VerificationEvent {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recordType   RecordType @map("record_type")
+  recordId     String     @map("record_id") @db.Uuid
+  verifiedById String     @map("verified_by") @db.Uuid
+  verifiedAt   DateTime   @map("verified_at") @db.Timestamptz(6)
+  nextReviewAt DateTime?  @map("next_review_at") @db.Timestamptz(6)
+  sourceNote   String?    @map("source_note")
+  verifiedBy   User       @relation(fields: [verifiedById], references: [id], onDelete: Restrict)
+
+  @@index([recordType, recordId])
+  @@index([nextReviewAt])
+  @@index([verifiedById])
+  @@map("verification_events")
+}
+
+/// Append-only. UPDATE, DELETE and TRUNCATE are rejected by triggers (constraints migration).
+model AuditEvent {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actorId       String?  @map("actor_id") @db.Uuid
+  action        String
+  entityType    String   @map("entity_type")
+  entityId      String?  @map("entity_id") @db.Uuid
+  beforeState   Json?    @map("before_state")
+  afterState    Json?    @map("after_state")
+  occurredAt    DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  correlationId String?  @map("correlation_id")
+  actor         User?    @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([occurredAt])
+  @@map("audit_events")
+}
+
+model ImportJob {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourceFilename String       @map("source_filename")
+  targetType     RecordType   @map("target_type")
+  mapping        Json?
+  status         ImportStatus @default(UPLOADED)
+  totalRows      Int          @default(0) @map("total_rows")
+  acceptedRows   Int          @default(0) @map("accepted_rows")
+  rejectedRows   Int          @default(0) @map("rejected_rows")
+  errorObjectKey String?      @map("error_object_key")
+  initiatedById  String       @map("initiated_by") @db.Uuid
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  initiatedBy    User         @relation(fields: [initiatedById], references: [id], onDelete: Restrict)
+  recordSources  RecordSource[]
+
+  @@index([initiatedById])
+  @@index([status])
+  @@map("import_jobs")
+}
+
+/// Admin-editable configuration (review cadence, stale thresholds, disclaimer text...).
+model AppSetting {
+  key         String   @id
+  value       Json
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  updatedById String?  @map("updated_by") @db.Uuid
+  updatedBy   User?    @relation(fields: [updatedById], references: [id], onDelete: Restrict)
+
+  @@index([updatedById])
+  @@map("app_settings")
+}

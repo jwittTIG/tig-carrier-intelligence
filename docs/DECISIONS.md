@@ -1,0 +1,54 @@
+# Decisions Log
+
+Status key: **PROPOSED** = Claude's recommended default; Josh must confirm before anything is built on it. **CONFIRMED** = approved by Josh (with date). **CHANGED** = superseded (keep the old entry and say why).
+
+Josh: edit the Status column, or tell Claude Code "confirm D4–D9" or "change D5 to X".
+
+## Product and access
+
+| # | Decision | Choice | Why | Status |
+|---|---|---|---|---|
+| D1 | Who sees what | Everyone at TIG sees everything, including commissions and agency codes. The blueprint's permission tables (roles, permissions, user_role_scopes) are built so restrictions can be switched on later. Seeded roles: **STAFF** (all permissions except user/settings admin) and **ADMIN** (all). Acceptance tests that assume restricted commissions or entity-scoped access are marked "not applicable by decision" rather than claimed as passing. From Milestone 2 the server will still check a permission on every read and write, so turning on restrictions later is a data change, not a rewrite. | Josh's choice in the originating conversation; the blueprint's PRD assumed restricted roles | CONFIRMED 2026-11-04 |
+| D2 | AI extraction of appetite guides | Follow the blueprint: P2, not in the MVP. Documents and versions are stored from Milestone 4; extraction with mandatory human review comes in a later phase. `record_sources.source_kind = AI_EXTRACTED` and `confidence` exist now so provenance never has to be retrofitted. | Josh originally wanted PDF extraction as an initial data source; the blueprint defers it | CONFIRMED 2026-11-04 |
+| D3 | App name and location | "TIG Carrier Intelligence", repo at `C:\dev\tig-carrier-intelligence`, its own git repo, separate from contractor-risk-platform | Blueprint name | CONFIRMED 2026-11-04 |
+| D4 | Portal credentials | Never stored. Portal records hold URL, instructions and an optional "where it lives in the password manager" note. `carrier_portals` has no credential columns (tested). | Josh + blueprint | CONFIRMED 2026-11-04 |
+| D5 | Seed data | P&C line taxonomy, US states/DC, roles/permissions, settings, plus a few fictional records prefixed `DEMO` (emails `@example.invalid`). No real carriers, rates, codes or people. | Josh + blueprint | CONFIRMED 2026-11-04 |
+
+## Stack and infrastructure
+
+| # | Decision | Recommended default | Why | Status |
+|---|---|---|---|---|
+| D6 | Framework | Next.js 16 App Router + TypeScript + React 19 + Tailwind 4; Prisma 7 + PostgreSQL 17; Zod; Vitest + Playwright. Same as contractor-risk-platform. | Blueprint stack; one stack across TIG apps | CONFIRMED 2026-11-04 |
+| D7 | Local database | **Changed from what I proposed.** I proposed Neon dev/test branches, but that needs a Neon project only you can create. Docker isn't installed, and this PC is Windows on ARM, which the embedded-Postgres package doesn't support. So local dev and tests use **two `prisma dev` servers** (local Postgres 17 built on PGlite, no account): `tci` (dev) and `tci-test` (tests). pg_trgm and btree_gist work there. CI uses a real `postgres:17` container. | Works today with zero setup; swap in Neon by changing two URLs in `.env.local` | PROPOSED |
+| D8 | Hosting | Vercel (app) + Neon (Postgres), same vendors as contractor-risk-platform; a separate Neon project for this app. Daily backups and point-in-time restore come from Neon; restore must be tested before go-live. | Low ops; vendors already in use | PROPOSED |
+| D9 | Sign-in (Milestone 2) | Clerk for identity, with **Microsoft sign-in** limited to TIG's domain if TIG uses Microsoft 365. Roles and permissions stay in our database (D1). The blueprint proposed Auth.js + OIDC; Clerk was chosen to match the other app and avoid building session/MFA handling. **Question for Josh: which identity provider does TIG use (Microsoft 365, Google Workspace, other)?** | Don't build auth; reuse what we know | PROPOSED |
+| D10 | Source control | Private GitHub repo. `gh` isn't installed here, so Josh creates an empty repo and Claude adds the remote. CI (`.github/workflows/ci.yml`) has not run yet. | Backup + CI | PROPOSED |
+| D11 | File storage (Milestone 4) | S3-compatible private bucket (Cloudflare R2), short-lived signed URLs after a permission check; `dev` local adapter that refuses to run in production. | Blueprint: private, object keys only | PROPOSED |
+| D12 | AI provider (P2) | Anthropic Claude API with PDF input and structured output; store model id, prompt version, raw output, page and quote per value. Check data-retention terms before real guides go in. | Same as contractor-risk-platform COI extraction | PROPOSED |
+| D13 | Background jobs | None until needed (expiry warnings and stale tasks can run as a daily cron route). Inngest if/when extraction (P2) needs durable jobs. | Keep MVP small | PROPOSED |
+
+## Workflow rules (needed by Milestone 4)
+
+| # | Decision | Recommended default | Why | Status |
+|---|---|---|---|---|
+| D14 | Approvals | Material changes to appetite, commissions, appointments and codes go through a change request. Any STAFF can approve (D1), but **not their own** change request; an ADMIN can approve their own, with a required reason. Approval records who/when/source and keeps the prior version. | Blueprint P0-09; a small team needs a way to unblock | PROPOSED |
+| D15 | Review cadence | Appetite profiles and contacts: next review 365 days after verification; appointment expiry warning 60 days ahead. Stored in `app_settings`, admin-editable. | Appetite guides go stale; blueprint P0-12 | PROPOSED |
+| D16 | Import format (Milestone 5) | CSV and XLSX (TIG's current sheets are likely Excel). Saved column mappings per sheet layout. Imported values get `source_kind = IMPORT` with the job id; appetite imports land as DRAFT until approved. **Waiting on Josh's sample sheets.** | Blueprint P0-10 is CSV-only | PROPOSED |
+| D17 | Agency legal entities | One `DEMO Agency Entity` in the seed until Josh says how many legal entities/business units TIG has. | Blueprint scopes appointments to agency entities | PROPOSED |
+
+## Implementation notes: where the schema differs from `DATA_MODEL.md`
+
+These are Milestone 1 choices. Josh: flag any you disagree with.
+
+| # | Change | Why |
+|---|---|---|
+| N1 | `record_sources` gains `source_kind` (DOCUMENT / IMPORT / USER_ENTERED / AI_EXTRACTED), `import_job_id`, `confidence`, `created_by`; `document_version_id` is nullable but required when kind = DOCUMENT (CHECK). | Josh's provenance requirement: never blur imported, typed and (later) AI-extracted values |
+| N2 | `agency_codes` gains `assigned_user_id` (producer) and `notes`. | Producer codes need a producer |
+| N3 | `commission_agreements` gains `contingency_notes`, `approved_at`, `notes`; `source_document_version_id` is nullable for drafts, required when APPROVED (CHECK). `contingency_agreements` (P2) is not created. | Josh wanted contingency/profit-sharing notes now; payout modeling is P2 |
+| N4 | `appetite_profiles` gains `approved_by`, `approved_at`. APPROVED requires owner, approver, approval time and effective_from (CHECK). The "approved needs a source" rule is enforced in the service layer (M4) because `record_sources` is polymorphic. | Blueprint business rule |
+| N5 | `appetite_rules.attribute_definition_id` is nullable, so a rule can apply to territories + industries as a whole ("TN roofing: REFERRAL"). If an attribute is named, operator and value are required (CHECK). Default outcome is UNKNOWN. | Most appetite statements aren't attribute comparisons |
+| N6 | `change_requests.record_id` nullable (a request can propose a new record); `import_jobs.target_type` added; `app_settings` table added. | Needed by the workflows |
+| N7 | Not created yet (blueprint P1/P2): risks, risk_attribute_values, submissions, submission_markets, quotes, declinations, placement_outcomes, commission_transactions, notifications, contingency_agreements. | IMPLEMENTATION_PLAN: MVP only |
+| N8 | No Postgres row-level security. Single organization (D1), so authorization lives in the service layer from M2. The blueprint lists RLS as optional. | Avoid complexity with no isolation benefit |
+| N9 | Commission `rate` is a fraction (0.125 = 12.5%), NUMERIC(9,6); money NUMERIC(18,2); effective dates are DATE with inclusive `effective_to` (null = open-ended). | Blueprint precision rules |
+| N10 | The test DB is reset by dropping and recreating its `public` schema, then running `prisma migrate deploy`. The reset is guarded: it only touches `TEST_DATABASE_URL`, refuses if that equals `DATABASE_URL`, and refuses non-local hosts outside CI. `prisma migrate reset` is not used because Prisma blocks it when run by an AI agent. | Repeatable test runs |
