@@ -1,5 +1,7 @@
 # Milestone 5: search, import, hardening
 
+Status: built 2026-11-05, awaiting Josh's review. CSV import covers carriers and contacts; appetite, codes and commission imports wait for sample sheets (D16).
+
 Prerequisite: Milestone 4 reviewed; D16 confirmed and Josh's sample spreadsheets received.
 
 Contract:

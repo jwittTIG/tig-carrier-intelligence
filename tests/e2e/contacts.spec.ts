@@ -25,8 +25,8 @@ test("add a contact, assign them, confirm them, and find them as the rep", async
   await expect(page.getByText(/Confirmed · next review/)).toBeVisible();
 
   await page.getByRole("link", { name: "Contacts", exact: true }).click();
-  await page.getByLabel("Carrier").selectOption({ label: "DEMO Summit Mutual" });
-  await page.getByLabel("State").selectOption({ label: "Tennessee" });
+  await page.locator('form[role="search"] select[name="organizationId"]').selectOption({ label: "DEMO Summit Mutual" });
+  await page.locator('form[role="search"] select[name="stateCode"]').selectOption({ label: "Tennessee" });
   await page.getByRole("button", { name: "Search" }).click();
   await expect(page.getByRole("link", { name: `Pat ${last}` })).toBeVisible();
 

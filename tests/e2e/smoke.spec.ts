@@ -13,6 +13,8 @@ test("health endpoint responds and private pages require sign-in", async ({ page
 test("sign in, create a carrier, find it, archive it", async ({ page }) => {
   await page.goto("/sign-in");
   await page.getByRole("button", { name: /Sign in as DEMO Producer/ }).click();
+  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  await page.getByRole("link", { name: "Carriers", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Carriers" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Users" })).toHaveCount(0); // STAFF is not an admin
 

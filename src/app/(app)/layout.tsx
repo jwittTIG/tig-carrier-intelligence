@@ -23,14 +23,22 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       )}
       <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         <nav aria-label="Main" className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3 text-sm">
-          <Link href="/carriers" className="font-semibold">TIG Carrier Intelligence</Link>
+          <Link href="/dashboard" className="font-semibold">TIG Carrier Intelligence</Link>
+          <Link href="/dashboard" className="hover:underline">Dashboard</Link>
+          {can(ctx, "appetite.read") && <Link href="/markets" className="hover:underline">Market Finder</Link>}
           <Link href="/carriers" className="hover:underline">Carriers</Link>
           {can(ctx, "contact.read") && <Link href="/contacts" className="hover:underline">Contacts</Link>}
           {can(ctx, "appointment.read") && <Link href="/codes" className="hover:underline">Codes</Link>}
           {can(ctx, "document.read") && <Link href="/documents" className="hover:underline">Documents</Link>}
           {can(ctx, "change_request.review") && <Link href="/approvals" className="hover:underline">Approvals</Link>}
           {can(ctx, "admin.users") && <Link href="/admin/users" className="hover:underline">Users</Link>}
-          <span className="ml-auto text-zinc-600 dark:text-zinc-400">{ctx.name}</span>
+          {can(ctx, "audit.read") && <Link href="/admin/audit" className="hover:underline">Audit log</Link>}
+          {can(ctx, "import.run") && <Link href="/imports" className="hover:underline">Import</Link>}
+          <form action="/search" method="get" role="search" className="ml-auto">
+            <label htmlFor="globalSearch" className="sr-only">Search carriers, contacts, codes and documents</label>
+            <input id="globalSearch" name="q" type="search" placeholder="Search…" className="w-40 rounded border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-900" />
+          </form>
+          <span className="text-zinc-600 dark:text-zinc-400">{ctx.name}</span>
           {dev ? <form action={signOut}>{signOutButton}</form> : <SignOutButton>{signOutButton}</SignOutButton>}
         </nav>
       </header>

@@ -3,6 +3,8 @@ import { expect, test, type Page } from "@playwright/test";
 async function signIn(page: Page, who: "DEMO Admin" | "DEMO Producer") {
   await page.goto("/sign-in");
   await page.getByRole("button", { name: new RegExp(`Sign in as ${who}`) }).click();
+  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  await page.goto("/carriers");
   await expect(page.getByRole("heading", { name: "Carriers" })).toBeVisible();
 }
 
@@ -17,6 +19,7 @@ test("upload a guide, draft appetite, submit, and have someone else approve it",
   await page.getByRole("button", { name: "Create carrier" }).click();
   await expect(page.getByRole("heading", { name })).toBeVisible();
   await page.getByRole("link", { name: "Writing companies & channels" }).click();
+  const productLabel = (await page.getByLabel("Existing product").locator("option").nth(1).textContent())!.trim();
   await page.getByLabel("Existing product").selectOption({ index: 1 });
   await page.getByRole("button", { name: "Add product" }).click();
   await expect(page.getByText("Product added.")).toBeVisible();
@@ -55,11 +58,22 @@ test("upload a guide, draft appetite, submit, and have someone else approve it",
   await page.getByRole("button", { name: "Sign out" }).click();
   await signIn(page, "DEMO Admin");
   await page.getByRole("link", { name: "Approvals" }).click();
-  const item = page.getByRole("listitem").filter({ hasText: name }).first();
+  const queue = page.locator("section").filter({ has: page.getByRole("heading", { name: /Waiting for approval/ }) });
+  const item = queue.getByRole("listitem").filter({ hasText: name }).first();
   await item.getByRole("button", { name: "Approve" }).click();
   // Once decided, it leaves the queue.
-  await expect(page.getByRole("listitem").filter({ hasText: name })).toHaveCount(0);
+  await expect(queue.getByRole("listitem").filter({ hasText: name })).toHaveCount(0);
   await page.goto(profileUrl);
   await expect(page.getByText("Approved", { exact: true }).first()).toBeVisible();
   await expect(page.getByText(/Confirmed · next review/)).toBeVisible();
+
+  // And it shows up in the Market Finder for a TN roofing contractor.
+  await page.getByRole("link", { name: "Market Finder" }).click();
+  await page.locator('select[name="productId"]').selectOption({ label: productLabel });
+  await page.locator('select[name="stateCode"]').selectOption({ label: "Tennessee" });
+  await page.getByLabel("Industry code").fill("NAICS 238160");
+  await page.getByRole("button", { name: "Find markets" }).click();
+  const accepted = page.locator("section").filter({ has: page.getByRole("heading", { name: /^Accepted/ }) });
+  await expect(accepted.getByRole("link", { name })).toBeVisible();
+  await expect(page.getByText(/not a commitment to quote or bind/).first()).toBeVisible();
 });

@@ -10,7 +10,11 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["tests/unit/**/*.test.ts", "tests/integration/**/*.test.ts"],
+    // Performance tests run on their own (`npm run test:perf`): they load thousands of rows,
+    // which the local PGlite database doesn't survive alongside the full suite (DECISIONS D7a).
+    include: process.env.PERF ? ["tests/perf/**/*.test.ts"] : ["tests/unit/**/*.test.ts", "tests/integration/**/*.test.ts"],
+    // Run files in a fixed order instead of slowest-first.
+    sequence: { shuffle: false },
     globalSetup: ["tests/support/global-setup.ts"],
     setupFiles: ["tests/support/setup-env.ts"],
     testTimeout: 30_000,

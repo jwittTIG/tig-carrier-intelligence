@@ -1,7 +1,48 @@
 # Progress
 
 ## Current state (2026-11-05)
-**Milestone 5 (search, import, hardening) is in progress.** Josh accepted M4 ("Proceed with the next step", 2026-11-05). D14 for appointments/codes was not answered, so they keep saving directly. Josh asked for email intake of carrier bulletins and guideline updates: proposed as Milestone 6 (DECISIONS D20, `prompts/06-email-intake.md`). D7a (real Postgres) is still open.
+**Milestone 5 (MVP release candidate) is built and waiting for Josh's review.** Josh accepted M4 ("Proceed with the next step", 2026-11-05). D14 for appointments/codes was not answered, so they keep saving directly. Josh asked for email intake of carrier bulletins and guideline updates: proposed as Milestone 6 (DECISIONS D20, `prompts/06-email-intake.md`). D7a (real Postgres) is still open. The MVP is **not production-ready**: see `docs/SECURITY.md` "Known gaps" and `docs/OPERATIONS.md`.
+
+## Milestone 5: search, import, hardening (done)
+- **Market Finder** (`/markets`, `GET /api/v1/markets`):
+  - Filter by line or product, state, industry code (NAICS hierarchy: a 2381 rule covers 238160) and the limit wanted.
+  - Uses only APPROVED appetite in effect today. Results are grouped Preferred / Accepted / Referral / Prohibited / Unknown.
+  - Each result shows the matched rules and why, conditions to check by hand (e.g. revenue ≤ $5M), the limit compared with the stated maximum ("not stated" is never "no limit"), appointment status, appetite freshness, a conflict flag, source count and contacts for that state.
+  - Shows the admin-editable disclaimer. Automatic matching against risk details is P1, per the PRD.
+- **Global search** (header box, `/search`, `GET /api/v1/search`): carriers (name or exact identifier), contacts, agency codes, documents. Restricted documents are hidden without `commission.read`.
+- **Dashboard** (`/dashboard`, the new home page), all real queries:
+  - waiting for your review, your submissions, appetite overdue, stale contacts;
+  - carriers you own, your overdue profiles, appointments ending soon, appetite approved in the last 30 days.
+- **Audit log viewer** (`/admin/audit`, `GET /api/v1/audit-events`): filter by record type, action, person and dates.
+- **CSV import** (`/imports`, `POST /api/v1/imports/preview`, `POST /api/v1/imports/commit`, `GET /api/v1/imports/:id/errors`):
+  - Carriers and contacts. Upload → columns matched automatically from header names (editable) → row-by-row preview: create / already exists / possible duplicate / error, with reasons.
+  - Commit runs in one transaction: all rows or none. Every record gets an IMPORT source (file + row) and an audit row.
+  - Downloadable error report. Existing records are never overwritten; possible duplicates are only created by opt-in.
+  - XLSX and appetite/codes/commission imports wait for D16 and the sample sheets.
+- **Hardening:**
+  - a route sweep proves every `/api/v1` route and method needs a session;
+  - axe accessibility scan of 11 main screens; it found links told apart by color only, now underlined, plus visible focus outlines;
+  - performance test; Market Finder 2.3× faster after moving rule filtering into the database;
+  - `docs/SECURITY.md`, `docs/OPERATIONS.md`, `docs/UAT.md`, `docs/ACCEPTANCE_STATUS.md`.
+- **Test reliability:** each test file now closes the app's database pool. The abrupt disconnects were crashing local PGlite as the suite grew. The performance test runs separately (`npm run test:perf`).
+
+### M5 tested (ran and saw pass)
+- `npm run check` passes: lint, typecheck, **168 tests in 20 files** (passed twice in a row), build. New tests cover:
+  - CSV parsing, quoting, formula neutralization, name normalization and similarity;
+  - Market Finder grouping, NAICS prefixes, class rules outranking general rules, drafts ignored, unknown for no profile or no stated rule, limit OK / below / not stated, appointed, stale, conflicts, conditions, validation;
+  - carrier import end to end (create, exact and in-file duplicates, errors, possible duplicates, opt-in, sources, audit, error report, no re-commit);
+  - contact import with assignment and territory; import validation and permission;
+  - global search, including the restricted-document hiding; dashboard; audit viewer permission;
+  - route sweep of all 30+ API routes.
+- `npm run test:perf` (300 carriers, 2,400 rules, local PGlite): Market Finder **median 837 ms / p95 928 ms**; global search **median 87 ms / p95 96 ms**. Target: p95 under 2 s.
+- `npm run test:e2e`: **5 Playwright tests pass**. They now include an appetite lookup in the Market Finder after approval, and the accessibility scan.
+- `npm audit --omit=dev`: 0 vulnerabilities in production dependencies.
+
+### M5 not done or not tested
+- **Restricted-commission Playwright test:** N/A under D1 (every real role has commission access). Covered by service and API tests with a limited TEST role.
+- **Import:** XLSX, appetite/codes/commissions import, and undoing an import batch.
+- **Settings screen:** settings (cadences, disclaimer, upload size) are database rows with no admin screen yet.
+- **Microsoft sign-in, R2, a real scanner, hosting, backups and a restore drill:** all need accounts or decisions from Josh.
 
 ## Milestone 4: appetite, commissions, documents, approvals (done)
 - **Documents** (`/documents`, `/documents/[id]`, and a carrier Documents tab):

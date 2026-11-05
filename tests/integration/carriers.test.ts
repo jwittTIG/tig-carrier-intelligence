@@ -78,7 +78,9 @@ describe("directory search and archive", () => {
     const glCarriers = await svc.listCarriers(staff, { lineId: gl.id, q: "DEMO" });
     expect(glCarriers.items.map((i) => i.displayName).sort()).toEqual(["DEMO Ridgeline Specialty", "DEMO Summit Mutual"]);
     const group = (await svc.listCarriers(staff, { type: "GROUP", q: "DEMO Summit" })).items[0];
-    expect((await svc.listCarriers(staff, { parentId: group.id })).items.map((i) => i.displayName)).toEqual(["DEMO Summit Mutual"]);
+    const members = (await svc.listCarriers(staff, { parentId: group.id, pageSize: 100 })).items;
+    expect(members.map((i) => i.displayName)).toContain("DEMO Summit Mutual");
+    expect(members.every((i) => i.parent?.id === group.id)).toBe(true);
   });
 
   it("archived carriers leave the default list but stay retrievable and restorable", async () => {

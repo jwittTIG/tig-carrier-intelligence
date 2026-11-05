@@ -43,6 +43,7 @@ A secure internal web app for The Insurance Group (TIG), an independent commerci
 - Migrate / seed dev DB: `npm run db:migrate` · `npm run db:seed` · new migration: `npm run db:migrate:dev -- --name <name>`
 - Dev server: `npm run dev`
 - Lint / typecheck / tests / build: `npm run lint` · `npm run typecheck` · `npm test` (resets the test DB first) · `npm run build`
+- Search timing: `npm run test:perf` (separate from `npm test`)
 - E2E: `npm run test:e2e` (dev DB + dev sign-in; first time `npx playwright install chromium`)
 - Everything before a commit: `npm run check`
 

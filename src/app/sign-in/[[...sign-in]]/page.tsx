@@ -20,7 +20,7 @@ export default async function SignInPage() {
   async function signIn(form: FormData) {
     "use server";
     await devSignIn(String(form.get("userId")));
-    redirect("/carriers");
+    redirect("/dashboard");
   }
 
   return (

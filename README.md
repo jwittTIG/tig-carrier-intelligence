@@ -2,9 +2,9 @@
 
 Internal web app for The Insurance Group's P&C market relationships: carriers and intermediaries, appetite, underwriter contacts, agency appointments and codes, commission schedules, documents and verification. **P&C only** (no life, health, benefits, disability or LTC).
 
-Status: **Milestone 4 (appetite, commissions, documents, approvals)**. See `docs/PROGRESS.md`.
+Status: **Milestone 5 (MVP release candidate)**: search, import, dashboard, hardening. See `docs/PROGRESS.md`.
 
-Docs: `docs/PRD.md` · `docs/DATA_MODEL.md` · `docs/IMPLEMENTATION_PLAN.md` · `docs/ACCEPTANCE_TESTS.md` · `docs/DECISIONS.md` · `CLAUDE.md`
+Docs: `docs/PRD.md` · `docs/DATA_MODEL.md` · `docs/IMPLEMENTATION_PLAN.md` · `docs/ACCEPTANCE_TESTS.md` · `docs/ACCEPTANCE_STATUS.md` · `docs/DECISIONS.md` · `docs/SECURITY.md` · `docs/OPERATIONS.md` · `docs/UAT.md` · `CLAUDE.md`
 
 ## Prerequisites
 - Node.js 24+, npm 11+, git
@@ -57,7 +57,12 @@ See `.env.example`:
 ## Testing
 - `npm test`: Vitest unit + integration tests. **It wipes and rebuilds the test database** (`TEST_DATABASE_URL`) before running.
 - `npm run test:e2e`: Playwright smoke test (run `npx playwright install chromium` once).
+- `npm run test:perf`: search timing on 300 fictional carriers (run on its own; it loads thousands of rows).
 - `npm run check`: lint + typecheck + tests + build.
+- On this PC, PowerShell blocks `npm.ps1`: type `npm.cmd` instead of `npm` (e.g. `npm.cmd run dev`).
+
+## Backup, restore and deployment
+See `docs/OPERATIONS.md` and `docs/SECURITY.md`.
 
 ## Backup and restore (to finish before go-live)
 Local `prisma dev` data is disposable. Production (DECISIONS D8, proposed Neon) needs daily backups plus point-in-time restore. A restore drill must be recorded in `docs/PROGRESS.md` before real data goes in. The PRD's proposed targets are RPO 1 hour and RTO 4 hours.

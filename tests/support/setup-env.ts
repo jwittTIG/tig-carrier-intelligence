@@ -1,4 +1,5 @@
 import { config } from "dotenv";
+import { afterAll } from "vitest";
 
 // Tests never touch the dev database.
 config({ path: ".env.local", quiet: true });
@@ -10,3 +11,11 @@ process.env.ALLOWED_EMAIL_DOMAINS = "example.invalid";
 process.env.DATABASE_POOL_MAX ??= "1";
 process.env.DEV_STORAGE_DIR = ".data/test-storage";
 process.env.STORAGE_SIGNING_SECRET ??= "test-signing-secret-0123456789abcdef0123456789abcdef";
+
+// Close the app's connection pool when each test file finishes. Without this, the worker exits
+// with the connection still open, and local PGlite (DECISIONS D7a) sometimes doesn't survive
+// the abrupt disconnect.
+afterAll(async () => {
+  const g = globalThis as unknown as { tciPrisma?: { $disconnect(): Promise<void> } };
+  await g.tciPrisma?.$disconnect();
+});
