@@ -1,7 +1,7 @@
 # Progress
 
 ## Current state (2026-11-05)
-**Milestone 4 (appetite, commissions, documents, approvals) is built and waiting for Josh's review.** Josh confirmed D11, D14 and D15 on 2026-11-05 ("Confirm all three"), which this report takes as acceptance of M3. D7a (real Postgres) is still open.
+**Milestone 5 (search, import, hardening) is in progress.** Josh accepted M4 ("Proceed with the next step", 2026-11-05). D14 for appointments/codes was not answered, so they keep saving directly. Josh asked for email intake of carrier bulletins and guideline updates: proposed as Milestone 6 (DECISIONS D20, `prompts/06-email-intake.md`). D7a (real Postgres) is still open.
 
 ## Milestone 4: appetite, commissions, documents, approvals (done)
 - **Documents** (`/documents`, `/documents/[id]`, and a carrier Documents tab):
