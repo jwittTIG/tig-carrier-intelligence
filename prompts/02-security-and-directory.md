@@ -8,7 +8,7 @@ Contract:
 - ACCEPTANCE_TESTS sections "Access control" and "Carrier model".
 
 ## Build
-- **Sign-in** through the confirmed provider, limited to TIG's domain. First sign-in links `users.identity_subject`; deactivated users are blocked.
+- **Sign-in** with Microsoft 365 work accounts through Clerk (D9), limited to the `tigknoxville.com` domain. No email/password sign-up. First sign-in links `users.identity_subject`; deactivated users are blocked.
 - **Authorization:** `AuthContext` + `assertCan(ctx, permission)`, default deny. Services take the context. Route handlers and server actions never import the Prisma client directly (enforced by an ESLint rule).
 - **Audit helper:** every write records an `audit_events` row (before/after) in the same transaction, with a correlation id.
 - **Carrier directory:**

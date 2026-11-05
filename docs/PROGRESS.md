@@ -1,7 +1,7 @@
 # Progress
 
 ## Current state (2026-11-04)
-**Milestones 0 + 1 are built and waiting for Josh's review.** Milestone 2 does not start until Josh reviews and confirms D9 (identity provider).
+**Milestones 0 + 1 are built and waiting for Josh's review.** D9 is confirmed (Microsoft 365 sign-in). Milestone 2 starts once Josh has reviewed Milestone 1.
 
 ## Milestone 0: repo and skeleton (done)
 - New git repo at `C:\dev\tig-carrier-intelligence` (D3). Blueprint files are in `docs/`; the originals are kept in `docs/blueprint/`.
@@ -60,7 +60,7 @@
 See `prompts/02…05`. M2 needs D9 confirmed. Access-control acceptance tests will be marked N/A where D1 makes them inapplicable, for example "Producer without commission.read".
 
 ## Open questions for Josh
-1. **D9:** Which identity provider does TIG use (Microsoft 365, Google Workspace, other)? Is Clerk with Microsoft sign-in OK?
+1. ~~**D9:** identity provider~~. Answered 2026-11-04: Microsoft 365 sign-in through Clerk. Still needed for M2: Josh's review of Milestone 1, and a Clerk application for this app.
 2. **D7, D8, D10–D17:** confirm or change the proposed defaults. D7 changed from my plan: local `prisma dev` instead of Neon, because no Neon project exists and Docker/embedded Postgres don't run on this ARM PC.
 3. **GitHub:** please create an empty private repo (for example `tig-carrier-intelligence`) and send the URL; I'll add the remote and push.
 4. **Spreadsheets:** please send samples of the sheets TIG tracks this in today (headers and a few fake rows), so the M5 import matches real columns.
