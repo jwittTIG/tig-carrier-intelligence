@@ -25,6 +25,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         <nav aria-label="Main" className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3 text-sm">
           <Link href="/carriers" className="font-semibold">TIG Carrier Intelligence</Link>
           <Link href="/carriers" className="hover:underline">Carriers</Link>
+          {can(ctx, "contact.read") && <Link href="/contacts" className="hover:underline">Contacts</Link>}
+          {can(ctx, "appointment.read") && <Link href="/codes" className="hover:underline">Codes</Link>}
           {can(ctx, "admin.users") && <Link href="/admin/users" className="hover:underline">Users</Link>}
           <span className="ml-auto text-zinc-600 dark:text-zinc-400">{ctx.name}</span>
           {dev ? <form action={signOut}>{signOutButton}</form> : <SignOutButton>{signOutButton}</SignOutButton>}

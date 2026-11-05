@@ -1,7 +1,63 @@
 # Progress
 
 ## Current state (2026-11-05)
-**Milestone 2 (security and carrier directory) is built and waiting for Josh's review.** Josh approved Milestone 1 on 2026-11-04. Milestone 3 should not start until Josh reviews M2 and decides D7a (move to real Postgres).
+**Milestone 3 (contacts, appointments, codes) is built and waiting for Josh's review.** Josh approved M1 (2026-11-04) and M2 ("Ok proceed with next phase", 2026-11-05). D7a (real Postgres) is still open, so M3 was built on the local PGlite database with its workarounds.
+
+## Milestone 3: contacts, appointments, codes (done)
+- **Contacts** (`/contacts`, `/contacts/[id]`):
+  - "Who's my rep" search by carrier, state, line and role, plus name/email and confirmation status. A state search matches that state or nationwide (United States). An assignment with no territory recorded never matches a state search.
+  - Contact details, with partial updates that change only the fields given.
+  - Assignments: carrier, optional channel (must belong to that carrier), territory, role, title, authority notes, backup contact. Ended assignments are kept, never deleted.
+  - Specialties by product and optional industry code.
+  - Notes filed under one of the contact's carriers; change history; archive.
+- **Verification:** "Confirm still current" requires a note on how it was confirmed. It records a `verification_events` row (who, when, how), sets `verified_at`, and puts the next review at `contact.review_cadence_days` (setting, seeded 365). Badges show Never confirmed / Stale / Confirmed with the next review date. Missing settings show "Setting not configured: …" rather than falling back to a hidden default.
+- **Carrier profile** gains two tabs:
+  - **Contacts:** current assignments with confirmation badges; past ones listed separately.
+  - **Appointments & codes:**
+    - portal links (URL, where the login lives, instructions);
+    - appointments per agency entity and channel, with status and dates;
+    - authorizations by state and product (the product must be written by that carrier);
+    - codes with producer, dates, status and edit.
+- **Effective status rules:**
+  - An ACTIVE appointment or code past its end date shows **Expired**, never Current.
+  - A record ending within `appointment.expiry_warning_days` (seeded 60) shows **Expiring soon**.
+  - A code is never more current than its appointment.
+- **Agency codes:**
+  - Overlapping ACTIVE duplicates come back as a clear 409: "Code X is already active for this appointment during those dates…". That covers adding a code and re-opening an ended one.
+  - A code's value, type and start date can't be edited; you end it and add a new one, so history stays readable.
+  - Code changes appear in the carrier's Change history.
+- **Codes screen** (`/codes`): filter by code, carrier, producer and status. CSV download: values are quoted, and cells starting with `= + - @` are prefixed with `'` so spreadsheets don't run them as formulas.
+- **Portal links:** URLs must be http(s) and can't contain a username or password. Instructions and the "where the login lives" field reject text that looks like a credential (best effort, e.g. "Password: …", "PIN: …").
+- **API:**
+  - `GET/POST /api/v1/contacts`;
+  - `GET (?organizationId) / POST /api/v1/appointments`;
+  - `GET (JSON or ?format=csv) / POST /api/v1/agency-codes`.
+
+### M3 tested (ran and saw pass)
+- `npm test`: **12 files, 106 tests pass**. New tests cover:
+  - effective-state, freshness, overlap and credential-guard rules (unit tests);
+  - one contact with several assignments, audited;
+  - the rep search: state, nationwide, unrecorded territory, line;
+  - ended assignments drop out of search but stay on the contact;
+  - verification: note required, 365-day next review, stale/fresh transitions;
+  - assignment validation: channel ownership, self-backup, agency org, notes need an assigned carrier;
+  - ID substitution for assignments and specialties;
+  - partial contact updates;
+  - expired and expiring appointments, with code state following the appointment;
+  - several appointments per entity; an active appointment needs a start date; authorization product rules;
+  - overlapping-code conflict message, re-issue after ending, and re-opening blocked;
+  - code history: audit before/after, also on the carrier;
+  - code validation: start date required, deactivated producer refused, ID substitution across appointments;
+  - CSV quoting and formula neutralization;
+  - portal credential refusals;
+  - API 401s on all new endpoints, contacts list, 400 without organizationId, CSV download.
+- `npm run test:e2e`: **3 Playwright tests pass**. The new one: create contact → assign to DEMO Summit Mutual in Tennessee → confirm → find via carrier + state search → Codes screen shows DEMO-0001.
+- Screens checked by eye in the browser pane: the carrier Appointments & codes and Contacts tabs.
+
+### M3 not done or not tested
+- **Agency entities** can't be created in the app yet. Only the seeded `DEMO Agency Entity` exists, pending D17.
+- No email or other notification for expiring appointments or stale contacts. That is P1 per the blueprint.
+- The appetite/appointment "state" filter on the carrier directory is still deferred; it needs appetite (M4).
 
 ## Milestone 2: security and carrier directory (done, Microsoft sign-in not tested)
 - **Sign-in** (D9, D18, D19):

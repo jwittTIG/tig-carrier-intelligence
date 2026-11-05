@@ -160,14 +160,21 @@ export async function listCarrierHistory(ctx: AuthContext, carrierId: string) {
   assertCan(ctx, "carrier.read");
   assertCan(ctx, "audit.read");
   await findCarrier(prisma, carrierId);
-  const [rels, identifiers, products, channels, notes] = await Promise.all([
-    prisma.organizationRelationship.findMany({ where: { OR: [{ fromOrgId: carrierId }, { toOrgId: carrierId }] }, select: { id: true } }),
-    prisma.organizationIdentifier.findMany({ where: { organizationId: carrierId }, select: { id: true } }),
-    prisma.carrierProduct.findMany({ where: { writingCompanyId: carrierId }, select: { id: true } }),
-    prisma.marketChannel.findMany({ where: { OR: [{ carrierProduct: { writingCompanyId: carrierId } }, { intermediaryOrgId: carrierId }] }, select: { id: true } }),
-    prisma.relationshipActivity.findMany({ where: { organizationId: carrierId }, select: { id: true } }),
-  ]);
-  const ids = [carrierId, ...[rels, identifiers, products, channels, notes].flat().map((r) => r.id)];
+  const viaChannel = { marketChannel: { OR: [{ carrierProduct: { writingCompanyId: carrierId } }, { intermediaryOrgId: carrierId }] } };
+  // Sequential on purpose: local PGlite is unstable with concurrent queries (DECISIONS D7a).
+  const groups = [
+    await prisma.organizationRelationship.findMany({ where: { OR: [{ fromOrgId: carrierId }, { toOrgId: carrierId }] }, select: { id: true } }),
+    await prisma.organizationIdentifier.findMany({ where: { organizationId: carrierId }, select: { id: true } }),
+    await prisma.carrierProduct.findMany({ where: { writingCompanyId: carrierId }, select: { id: true } }),
+    await prisma.marketChannel.findMany({ where: { OR: [{ carrierProduct: { writingCompanyId: carrierId } }, { intermediaryOrgId: carrierId }] }, select: { id: true } }),
+    await prisma.relationshipActivity.findMany({ where: { organizationId: carrierId }, select: { id: true } }),
+    await prisma.agencyAppointment.findMany({ where: viaChannel, select: { id: true } }),
+    await prisma.agencyCode.findMany({ where: { appointment: viaChannel }, select: { id: true } }),
+    await prisma.appointmentAuthorization.findMany({ where: { appointment: viaChannel }, select: { id: true } }),
+    await prisma.carrierPortal.findMany({ where: { organizationId: carrierId }, select: { id: true } }),
+    await prisma.contactAssignment.findMany({ where: { organizationId: carrierId }, select: { id: true } }),
+  ];
+  const ids = [carrierId, ...groups.flat().map((r) => r.id)];
   // Identifier deletions keep the carrier id in after_state, so match those too.
   return prisma.auditEvent.findMany({
     where: { OR: [{ entityId: { in: ids } }, { afterState: { path: ["organizationId"], equals: carrierId } }, { beforeState: { path: ["organizationId"], equals: carrierId } }] },

@@ -1,6 +1,6 @@
 # Milestone 2: security and carrier directory
 
-Status: built 2026-11-05, awaiting Josh's review. Microsoft sign-in is not tested (no Clerk keys yet).
+Status: built 2026-11-05; Josh approved it 2026-11-05. Microsoft sign-in is not tested (no Clerk keys yet).
 
 Prerequisite: Milestone 1 reviewed by Josh; D9 (identity provider) confirmed.
 

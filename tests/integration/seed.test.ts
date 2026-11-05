@@ -33,8 +33,10 @@ describe("seed", () => {
     expect(orgs.filter((o) => !o.displayName.startsWith("DEMO ") || !o.legalName.startsWith("DEMO "))).toEqual([]);
     const users = await db.user.findMany({ where: { NOT: { name: { startsWith: "TEST " } } } });
     expect(users.filter((u) => !u.name.startsWith("DEMO ") || !u.email.endsWith("@example.invalid"))).toEqual([]);
-    const codes = await db.agencyCode.findMany();
-    expect(codes.filter((c) => !c.codeValue.startsWith("DEMO-") && !c.codeValue.match(/^[PM]-\d+$/))).toEqual([]);
+    // Codes on seeded (DEMO) carriers are DEMO codes; TEST fixtures create their own carriers.
+    const codes = await db.agencyCode.findMany({ where: { appointment: { marketChannel: { carrierProduct: { writingCompany: { displayName: { startsWith: "DEMO " } } } } } } });
+    expect(codes.length).toBeGreaterThan(0);
+    expect(codes.filter((c) => !c.codeValue.startsWith("DEMO-"))).toEqual([]);
   });
 
   it("leaves DEMO appetite and commissions unapproved", async () => {

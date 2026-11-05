@@ -21,10 +21,14 @@ import {
   updateCarrierAction,
 } from "../actions";
 import { CarrierFields } from "../carrier-fields";
+import { AppointmentsTab } from "./appointments-tab";
+import { ContactsTab } from "./contacts-tab";
 
 const TABS = [
   { key: "overview", name: "Overview" },
   { key: "channels", name: "Writing companies & channels" },
+  { key: "contacts", name: "Contacts" },
+  { key: "appointments", name: "Appointments & codes" },
   { key: "activity", name: "Activity" },
   { key: "history", name: "Change history" },
 ] as const;
@@ -88,6 +92,8 @@ export default async function CarrierPage({ params, searchParams }: PageProps<"/
 
       {tab === "overview" && <Overview carrier={carrier} write={write} />}
       {tab === "channels" && <Channels carrier={carrier} write={write} />}
+      {tab === "contacts" && <ContactsTab carrierId={id} />}
+      {tab === "appointments" && <AppointmentsTab carrierId={id} />}
       {tab === "activity" && <Activity id={id} write={write} />}
       {tab === "history" && <History id={id} />}
     </>
