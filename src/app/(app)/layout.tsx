@@ -27,6 +27,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           <Link href="/carriers" className="hover:underline">Carriers</Link>
           {can(ctx, "contact.read") && <Link href="/contacts" className="hover:underline">Contacts</Link>}
           {can(ctx, "appointment.read") && <Link href="/codes" className="hover:underline">Codes</Link>}
+          {can(ctx, "document.read") && <Link href="/documents" className="hover:underline">Documents</Link>}
+          {can(ctx, "change_request.review") && <Link href="/approvals" className="hover:underline">Approvals</Link>}
           {can(ctx, "admin.users") && <Link href="/admin/users" className="hover:underline">Users</Link>}
           <span className="ml-auto text-zinc-600 dark:text-zinc-400">{ctx.name}</span>
           {dev ? <form action={signOut}>{signOutButton}</form> : <SignOutButton>{signOutButton}</SignOutButton>}

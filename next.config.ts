@@ -4,6 +4,11 @@ const nextConfig: NextConfig = {
   // Every app page shows signed-in, internal data. Cache Components stays off so pages
   // render per request and nothing private lands in a shared cache.
   cacheComponents: false,
+  experimental: {
+    // Uploads are capped at document.max_upload_mb (seeded 25 MB); leave room for multipart overhead.
+    serverActions: { bodySizeLimit: "26mb" },
+    proxyClientMaxBodySize: "26mb",
+  },
   turbopack: {
     rules: {
       "*.css": {

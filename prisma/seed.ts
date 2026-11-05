@@ -67,6 +67,7 @@ export const SETTINGS: Record<string, Prisma.InputJsonValue> = {
   "appetite.review_cadence_days": 365,
   "contact.review_cadence_days": 365,
   "appointment.expiry_warning_days": 60,
+  "document.max_upload_mb": 25,
   "search.disclaimer":
     "Appetite information is a guide, not a commitment to quote or bind. Confirm eligibility with the underwriter.",
 };

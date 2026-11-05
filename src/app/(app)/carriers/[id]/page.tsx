@@ -23,12 +23,16 @@ import {
 import { CarrierFields } from "../carrier-fields";
 import { AppointmentsTab } from "./appointments-tab";
 import { ContactsTab } from "./contacts-tab";
+import { AppetiteTab, CommissionsTab, DocumentsTab } from "./m4-tabs";
 
 const TABS = [
   { key: "overview", name: "Overview" },
   { key: "channels", name: "Writing companies & channels" },
   { key: "contacts", name: "Contacts" },
   { key: "appointments", name: "Appointments & codes" },
+  { key: "appetite", name: "Appetite" },
+  { key: "commissions", name: "Commissions" },
+  { key: "documents", name: "Documents" },
   { key: "activity", name: "Activity" },
   { key: "history", name: "Change history" },
 ] as const;
@@ -78,7 +82,7 @@ export default async function CarrierPage({ params, searchParams }: PageProps<"/
       {carrier.legalName !== carrier.displayName && <p className="-mt-3 text-sm text-zinc-600 dark:text-zinc-400">{carrier.legalName}</p>}
 
       <nav aria-label="Carrier sections" className="flex flex-wrap gap-1 border-b border-zinc-200 dark:border-zinc-700">
-        {TABS.map((t) => (
+        {TABS.filter((t) => t.key !== "commissions" || can(ctx, "commission.read")).map((t) => (
           <Link
             key={t.key}
             href={t.key === "overview" ? `/carriers/${id}` : `/carriers/${id}?tab=${t.key}`}
@@ -94,6 +98,9 @@ export default async function CarrierPage({ params, searchParams }: PageProps<"/
       {tab === "channels" && <Channels carrier={carrier} write={write} />}
       {tab === "contacts" && <ContactsTab carrierId={id} />}
       {tab === "appointments" && <AppointmentsTab carrierId={id} />}
+      {tab === "appetite" && <AppetiteTab carrier={carrier} />}
+      {tab === "commissions" && <CommissionsTab carrierId={id} />}
+      {tab === "documents" && <DocumentsTab carrierId={id} />}
       {tab === "activity" && <Activity id={id} write={write} />}
       {tab === "history" && <History id={id} />}
     </>

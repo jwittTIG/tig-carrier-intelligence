@@ -1,6 +1,6 @@
 # Milestone 3: contacts, appointments, codes
 
-Status: built 2026-11-05, awaiting Josh's review.
+Status: built 2026-11-05; accepted by Josh 2026-11-05.
 
 Prerequisite: Milestone 2 reviewed.
 

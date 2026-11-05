@@ -20,3 +20,16 @@ export async function testUser(db: PrismaClient, opts: { role?: "STAFF" | "ADMIN
   }
   return user;
 }
+
+/** A TEST user whose only role grants exactly `permissions` (to prove restrictions work). */
+export async function limitedUser(db: PrismaClient, permissions: string[]) {
+  const t = randomUUID().slice(0, 8);
+  const role = await db.role.create({ data: { code: `TEST_${t}`, description: "TEST limited role" } });
+  const perms = await db.permission.findMany({ where: { code: { in: permissions } } });
+  await db.rolePermission.createMany({ data: perms.map((p) => ({ roleId: role.id, permissionId: p.id })) });
+  const user = await db.user.create({ data: { name: `TEST Limited ${t}`, email: `limited.${t}@example.invalid`, status: "ACTIVE" } });
+  await db.userRoleScope.create({ data: { userId: user.id, roleId: role.id } });
+  const ctx = await loadAuthContext(user.id);
+  if (!ctx) throw new Error("no context");
+  return ctx;
+}

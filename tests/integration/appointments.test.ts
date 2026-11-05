@@ -59,7 +59,8 @@ describe("appointments", () => {
     const s = await setup();
     const tn = await db.territory.findFirstOrThrow({ where: { stateCode: "TN" } });
     await svc.addAuthorization(staff, s.appt.id, { territoryId: tn.id, productId: s.product.id, authorityType: "Quote and bind" });
-    const other = (await listProducts(staff)).find((p) => p.id !== s.product.id)!;
+    const line = await db.lineOfBusiness.findUniqueOrThrow({ where: { code: "CYBER" } });
+    const other = await db.insuranceProduct.create({ data: { lineId: line.id, code: `TEST_OTHER_${t()}`, name: "TEST Other product" } });
     await expect(svc.addAuthorization(staff, s.appt.id, { territoryId: tn.id, productId: other.id, authorityType: "x" })).rejects.toBeInstanceOf(ValidationError);
   });
 });

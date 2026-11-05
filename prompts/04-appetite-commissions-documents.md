@@ -1,5 +1,7 @@
 # Milestone 4: appetite, commissions, documents, approvals
 
+Status: built 2026-11-05, awaiting Josh's review.
+
 Prerequisite: Milestone 3 reviewed; D11, D14 and D15 confirmed.
 
 Contract:

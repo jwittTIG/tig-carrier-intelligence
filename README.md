@@ -2,7 +2,7 @@
 
 Internal web app for The Insurance Group's P&C market relationships: carriers and intermediaries, appetite, underwriter contacts, agency appointments and codes, commission schedules, documents and verification. **P&C only** (no life, health, benefits, disability or LTC).
 
-Status: **Milestone 3 (contacts, appointments, codes)**. See `docs/PROGRESS.md`.
+Status: **Milestone 4 (appetite, commissions, documents, approvals)**. See `docs/PROGRESS.md`.
 
 Docs: `docs/PRD.md` · `docs/DATA_MODEL.md` · `docs/IMPLEMENTATION_PLAN.md` · `docs/ACCEPTANCE_TESTS.md` · `docs/DECISIONS.md` · `CLAUDE.md`
 

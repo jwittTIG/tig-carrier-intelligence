@@ -8,3 +8,5 @@ process.env.STORAGE_DRIVER = "dev";
 process.env.AUTH_DRIVER = "dev";
 process.env.ALLOWED_EMAIL_DOMAINS = "example.invalid";
 process.env.DATABASE_POOL_MAX ??= "1";
+process.env.DEV_STORAGE_DIR = ".data/test-storage";
+process.env.STORAGE_SIGNING_SECRET ??= "test-signing-secret-0123456789abcdef0123456789abcdef";

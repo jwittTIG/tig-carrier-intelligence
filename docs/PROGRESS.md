@@ -1,7 +1,66 @@
 # Progress
 
 ## Current state (2026-11-05)
-**Milestone 3 (contacts, appointments, codes) is built and waiting for Josh's review.** Josh approved M1 (2026-11-04) and M2 ("Ok proceed with next phase", 2026-11-05). D7a (real Postgres) is still open, so M3 was built on the local PGlite database with its workarounds.
+**Milestone 4 (appetite, commissions, documents, approvals) is built and waiting for Josh's review.** Josh confirmed D11, D14 and D15 on 2026-11-05 ("Confirm all three"), which this report takes as acceptance of M3. D7a (real Postgres) is still open.
+
+## Milestone 4: appetite, commissions, documents, approvals (done)
+- **Documents** (`/documents`, `/documents/[id]`, and a carrier Documents tab):
+  - Upload with the file type checked by content (PDF, PNG, JPEG, DOCX, XLSX, CSV/TXT). A renamed file is refused.
+  - Size limit from the `document.max_upload_mb` setting (seeded 25).
+  - Scanning hook: a dev stub that catches only the EICAR test string and refuses production.
+  - Storage under unique object keys that are never overwritten. Versions; duplicate detection by sha256; classification (General / Internal / Restricted).
+  - Download: `/api/v1/document-versions/:id/download` checks permission, then redirects to a 5-minute HMAC-signed `/api/v1/files` link.
+  - Restricted documents also need `commission.read`, and are hidden (404) without it.
+  - Storage driver is the `dev` adapter (refuses production); R2 is not built (no bucket or keys yet, D11).
+- **Sources** (`record_sources`): link a document version and page, or a staff note ("call with UW on…"), to any record. Append-only.
+- **Appetite** (carrier Appetite tab, `/appetite/[id]`):
+  - Versioned profiles per carrier product (and optional channel), one draft at a time.
+  - Rules: outcome (preferred / accepted / referral / prohibited / unknown), states, industry codes (`NAICS 238160, ISO_GL 91111`), optional attribute conditions with typed values (=, ≤, between, one of…), dates, rationale. Products get attribute definitions (e.g. annual_revenue, MONEY, USD).
+  - Conflict warnings when rules with different outcomes could apply to the same risk.
+  - Coverage limits and underwriting requirements per carrier product. Blank limits show as "not stated".
+  - Submit requires an owner, an effective date, at least one rule and a source.
+  - Approval sets the approver, `verified_at`, and the next review (365 days), and retires the previous approved version, which ends the day before and stays readable.
+  - "Start a new version" copies the rules but not the sources (they must be cited again).
+  - "Confirm still current" on approved profiles. Draft deletion only when there's no review history.
+- **Commissions** (carrier Commissions tab, `/commissions/[id]`; hidden without `commission.read`):
+  - Agreements per channel and agency entity, with a reference, the signed agreement document (required to submit), contingency/profit-sharing notes (editable any time, audited) and notes.
+  - Schedules: new / renewal / endorsement / other, by state or all states, rate % / flat / tiered (with tiers). Percentages are converted exactly to Decimal fractions.
+  - Approved schedules never change. Approving a new rate ends the replaced schedule the day before. An overlap with a later approved schedule is refused with a clear message.
+  - Retiring a schedule needs `commission.approve` and a reason. CSV export is formula-safe.
+- **Approvals (D14)** (`/approvals` and on each record):
+  - Submit → PENDING change request → approve or reject.
+  - The submitter can't approve their own. An admin can, with a reason of 10+ characters. A rejection needs a reason. The submitter can withdraw.
+  - The queue also shows approved appetite past its review date, the stale-contact count, and possible duplicate carriers (trigram similarity > 0.6).
+- **API:**
+  - `GET/POST /api/v1/appetite-profiles`;
+  - `GET/POST /api/v1/commission-agreements`;
+  - `GET (JSON or CSV) / POST /api/v1/commission-schedules`;
+  - `GET/POST (multipart) /api/v1/documents`;
+  - `GET/POST /api/v1/change-requests`, `POST /api/v1/change-requests/:id/approve` and `/reject`;
+  - `GET /api/v1/document-versions/:id/download`, `GET /api/v1/files`.
+- **Bug found and fixed:** a settings read inside the approval transaction used the global connection, which deadlocked with a one-connection pool. Settings reads now take the transaction client.
+
+### M4 tested (ran and saw pass)
+- `npm test`: **15 files, 130 tests pass**. New tests cover:
+  - **Documents:** content-type checks, renamed files, EICAR, size limit, versions, duplicates, carrier filing.
+  - **Signed URLs:** 5-minute expiry, a tampered token gives 403, the bytes served match the upload.
+  - **Restricted documents:** invisible to a user with only `document.read`.
+  - **Sources:** a note or document is required.
+  - **Appetite rules:** typed values, industry parsing, conflict detection.
+  - **Appetite approval:** submit prerequisites; own approval refused for staff; admin's own approval needs a reason; approval by someone else; edits locked after submit; new version copies rules and needs a new source; approving v2 retires v1 ending 2026-12-31; history kept; reject needs a reason; withdraw is submitter-only; one draft at a time; draft deletion.
+  - **Commission math:** exact percentage conversion.
+  - **Commission rules:** agreement needs its document; schedules need an approved agreement; contingency notes editable but reference locked; new/renewal rates; supersede ends the old schedule the day before; overlap with a later schedule refused (and left pending); tiers; self-approval refused; retire; CSV.
+  - **Permissions and API:** `commission.read` enforced on every commission read, CSV and carrier response; 401 on every new endpoint; multipart upload; 303 to a signed URL; commission CSV 403 without the permission.
+- `npm run test:e2e`: **4 Playwright tests pass**. The new one, on a fresh carrier: add a product, upload a guide PDF, draft appetite (TN, NAICS 238160), cite the guide p. 2, submit; the submitter sees "Someone else needs to review it"; DEMO Admin approves from the queue; the profile shows Approved with its next review.
+- Browser pane: the carrier Appetite tab shows the approved v1 with its review date.
+
+### M4 not done or not tested
+- **D14 for appointments and codes:** they still save directly (audited). The confirmed D14 wording includes them. **Question for Josh.**
+- **R2 storage:** not built; the dev adapter only. A real malware scanner is also not built (dev stub).
+- **Orphaned files:** if the database write fails after a file is stored, the stored file is left behind. Harmless, but no cleanup job yet.
+- **Coverage limits and underwriting requirements** are per carrier product and save directly (audited); they aren't versioned with appetite profiles.
+- **Merging duplicate carriers** isn't built; the queue only lists candidates.
+- **Market Finder / search over appetite** is Milestone 5.
 
 ## Milestone 3: contacts, appointments, codes (done)
 - **Contacts** (`/contacts`, `/contacts/[id]`):

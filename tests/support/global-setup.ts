@@ -1,4 +1,6 @@
 import { spawnSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
 import { config } from "dotenv";
 import pg from "pg";
 
@@ -18,6 +20,9 @@ export default async function setup() {
   if (!["localhost", "127.0.0.1", "[::1]", "::1"].includes(host) && process.env.ALLOW_REMOTE_TEST_DB !== "1") {
     throw new Error(`Refusing to reset a non-local test database (${host})`);
   }
+
+  // Test file storage is disposable.
+  fs.rmSync(path.join(process.cwd(), ".data", "test-storage"), { recursive: true, force: true });
 
   // Local `prisma dev` (PGlite) becomes unstable after repeated schema rebuilds, so restart
   // the named test server first (DECISIONS D7). CI uses real Postgres and skips this.

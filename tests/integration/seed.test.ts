@@ -42,7 +42,8 @@ describe("seed", () => {
   it("leaves DEMO appetite and commissions unapproved", async () => {
     const demo = { carrierProduct: { writingCompany: { displayName: { startsWith: "DEMO " } } } };
     expect(await db.appetiteProfile.count({ where: { ...demo, status: "APPROVED" } })).toBe(0);
-    expect(await db.commissionSchedule.count({ where: { agreement: { agencyEntity: { organization: { displayName: { startsWith: "DEMO " } } } }, status: "APPROVED" } })).toBe(0);
+    // TEST fixtures share the DEMO agency entity, so scope by DEMO carrier.
+    expect(await db.commissionSchedule.count({ where: { agreement: { marketChannel: demo }, status: "APPROVED" } })).toBe(0);
   });
 
   it("seeds settings with the appetite disclaimer", async () => {

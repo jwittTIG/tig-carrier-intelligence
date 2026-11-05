@@ -99,3 +99,47 @@ describe("/api/v1 contacts, appointments, agency-codes", () => {
     expect(await csv.text()).toContain("DEMO-0001");
   });
 });
+
+describe("/api/v1 appetite, commissions, documents, change requests", () => {
+  it("all return 401 without a session", async () => {
+    const mods = await Promise.all([
+      import("@/app/api/v1/appetite-profiles/route"),
+      import("@/app/api/v1/commission-agreements/route"),
+      import("@/app/api/v1/commission-schedules/route"),
+      import("@/app/api/v1/documents/route"),
+      import("@/app/api/v1/change-requests/route"),
+    ]);
+    for (const m of mods) {
+      expect((await m.GET(req("/x"))).status).toBe(401);
+      expect((await m.POST(req("/x", { method: "POST", body: "{}" }))).status).toBe(401);
+    }
+    const approve = await import("@/app/api/v1/change-requests/[id]/approve/route");
+    expect((await approve.POST(req("/x", { method: "POST", body: "{}" }), params(randomUUID()))).status).toBe(401);
+    const dl = await import("@/app/api/v1/document-versions/[id]/download/route");
+    expect((await dl.GET(req("/x"), params(randomUUID()))).status).toBe(401);
+  });
+
+  it("uploads by multipart, redirects downloads to a signed URL, and keeps commission CSV behind commission.read", async () => {
+    const docsRoute = await import("@/app/api/v1/documents/route");
+    const form = new FormData();
+    form.set("title", "TEST API upload");
+    form.set("documentType", "BULLETIN");
+    form.set("file", new File([new TextEncoder().encode("%PDF-1.4\n% TEST\n%%EOF\n")], "bulletin.pdf", { type: "application/pdf" }));
+    const up = await docsRoute.POST(new Request("http://localhost/api/v1/documents", { method: "POST", body: form, headers: { cookie: staffCookie } }));
+    expect(up.status).toBe(201);
+    const { version } = await up.json();
+    const dl = await import("@/app/api/v1/document-versions/[id]/download/route");
+    const r = await dl.GET(req(`/api/v1/document-versions/${version.id}/download`, { cookie: staffCookie }), params(version.id));
+    expect(r.status).toBe(303);
+    expect(r.headers.get("location")).toMatch(/\/api\/v1\/files\?t=/);
+
+    const sched = await import("@/app/api/v1/commission-schedules/route");
+    expect((await sched.GET(req("/api/v1/commission-schedules?format=csv", { cookie: staffCookie }))).status).toBe(200);
+    const role = await db.role.create({ data: { code: `TEST_NOCOMM_${randomUUID().slice(0, 6)}`, description: "TEST" } });
+    const perm = await db.permission.findUniqueOrThrow({ where: { code: "carrier.read" } });
+    await db.rolePermission.create({ data: { roleId: role.id, permissionId: perm.id } });
+    const u = await testUser(db, { role: null });
+    await db.userRoleScope.create({ data: { userId: u.id, roleId: role.id } });
+    expect((await sched.GET(req("/api/v1/commission-schedules?format=csv", { cookie: `${DEV_USER_COOKIE}=${u.id}` }))).status).toBe(403);
+  });
+});
