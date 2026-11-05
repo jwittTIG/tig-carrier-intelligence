@@ -19,8 +19,22 @@ export default async function setup() {
     throw new Error(`Refusing to reset a non-local test database (${host})`);
   }
 
-  const client = new pg.Client({ connectionString: testUrl });
-  await client.connect();
+  // Local `prisma dev` (PGlite) becomes unstable after repeated schema rebuilds, so restart
+  // the named test server first (DECISIONS D7). CI uses real Postgres and skips this.
+  const server = process.env.PRISMA_DEV_TEST_SERVER;
+  if (server) {
+    if (!/^[a-z0-9-]+$/.test(server)) throw new Error("PRISMA_DEV_TEST_SERVER must be a simple server name");
+    spawnSync(`npx prisma dev stop ${server}`, { stdio: "ignore", shell: true });
+    // Stopping finishes asynchronously; retry the start until the old process is gone.
+    for (let i = 1; ; i++) {
+      const r = spawnSync(`npx prisma dev -n ${server} --detach`, { stdio: "ignore", shell: true });
+      if (r.status === 0) break;
+      if (i >= 10) throw new Error(`Could not start prisma dev server ${server}`);
+      await new Promise((res) => setTimeout(res, 1000));
+    }
+  }
+
+  const client = await connectWithRetry(testUrl);
   try {
     await client.query("drop schema if exists public cascade");
     await client.query("create schema public");
@@ -32,5 +46,20 @@ export default async function setup() {
   for (const cmd of ["npx prisma migrate deploy", "npx tsx prisma/seed.ts"]) {
     const r = spawnSync(cmd, { stdio: "inherit", shell: true, env });
     if (r.status !== 0) throw new Error(`Test DB setup failed: ${cmd}`);
+  }
+}
+
+async function connectWithRetry(url: string, attempts = 20): Promise<pg.Client> {
+  for (let i = 1; ; i++) {
+    const client = new pg.Client({ connectionString: url });
+    try {
+      await client.connect();
+      await client.query("select 1");
+      return client;
+    } catch (e) {
+      await client.end().catch(() => {});
+      if (i >= attempts) throw e;
+      await new Promise((r) => setTimeout(r, 500));
+    }
   }
 }

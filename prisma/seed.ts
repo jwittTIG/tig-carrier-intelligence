@@ -10,6 +10,7 @@ import { config } from "dotenv";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Prisma, PrismaClient } from "../src/generated/prisma/client";
 import { assertPropertyCasualtyLine } from "../src/lib/taxonomy/scope";
+import { PERMISSIONS, ROLES } from "../src/server/auth/catalog";
 
 config({ path: ".env.local", quiet: true });
 
@@ -60,33 +61,7 @@ export const STATES: [string, string][] = [
   ["WA", "Washington"], ["WV", "West Virginia"], ["WI", "Wisconsin"], ["WY", "Wyoming"],
 ];
 
-// ── Permissions and roles (DECISIONS D1: everyone sees everything for now) ──
-export const PERMISSIONS: [string, string][] = [
-  ["carrier.read", "View carriers, products and channels"],
-  ["carrier.write", "Create and edit carriers, products and channels"],
-  ["contact.read", "View underwriter and marketing contacts"],
-  ["contact.write", "Create and edit contacts"],
-  ["appointment.read", "View appointments, agency codes and portal links"],
-  ["appointment.write", "Create and edit appointments, agency codes and portal links"],
-  ["appetite.read", "View appetite profiles and rules"],
-  ["appetite.write", "Propose appetite changes"],
-  ["appetite.approve", "Approve appetite profiles"],
-  ["commission.read", "View commission agreements and schedules"],
-  ["commission.write", "Create and edit commission agreements and schedules"],
-  ["commission.approve", "Approve commission agreements and schedules"],
-  ["document.read", "View and download documents"],
-  ["document.write", "Upload and classify documents"],
-  ["change_request.review", "Approve or reject change requests"],
-  ["import.run", "Run CSV imports"],
-  ["audit.read", "View the audit log"],
-  ["admin.users", "Manage users and roles"],
-  ["admin.settings", "Manage taxonomy and settings"],
-];
-const ADMIN_ONLY = new Set(["admin.users", "admin.settings"]);
-export const ROLES: { code: string; description: string; permissions: (p: string) => boolean }[] = [
-  { code: "STAFF", description: "TIG staff: can view and edit everything except users and settings", permissions: (p) => !ADMIN_ONLY.has(p) },
-  { code: "ADMIN", description: "TIG staff who also manage users, roles, taxonomy and settings", permissions: () => true },
-];
+// Permissions and roles come from the shared catalog (DECISIONS D1).
 
 export const SETTINGS: Record<string, Prisma.InputJsonValue> = {
   "appetite.review_cadence_days": 365,
@@ -116,14 +91,15 @@ async function seedReference() {
     if (!existing) await prisma.territory.create({ data: { countryCode: "US", stateCode: code, territoryType: "STATE", name } });
   }
 
-  for (const [code, description] of PERMISSIONS) {
+  for (const { code, description } of PERMISSIONS) {
     await prisma.permission.upsert({ where: { code }, update: { description }, create: { code, description } });
   }
   const perms = await prisma.permission.findMany();
   for (const role of ROLES) {
     const r = await prisma.role.upsert({ where: { code: role.code }, update: { description: role.description }, create: { code: role.code, description: role.description } });
+    const wanted = new Set<string>(role.permissions);
     await prisma.rolePermission.createMany({
-      data: perms.filter((p) => role.permissions(p.code)).map((p) => ({ roleId: r.id, permissionId: p.id })),
+      data: perms.filter((p) => wanted.has(p.code)).map((p) => ({ roleId: r.id, permissionId: p.id })),
       skipDuplicates: true,
     });
   }

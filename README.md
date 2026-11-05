@@ -2,7 +2,7 @@
 
 Internal web app for The Insurance Group's P&C market relationships: carriers and intermediaries, appetite, underwriter contacts, agency appointments and codes, commission schedules, documents and verification. **P&C only** (no life, health, benefits, disability or LTC).
 
-Status: **Milestone 1 (data foundation)**. No sign-in and no screens yet. See `docs/PROGRESS.md`.
+Status: **Milestone 2 (sign-in and carrier directory)**. See `docs/PROGRESS.md`.
 
 Docs: `docs/PRD.md` · `docs/DATA_MODEL.md` · `docs/IMPLEMENTATION_PLAN.md` · `docs/ACCEPTANCE_TESTS.md` · `docs/DECISIONS.md` · `CLAUDE.md`
 
@@ -33,9 +33,16 @@ See `.env.example`:
 - `DATABASE_URL`: the app database.
 - `SHADOW_DATABASE_URL`: only used by `prisma migrate dev`.
 - `TEST_DATABASE_URL`: wiped on every test run. It must be local and different from `DATABASE_URL`.
+- `DATABASE_POOL_MAX`: connection-pool cap. Keep it at `1` for local `prisma dev`, which is unstable with concurrent connections (DECISIONS D7a).
+- `PRISMA_DEV_TEST_SERVER`: name of the local test server; `npm test` restarts it before each run. Leave it unset for real Postgres.
+- `AUTH_DRIVER`: `clerk` (Microsoft 365 through Clerk) or `dev` (development-only sign-in, refused in production).
+- `ALLOWED_EMAIL_DOMAINS`: who can be invited and sign in.
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY`: Clerk keys for this app. Not set yet.
 - `STORAGE_DRIVER` / `DEV_STORAGE_DIR`: document storage, used from Milestone 4.
 
-Identity-provider variables arrive in Milestone 2.
+## Signing in
+- **Now:** `AUTH_DRIVER=dev`. `/sign-in` lists the seeded DEMO users (DEMO Admin, DEMO Producer). A yellow banner shows on every page while this is on.
+- **Later:** `AUTH_DRIVER=clerk`. Staff sign in with Microsoft 365. Access is invite-only: an admin invites them on **Users** first (DECISIONS D18).
 
 ## Migrations and seed
 - Apply: `npm run db:migrate` · Create: `npm run db:migrate:dev -- --name <name>`

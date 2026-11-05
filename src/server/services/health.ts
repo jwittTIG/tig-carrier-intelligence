@@ -1,5 +1,5 @@
 import "server-only";
-import { prisma } from "./client";
+import { prisma } from "@/server/db/client";
 
 export type DatabaseHealth = { ok: true; latencyMs: number } | { ok: false };
 

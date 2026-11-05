@@ -4,7 +4,7 @@ import { PrismaClient } from "@/generated/prisma/client";
 
 /** Prisma client on the test DB, for building fixtures. */
 export function testPrisma() {
-  return new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.TEST_DATABASE_URL! }) });
+  return new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.TEST_DATABASE_URL!, max: 1 }) });
 }
 
 /** Raw pg client, so tests can assert exact Postgres error codes. */

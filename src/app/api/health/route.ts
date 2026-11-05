@@ -1,4 +1,4 @@
-import { checkDatabase } from "@/lib/db/health";
+import { checkDatabase } from "@/server/services/health";
 
 /** Liveness + database check. Public by design; returns no data beyond up/down. */
 export async function GET() {

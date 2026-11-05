@@ -10,7 +10,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "db:start": "prisma dev start tci tci-test",
+    "db:start": "prisma dev -n tci --detach && prisma dev -n tci-test --detach",
     "db:stop": "prisma dev stop tci tci-test",
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
@@ -19,6 +19,7 @@
     "check": "npm run lint && npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.9.24",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
     "next": "16.4.3",

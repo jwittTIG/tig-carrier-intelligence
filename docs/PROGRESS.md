@@ -1,7 +1,52 @@
 # Progress
 
-## Current state (2026-11-04)
-**Milestones 0 + 1 are built and waiting for Josh's review.** D9 is confirmed (Microsoft 365 sign-in). Milestone 2 starts once Josh has reviewed Milestone 1.
+## Current state (2026-11-05)
+**Milestone 2 (security and carrier directory) is built and waiting for Josh's review.** Josh approved Milestone 1 on 2026-11-04. Milestone 3 should not start until Josh reviews M2 and decides D7a (move to real Postgres).
+
+## Milestone 2: security and carrier directory (done, Microsoft sign-in not tested)
+- **Sign-in** (D9, D18, D19):
+  - Clerk with Microsoft 365, invite-only. The first sign-in links the Microsoft account to the invited email.
+  - `AUTH_DRIVER=dev` provides a labeled development sign-in that refuses production. The Clerk driver is written but **has never run**: there are no Clerk keys yet.
+- **Authorization:**
+  - `AuthContext` is built from the database: user_role_scopes → roles → permissions.
+  - `assertCan` is default deny and is called by every service function.
+  - Pages, actions and route handlers can't import the database client (ESLint rule).
+  - INVITED and DEACTIVATED users get no context; deactivation takes effect on the next request.
+- **Audit:** `recordAudit` writes before/after JSON and a per-request correlation id in the same transaction as each write.
+- **Carrier directory** (`/carriers`):
+  - search by display name, legal name or exact identifier;
+  - filters: type, line, group, owner, status, include archived;
+  - pagination; create; edit; soft archive and restore.
+  - State and verification-freshness filters are deferred to M3/M4, and the page says so.
+- **Carrier profile** tabs:
+  - **Overview:** edit form; identifiers (NAIC, FEIN…) with duplicate protection; relationships with effective dates (only ended, never deleted); group members; archive.
+  - **Writing companies & channels:** products written (existing or new P&C product); channels (direct, or through a wholesaler/MGA/program administrator); access status; archive. Intermediaries see "acts as a channel for".
+  - **Activity:** notes, calls, meetings.
+  - **Change history:** audit rows for the carrier and everything attached to it.
+- **API:** `GET/POST /api/v1/carriers`, `GET/PATCH /api/v1/carriers/:id`. Zod validation, pagination, and JSON errors (401/403/404/400/409) with no internal details.
+- **Admin users** (`/admin/users`): invite (allowed domains only), change role, deactivate or reactivate. Admins can't deactivate themselves, and the last active admin can't be removed.
+- **Security headers:** nosniff, `frame-ancestors 'none'`, referrer and permissions policies. Cache Components is off (`next.config.ts`).
+
+### M2 tested (ran and saw pass)
+- `npm run lint`, `npx tsc --noEmit` and `npm run build` pass.
+- `npm test`: **9 files, 72 tests pass**. New tests cover:
+  - default deny, including a user with no role;
+  - the context loader and first-sign-in linking (case-insensitive email; refuses uninvited, deactivated, already-linked and wrong-domain accounts);
+  - each carrier write producing exactly one audit row per record (12 writes → 12 rows), with before/after and correlation id;
+  - search and filters, archive/restore, stable pagination;
+  - ID substitution: agency orgs, unknown and malformed ids are 404; another carrier's products, channels, identifiers and relationships can't be reached through this carrier;
+  - validation: AGENCY type, `javascript:` URLs, parent cycles, channel rules, self-relationships, reversed dates, duplicate identifiers;
+  - user admin guards;
+  - API 401 (no cookie, bad cookie, unknown id, deactivated user), 403 (no role), 400 with issue paths, 201, 404, and no commission/code fields in carrier responses.
+- `npm run test:e2e`: **2 Playwright tests pass** (Chromium):
+  - unauthenticated redirect and API 401;
+  - sign in as DEMO Producer → no Users link → create carrier → audit row in Change history → search → archive.
+
+### M2 not tested
+- **Microsoft 365 / Clerk sign-in:** needs a Clerk application and keys from Josh.
+- **ACCEPTANCE_TESTS items that assume restricted roles** are not applicable under D1: "Producer without commission.read…", "Admin without explicit finance permission…", "User scoped to agency entity A cannot access entity B…". The permission checks and tables exist; only the seeded roles grant everything.
+- **Screens checked by eye:** none. Only Playwright exercised the pages; no screenshots were reviewed.
+- **Test reliability:** one run out of five hung while restarting the local test server (D7a).
 
 ## Milestone 0: repo and skeleton (done)
 - New git repo at `C:\dev\tig-carrier-intelligence` (D3). Blueprint files are in `docs/`; the originals are kept in `docs/blueprint/`.
@@ -49,19 +94,20 @@
   - **Health route:** returns 200 ok.
 - **Mutation check:** with the commission-overlap constraint and the audit trigger removed, the 3 matching tests failed. The migration was then restored, verified identical, and the full suite re-run.
 
-## Not tested
-- **Playwright e2e** (`tests/e2e/smoke.spec.ts`): browsers are not installed, so it has never run.
+## Not tested (M0/M1)
 - **CI workflow:** never run, because there is no remote yet.
-- `/api/health` in a running dev server: only exercised by the integration test, not by the browser.
-- **Real Postgres:** everything was run on PGlite-based `prisma dev` (Postgres 17.5 compiled to WASM). The first run on real Postgres will be CI or Neon.
-- **ACCEPTANCE_TESTS items for M2–M5:** not started (auth, screens, approvals, import, search).
+- **Real Postgres:** everything was run on PGlite-based `prisma dev` (Postgres 17.5 compiled to WASM). The first run on real Postgres will be CI, Neon or a local install (D7a).
+- **ACCEPTANCE_TESTS items for M3–M5:** not started (contacts, appointments, appetite, commissions, approvals, import, search).
 
 ## Remaining (next milestones)
-See `prompts/02…05`. M2 needs D9 confirmed. Access-control acceptance tests will be marked N/A where D1 makes them inapplicable, for example "Producer without commission.read".
+See `prompts/03…05`.
 
 ## Open questions for Josh
-1. ~~**D9:** identity provider~~. Answered 2026-11-04: Microsoft 365 sign-in through Clerk. Still needed for M2: Josh's review of Milestone 1, and a Clerk application for this app.
-2. **D7, D8, D10–D17:** confirm or change the proposed defaults. D7 changed from my plan: local `prisma dev` instead of Neon, because no Neon project exists and Docker/embedded Postgres don't run on this ARM PC.
+1. **Review Milestone 2.** Sign in with `npm run db:start` then `npm run dev`, open http://localhost:3000, and pick a DEMO user on the development sign-in page.
+2. **D7a: real Postgres for dev/test before M3.** Neon project (send the dev and test connection strings), or OK to install PostgreSQL 17 on this PC.
+3. **Clerk app** for Microsoft sign-in: create it, enable Microsoft, and send the two development keys.
+4. **D18/D19:** invite-only sign-in and the labeled dev sign-in. Confirm.
+5. **D8, D10–D17:** confirm or change the proposed defaults.
 3. **GitHub:** please create an empty private repo (for example `tig-carrier-intelligence`) and send the URL; I'll add the remote and push.
 4. **Spreadsheets:** please send samples of the sheets TIG tracks this in today (headers and a few fake rows), so the M5 import matches real columns.
 5. **Legal entities:** how many agency legal entities and business units does TIG have (D17)?
@@ -69,3 +115,4 @@ See `prompts/02…05`. M2 needs D9 confirmed. Access-control acceptance tests wi
 
 ## Session log
 - 2026-11-04: Phase 0 planning, then the blueprint arrived. Built M0 + M1 per the blueprint. Josh approved resetting the local test DB for test runs this session.
+- 2026-11-04/05: Josh confirmed Microsoft 365 sign-in (D9) and approved M1 ("Yes, start M2"). Built M2. Found PGlite instability (D7a); added a pool cap of 1 and a test-server restart.

@@ -39,11 +39,11 @@ A secure internal web app for The Insurance Group (TIG), an independent commerci
 
 ## Commands
 - Install: `npm install` (runs `prisma generate`)
-- Local databases: `npm run db:start` (starts the `tci` and `tci-test` prisma dev servers; first time, see README)
+- Local databases: `npm run db:start` (starts the `tci` and `tci-test` prisma dev servers; see README and DECISIONS D7a)
 - Migrate / seed dev DB: `npm run db:migrate` · `npm run db:seed` · new migration: `npm run db:migrate:dev -- --name <name>`
 - Dev server: `npm run dev`
 - Lint / typecheck / tests / build: `npm run lint` · `npm run typecheck` · `npm test` (resets the test DB first) · `npm run build`
-- E2E: `npm run test:e2e` (first `npx playwright install chromium`)
+- E2E: `npm run test:e2e` (dev DB + dev sign-in; first time `npx playwright install chromium`)
 - Everything before a commit: `npm run check`
 
 ## Codebase conventions
@@ -51,3 +51,5 @@ A secure internal web app for The Insurance Group (TIG), an independent commerci
 - Prisma client is generated to `src/generated/prisma`; import from `@/generated/prisma/client`. App code uses `@/lib/db/client` (server-only).
 - Postgres tables/columns are snake_case (`@@map`/`@map`), Prisma fields camelCase.
 - Constraints Prisma can't express go in SQL migrations, each with a test in `tests/integration/`.
+- Auth: services take an `AuthContext` and call `assertCan` first. Pages and actions call `requireAuth()`; API routes wrap handlers in `apiHandler()`. Every write calls `recordAudit(tx, ctx, ...)` inside its transaction.
+- Server actions return `ActionState` through `runAction()`; forms use `<ActionForm>`.

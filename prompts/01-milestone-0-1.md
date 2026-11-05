@@ -1,6 +1,6 @@
 # Milestones 0 + 1: repo setup and data foundation
 
-Status: built 2026-11-04, awaiting Josh's review.
+Status: built 2026-11-04; Josh approved it 2026-11-04.
 
 ## Build
 - Next.js/TypeScript/Prisma/Postgres skeleton, env template, CI workflow, README.
