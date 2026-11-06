@@ -31,7 +31,7 @@ describe("seed", () => {
     const orgs = await db.organization.findMany({ where: { NOT: { displayName: { startsWith: "TEST " } } } });
     expect(orgs.length).toBeGreaterThan(0);
     expect(orgs.filter((o) => !o.displayName.startsWith("DEMO ") || !o.legalName.startsWith("DEMO "))).toEqual([]);
-    const users = await db.user.findMany({ where: { NOT: { name: { startsWith: "TEST " } } } });
+    const users = await db.user.findMany({ where: { NOT: [{ name: { startsWith: "TEST " } }, { email: "mail-intake@system.invalid" }] } });
     expect(users.filter((u) => !u.name.startsWith("DEMO ") || !u.email.endsWith("@example.invalid"))).toEqual([]);
     // Codes on seeded (DEMO) carriers are DEMO codes; TEST fixtures create their own carriers.
     const codes = await db.agencyCode.findMany({ where: { appointment: { marketChannel: { carrierProduct: { writingCompany: { displayName: { startsWith: "DEMO " } } } } } } });

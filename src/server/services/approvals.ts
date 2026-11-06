@@ -8,6 +8,7 @@ import { optionalText, parse } from "@/server/validation";
 import { applyProfileDecision } from "./appetite";
 import { checkReviewer, closeChangeRequest } from "./approvals-core";
 import { applyAgreementDecision, applyScheduleDecision } from "./commissions";
+import { staleInboxCount } from "./inbox";
 import { numberSetting, SETTING } from "./settings";
 
 /** Approvals queue and decisions (PRD screen 9, P0-09, DECISIONS D14). */
@@ -100,5 +101,7 @@ export async function dataQuality(ctx: AuthContext) {
     where a.type <> 'AGENCY' and b.type <> 'AGENCY' and a.archived_at is null and b.archived_at is null
       and similarity(a.display_name, b.display_name) > 0.6
     order by score desc limit 50`;
-  return { staleAppetite, staleContacts, contactDays, duplicates };
+  const staleInbox = await staleInboxCount(ctx);
+  const inboxDays = await numberSetting("inbox.stale_days");
+  return { staleAppetite, staleContacts, contactDays, duplicates, staleInbox, inboxDays };
 }

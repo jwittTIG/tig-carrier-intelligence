@@ -21,13 +21,16 @@ export const PERMISSIONS = [
   { code: "change_request.review", description: "Approve or reject change requests" },
   { code: "import.run", description: "Run CSV imports" },
   { code: "audit.read", description: "View the audit log" },
+  { code: "inbox.read", description: "View emails taken in from the carrier-updates mailbox" },
+  { code: "inbox.triage", description: "File, cite, draft from, or dismiss inbox emails" },
+  { code: "inbox.manage", description: "Check the mailbox now, and accept or discard emails from unknown senders" },
   { code: "admin.users", description: "Manage users and roles" },
   { code: "admin.settings", description: "Manage taxonomy and settings" },
 ] as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[number]["code"];
 
-const ADMIN_ONLY: PermissionCode[] = ["admin.users", "admin.settings"];
+const ADMIN_ONLY: PermissionCode[] = ["admin.users", "admin.settings", "inbox.manage"];
 
 export const ROLES = [
   { code: "STAFF", name: "Staff", description: "TIG staff: can view and edit everything except users and settings", permissions: PERMISSIONS.map((p) => p.code).filter((c) => !ADMIN_ONLY.includes(c)) },

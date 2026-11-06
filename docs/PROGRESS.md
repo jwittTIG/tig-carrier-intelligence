@@ -1,7 +1,46 @@
 # Progress
 
 ## Current state (2026-11-05)
-**Milestone 5 (MVP release candidate) is built and waiting for Josh's review.** Josh accepted M4 ("Proceed with the next step", 2026-11-05). D14 for appointments/codes was not answered, so they keep saving directly. Josh asked for email intake of carrier bulletins and guideline updates: proposed as Milestone 6 (DECISIONS D20, `prompts/06-email-intake.md`). D7a (real Postgres) is still open. The MVP is **not production-ready**: see `docs/SECURITY.md` "Known gaps" and `docs/OPERATIONS.md`.
+**Milestone 6 (email intake) is built on the dev mailbox and waiting for Josh's review.** The real Microsoft 365 mailbox isn't set up yet (docs/EMAIL_SETUP.md), so the Graph reader is untested. Josh moved from M5 to M6 ("Yes, start M6", 2026-11-05). Earlier status: Josh accepted M4 ("Proceed with the next step", 2026-11-05). D14 for appointments/codes was not answered, so they keep saving directly. Josh asked for email intake of carrier bulletins and guideline updates: proposed as Milestone 6 (DECISIONS D20, `prompts/06-email-intake.md`). D7a (real Postgres) is still open. The MVP is **not production-ready**: see `docs/SECURITY.md` "Known gaps" and `docs/OPERATIONS.md`.
+
+## Milestone 6: email intake (done on the dev mailbox; Microsoft 365 not tested)
+- **Mailbox:** Microsoft 365 shared mailbox (D20 confirmed). `docs/EMAIL_SETUP.md` covers creating it, accepting internal mail only, the Entra app, and Exchange "RBAC for Applications" that limits the app to that one mailbox, read-only.
+- **Readers:**
+  - `dev`: reads `.eml` files from `.data/inbox`; refuses production.
+  - `graph`: Microsoft Graph delta query, with page links saved so large backlogs resume. Written, but **never run against Microsoft**; its paging logic is tested with mocked responses.
+- **Intake** ("Check mailbox now" for admins, `POST /api/v1/inbox/run`, or `GET /api/cron/mail-intake` with `CRON_SECRET` for scheduling):
+  - Each email is taken in once (Message-ID, or content hash).
+  - The original `.eml` is kept as a document (new type Email). The body is stored and shown as plain text only.
+  - Sender rule: forwarded by an active TIG user → accepted. Anyone else → held, attachments not opened until an admin accepts it.
+  - Attachments go through the upload checks (type by content, size, scan stub). Identical files are reused, and small inline images (logos) are skipped.
+  - Each refused file is recorded with its reason. One bad email doesn't stop a run; the last run and any error are shown.
+- **Inbox** (`/inbox`, `/inbox/[id]`): new / done / dismissed / held, with search.
+  - Detail: sender, original sender (read from the forwarded header), attachments, plain-text body, and carrier suggestions (contacts or websites matching the original sender's domain).
+  - Actions: file under carrier (the email and files show on the carrier's Documents and new **Updates** tab); start an appetite draft from it (or add it to the open draft), with the attachment as the source; cite it on a record; dismiss with a reason; admins accept or discard held mail.
+  - Nothing is ever approved from the inbox (D14 still applies).
+- **Elsewhere:** dashboard tile "Inbox emails to handle"; Approvals data quality shows emails waiting longer than `inbox.stale_days` (seeded 7).
+- **Permissions:** `inbox.read` and `inbox.triage` (all staff); `inbox.manage` (admins: check now, held mail).
+- **New non-login user** "System (mail intake)" records who uploaded intake files (DECISIONS N14).
+- **Root cause of Josh's sign-in reload loop found and fixed:** Vitest wrote its caches inside the project (`node_modules/.vitest-cache`). A running `next dev` saw the writes and kept rebuilding and reloading open pages. Test caches and test file storage now live in the system temp folder; a full test run with the dev server up no longer disturbs it.
+
+### M6 tested (ran and saw pass)
+- `npm run check`: **183 tests in 21 files** pass. The 13 inbox tests cover:
+  - intake from staff: original kept, attachment stored as a typed document, audit row, forwarded sender detected;
+  - duplicates by Message-ID and by content; identical attachments reused;
+  - refused attachments: .exe, renamed file, EICAR, inline logo;
+  - held senders: accept (attachments then stored) and discard; staff can't decide them; held mail can't be triaged;
+  - broken mailbox reported;
+  - file under carrier (shows on the carrier's documents); carrier suggestion from a contact's domain; appetite draft created with the attachment as source, and reused;
+  - cite as source; refusing another email's file; dismiss needs a reason; permissions;
+  - Graph paging with mocked Microsoft responses (sign-in, delta pages, removed items, MIME download, delta link, sign-in failure);
+  - cron secret; database checks.
+- `npm run test:e2e`: **6 Playwright tests pass**. The new one: drop an `.eml` in the dev mailbox → Check mailbox now → open it → file under DEMO Summit Mutual → start an appetite draft that shows the bulletin as its source.
+- The dev server log stayed quiet during a full test run (the reload-loop fix).
+
+### M6 not done or not tested
+- **The real mailbox:** Graph reading needs the mailbox, the app registration and the three values from docs/EMAIL_SETUP.md. The Microsoft side has never been exercised.
+- **Scheduled checks:** need hosting (D8) and a CRON_SECRET; for now an admin presses "Check mailbox now".
+- **AI summaries or extraction of bulletins** remain P2.
 
 ## Milestone 5: search, import, hardening (done)
 - **Market Finder** (`/markets`, `GET /api/v1/markets`):

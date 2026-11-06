@@ -11,6 +11,8 @@ export const ALLOWED_TYPES: Record<string, { label: string; ext: string }> = {
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": { label: "Excel workbook", ext: "xlsx" },
   "text/csv": { label: "CSV", ext: "csv" },
   "text/plain": { label: "Text", ext: "txt" },
+  // Original emails from the mailbox (stored by intake, never accepted as uploads: no signature to sniff).
+  "message/rfc822": { label: "Email", ext: "eml" },
 };
 
 export type Inspection = { ok: true; mimeType: string; sha256: string; sizeBytes: number } | { ok: false; reason: string };

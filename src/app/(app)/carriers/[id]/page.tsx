@@ -23,7 +23,7 @@ import {
 import { CarrierFields } from "../carrier-fields";
 import { AppointmentsTab } from "./appointments-tab";
 import { ContactsTab } from "./contacts-tab";
-import { AppetiteTab, CommissionsTab, DocumentsTab } from "./m4-tabs";
+import { AppetiteTab, CommissionsTab, DocumentsTab, UpdatesTab } from "./m4-tabs";
 
 const TABS = [
   { key: "overview", name: "Overview" },
@@ -33,6 +33,7 @@ const TABS = [
   { key: "appetite", name: "Appetite" },
   { key: "commissions", name: "Commissions" },
   { key: "documents", name: "Documents" },
+  { key: "updates", name: "Updates" },
   { key: "activity", name: "Activity" },
   { key: "history", name: "Change history" },
 ] as const;
@@ -101,6 +102,7 @@ export default async function CarrierPage({ params, searchParams }: PageProps<"/
       {tab === "appetite" && <AppetiteTab carrier={carrier} />}
       {tab === "commissions" && <CommissionsTab carrierId={id} />}
       {tab === "documents" && <DocumentsTab carrierId={id} />}
+      {tab === "updates" && <UpdatesTab carrierId={id} />}
       {tab === "activity" && <Activity id={id} write={write} />}
       {tab === "history" && <History id={id} />}
     </>

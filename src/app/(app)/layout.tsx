@@ -30,6 +30,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           {can(ctx, "contact.read") && <Link href="/contacts" className="hover:underline">Contacts</Link>}
           {can(ctx, "appointment.read") && <Link href="/codes" className="hover:underline">Codes</Link>}
           {can(ctx, "document.read") && <Link href="/documents" className="hover:underline">Documents</Link>}
+          {can(ctx, "inbox.read") && <Link href="/inbox" className="hover:underline">Inbox</Link>}
           {can(ctx, "change_request.review") && <Link href="/approvals" className="hover:underline">Approvals</Link>}
           {can(ctx, "admin.users") && <Link href="/admin/users" className="hover:underline">Users</Link>}
           {can(ctx, "audit.read") && <Link href="/admin/audit" className="hover:underline">Audit log</Link>}

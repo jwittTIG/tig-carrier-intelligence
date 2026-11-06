@@ -187,6 +187,7 @@ enum DocumentType {
   AGREEMENT
   COMMISSION_SCHEDULE
   APPLICATION
+  EMAIL
   OTHER
 }
 
@@ -266,6 +267,8 @@ model User {
   importJobs            ImportJob[]
   recordSources         RecordSource[]
   settingsUpdated       AppSetting[]
+  inboundSent           InboundMessage[]       @relation("InboundSender")
+  inboundTriaged        InboundMessage[]       @relation("InboundTriager")
 
   @@map("users")
 }
@@ -381,6 +384,7 @@ model Organization {
   portals          CarrierPortal[]
   contactAssignments ContactAssignment[]
   activities       RelationshipActivity[]
+  inboundMessages  InboundMessage[]
 
   @@index([parentId])
   @@index([ownerUserId])
@@ -928,6 +932,8 @@ model DocumentVersion {
   requirements  UnderwritingRequirement[]
   agreements    CommissionAgreement[]
   recordSources RecordSource[]
+  inboundRaw    InboundMessage[]
+  inboundFiles  InboundAttachment[]
 
   @@unique([documentId, versionNumber])
   @@index([uploadedById])
@@ -1051,4 +1057,98 @@ model AppSetting {
 
   @@index([updatedById])
   @@map("app_settings")
+}
+
+// ───────────────────── Email intake (Milestone 6, DECISIONS D20) ─────────────────────
+
+enum MailSource {
+  DEV
+  GRAPH
+}
+
+/// ACCEPTED: forwarded by an active TIG user. HELD: anyone else, waiting for an admin.
+/// DISCARDED: an admin threw a held message away.
+enum SenderStatus {
+  ACCEPTED
+  HELD
+  DISCARDED
+}
+
+enum InboxStatus {
+  NEW
+  TRIAGED
+  DISMISSED
+}
+
+/// One email taken in from the carrier-updates mailbox. The original .eml is kept as a
+/// document; the body is stored as plain text only (HTML is never rendered).
+model InboundMessage {
+  id                   String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  source               MailSource
+  mailbox              String
+  externalId           String?         @map("external_id")
+  /// RFC 5322 Message-ID, or sha256 of the raw message when absent. Each email is taken in once.
+  messageKey           String          @unique @map("message_key")
+  fromAddress          String          @map("from_address")
+  fromName             String?         @map("from_name")
+  /// Best-effort original sender, read from the forwarded-message header in the body.
+  originalFrom         String?         @map("original_from")
+  subject              String
+  receivedAt           DateTime        @map("received_at") @db.Timestamptz(6)
+  bodyText             String          @map("body_text")
+  authResults          String?         @map("auth_results")
+  senderStatus         SenderStatus    @map("sender_status")
+  senderUserId         String?         @map("sender_user_id") @db.Uuid
+  status               InboxStatus     @default(NEW)
+  organizationId       String?         @map("organization_id") @db.Uuid
+  rawDocumentVersionId String          @map("raw_document_version_id") @db.Uuid
+  triagedById          String?         @map("triaged_by") @db.Uuid
+  triagedAt            DateTime?       @map("triaged_at") @db.Timestamptz(6)
+  dismissReason        String?         @map("dismiss_reason")
+  createdAt            DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  senderUser           User?           @relation("InboundSender", fields: [senderUserId], references: [id], onDelete: Restrict)
+  triagedBy            User?           @relation("InboundTriager", fields: [triagedById], references: [id], onDelete: Restrict)
+  organization         Organization?   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  rawDocumentVersion   DocumentVersion @relation(fields: [rawDocumentVersionId], references: [id], onDelete: Restrict)
+  attachments          InboundAttachment[]
+
+  @@index([status, receivedAt])
+  @@index([senderStatus])
+  @@index([organizationId])
+  @@index([senderUserId])
+  @@index([triagedById])
+  @@index([rawDocumentVersionId])
+  @@map("inbound_messages")
+}
+
+model InboundAttachment {
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  messageId         String           @map("message_id") @db.Uuid
+  filename          String
+  mimeType          String           @map("mime_type")
+  sizeBytes         Int              @map("size_bytes")
+  sha256            String           @db.Char(64)
+  /// Set once the file passed the upload checks and is stored as a document.
+  documentVersionId String?          @map("document_version_id") @db.Uuid
+  /// Why the file was not stored (type, size, scan, or held sender).
+  rejectedReason    String?          @map("rejected_reason")
+  message           InboundMessage   @relation(fields: [messageId], references: [id], onDelete: Restrict)
+  documentVersion   DocumentVersion? @relation(fields: [documentVersionId], references: [id], onDelete: Restrict)
+
+  @@index([messageId])
+  @@index([documentVersionId])
+  @@index([sha256])
+  @@map("inbound_attachments")
+}
+
+/// Where the Graph reader left off (delta link) for each mailbox.
+model MailIntakeState {
+  mailbox   String    @id
+  deltaLink String?   @map("delta_link")
+  lastRunAt DateTime? @map("last_run_at") @db.Timestamptz(6)
+  lastError String?   @map("last_error")
+  lastCount Int       @default(0) @map("last_count")
+
+  @@map("mail_intake_state")
 }

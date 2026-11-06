@@ -2,7 +2,9 @@
 
 Internal web app for The Insurance Group's P&C market relationships: carriers and intermediaries, appetite, underwriter contacts, agency appointments and codes, commission schedules, documents and verification. **P&C only** (no life, health, benefits, disability or LTC).
 
-Status: **Milestone 5 (MVP release candidate)**: search, import, dashboard, hardening. See `docs/PROGRESS.md`.
+Status: **Milestone 6 (email intake)** on top of the MVP release candidate. Email setup: `docs/EMAIL_SETUP.md`.
+
+To try the inbox locally: save an `.eml` file (in Outlook: File → Save As) into `.data/inbox`. The sender must be an active user of this app, or the email is held. Then, as an admin, press **Inbox → Check mailbox now**. See `docs/PROGRESS.md`.
 
 Docs: `docs/PRD.md` · `docs/DATA_MODEL.md` · `docs/IMPLEMENTATION_PLAN.md` · `docs/ACCEPTANCE_TESTS.md` · `docs/ACCEPTANCE_STATUS.md` · `docs/DECISIONS.md` · `docs/SECURITY.md` · `docs/OPERATIONS.md` · `docs/UAT.md` · `CLAUDE.md`
 
@@ -78,6 +80,6 @@ Before deploying, these must be in place:
 Do not treat this as production-ready until TIG stakeholders accept it.
 
 ## Troubleshooting
-- **The sign-in page keeps reloading by itself and you can't sign in:** the dev server's build cache is in a bad state. Stop the server (Ctrl-C), delete the `.next` folder, and start it again with `npm.cmd run dev`. The folder holds no data and is rebuilt automatically.
+- **Pages keep reloading by themselves and you can't sign in:** something is writing files inside the project while `next dev` runs. Test runs used to do this; their caches now live in the system temp folder. If it happens again: stop the server (Ctrl-C), delete the `.next` folder, and start it with `npm.cmd run dev`.
 - **`npm` fails in PowerShell with "running scripts is disabled":** use `npm.cmd` instead of `npm`.
 - **Tests fail with "Connection terminated unexpectedly":** the local test database (PGlite) crashed. Run `npm test` again; it restarts that server first. Moving to real Postgres fixes this for good (DECISIONS D7a).

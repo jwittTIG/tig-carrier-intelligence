@@ -48,6 +48,9 @@ export default async function ApprovalsPage() {
         <p className="text-sm">
           <Link href="/contacts?freshness=stale" className="text-blue-800 hover:underline dark:text-blue-300">{quality.staleContacts} contacts</Link> are stale or were never confirmed ({quality.contactDays}-day review cycle).
         </p>
+        <p className="text-sm">
+          <Link href="/inbox?status=NEW" className="text-blue-800 hover:underline dark:text-blue-300">{quality.staleInbox} inbox emails</Link> have waited more than {quality.inboxDays} days to be handled.
+        </p>
       </Section>
 
       <Section title="Possible duplicate carriers">

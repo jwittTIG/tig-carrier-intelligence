@@ -5,6 +5,7 @@ import { listProfilesForCarrier } from "@/server/services/appetite";
 import { channelLabel, listAgencyEntities, listChannelsForOrg } from "@/server/services/appointments";
 import { fractionToPercent, listAgreementsForCarrier } from "@/server/services/commissions";
 import { listCitableVersions, listDocuments } from "@/server/services/documents";
+import { listCarrierUpdates } from "@/server/services/inbox-options";
 import { ActionForm } from "@/components/action-form";
 import { StatusBadge } from "@/components/m4";
 import { Badge, Field, Section, fmtDate, fmtDateTime, inputClass, label } from "@/components/ui";
@@ -124,6 +125,27 @@ export async function DocumentsTab({ carrierId }: { carrierId: string }) {
         </ul>
       )}
       {can(ctx, "document.write") && <UploadForm organizationId={carrierId} returnTo={`/carriers/${carrierId}`} />}
+    </Section>
+  );
+}
+
+export async function UpdatesTab({ carrierId }: { carrierId: string }) {
+  const ctx = await requireAuth();
+  if (!can(ctx, "inbox.read")) return <p className="text-sm">You don&apos;t have permission to view the inbox.</p>;
+  const items = await listCarrierUpdates(ctx, carrierId);
+  return (
+    <Section title="Updates by email">
+      <p className="text-xs text-zinc-500">Bulletins and guideline emails forwarded to the carrier-updates mailbox and filed under this carrier.</p>
+      {items.length === 0 ? <p className="text-sm text-zinc-500">None yet.</p> : (
+        <ul className="text-sm">
+          {items.map((m) => (
+            <li key={m.id}>
+              <Link href={`/inbox/${m.id}`} className="text-blue-800 dark:text-blue-300">{m.subject}</Link>
+              <span className="text-xs text-zinc-500"> · {fmtDateTime(m.receivedAt)} · {m.originalFrom ?? m.fromAddress}{m._count.attachments ? ` · ${m._count.attachments} file(s)` : ""}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </Section>
   );
 }

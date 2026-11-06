@@ -94,5 +94,6 @@ export async function dashboard(ctx: AuthContext) {
         include: { marketChannel: { include: { carrierProduct: { include: { writingCompany: { select: { id: true, displayName: true } }, product: { select: { name: true } } } }, intermediary: { select: { displayName: true } } } } },
       })
     : [];
-  return { myCarriers, myOverdueAppetite, overdueAppetiteCount, staleContacts, pending, mySubmissions, recentAppetite, expiring, warn };
+  const inboxWaiting = can(ctx, "inbox.read") ? await prisma.inboundMessage.count({ where: { status: "NEW", senderStatus: "ACCEPTED" } }) : 0;
+  return { myCarriers, myOverdueAppetite, overdueAppetiteCount, staleContacts, pending, mySubmissions, recentAppetite, expiring, warn, inboxWaiting };
 }

@@ -11,11 +11,12 @@ export default async function DashboardPage() {
   return (
     <>
       <h1 className="text-xl font-semibold">Dashboard</h1>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Tile href="/approvals" title="Waiting for your review" value={d.pending} />
         <Tile href="/approvals" title="Your submissions waiting" value={d.mySubmissions} />
         <Tile href="/approvals" title="Appetite overdue for review" value={d.overdueAppetiteCount} />
         <Tile href="/contacts?freshness=stale" title="Contacts stale or never confirmed" value={d.staleContacts} />
+        <Tile href="/inbox?status=NEW" title="Inbox emails to handle" value={d.inboxWaiting} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

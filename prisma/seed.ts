@@ -68,6 +68,7 @@ export const SETTINGS: Record<string, Prisma.InputJsonValue> = {
   "contact.review_cadence_days": 365,
   "appointment.expiry_warning_days": 60,
   "document.max_upload_mb": 25,
+  "inbox.stale_days": 7,
   "search.disclaimer":
     "Appetite information is a guide, not a commitment to quote or bind. Confirm eligibility with the underwriter.",
 };
@@ -108,6 +109,14 @@ async function seedReference() {
   for (const [key, value] of Object.entries(SETTINGS)) {
     await prisma.appSetting.upsert({ where: { key }, update: {}, create: { key, value } });
   }
+
+  // Non-login system user that "uploads" files taken in from the mailbox (Milestone 6).
+  // DEACTIVATED and without roles, so it can never sign in or act.
+  await prisma.user.upsert({
+    where: { email: "mail-intake@system.invalid" },
+    update: { status: "DEACTIVATED" },
+    create: { name: "System (mail intake)", email: "mail-intake@system.invalid", status: "DEACTIVATED" },
+  });
 }
 
 /** Fictional records so screens and tests have something to show. All prefixed DEMO. */

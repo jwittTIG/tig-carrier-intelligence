@@ -1,3 +1,5 @@
+import os from "node:os";
+import path from "node:path";
 import { config } from "dotenv";
 import { afterAll } from "vitest";
 
@@ -9,7 +11,8 @@ process.env.STORAGE_DRIVER = "dev";
 process.env.AUTH_DRIVER = "dev";
 process.env.ALLOWED_EMAIL_DOMAINS = "example.invalid";
 process.env.DATABASE_POOL_MAX ??= "1";
-process.env.DEV_STORAGE_DIR = ".data/test-storage";
+// Outside the project folder, so a running dev server doesn't see test writes.
+process.env.DEV_STORAGE_DIR = path.join(os.tmpdir(), "tig-carrier-intelligence-tests", "storage");
 process.env.STORAGE_SIGNING_SECRET ??= "test-signing-secret-0123456789abcdef0123456789abcdef";
 
 // Close the app's connection pool when each test file finishes. Without this, the worker exits
