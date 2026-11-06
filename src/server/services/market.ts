@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { Prisma } from "@/generated/prisma/client";
 import type { AppetiteOutcome } from "@/generated/prisma/enums";
 import { effectiveState, todayUtc } from "@/lib/dates";
+import { chooseOutcome, evaluateCondition, normalizeInput, type ConditionState, type DataType, type Evaluation, type Operator } from "@/lib/matching";
 import { assertCan, can, type AuthContext } from "@/server/auth/context";
 import { prisma } from "@/server/db/client";
 import { ValidationError } from "@/server/errors";
@@ -10,17 +11,19 @@ import { parseIndustries } from "./appetite";
 import { numberSetting, SETTING, textSetting } from "./settings";
 
 /**
- * Market Finder (PRD screen 4, MVP). Structured filtering over APPROVED appetite in effect
- * today: line/product, state, industry code, and optionally a limit to compare with stated
- * maximums. Attribute conditions (revenue, payroll…) are listed for staff to check by hand;
- * automatic risk matching is P1. Results never imply eligibility, coverage or binding.
+ * Market Finder (PRD screen 4) with risk matching (M7, DECISIONS D21). Filters APPROVED
+ * appetite in effect today by line/product, state, industry code, an optional limit, and the
+ * risk attributes staff enter (`a_<key>` fields). Results never imply eligibility, coverage or binding.
  *
- * Outcome for a carrier product: the first matching rule without an attribute, ordered by
- * priority (lower first) then specificity (industry + state, industry, state, general).
- * No matching rule → UNKNOWN. Matching rules with different outcomes → flagged.
+ * Outcome for a carrier product: the first applying rule, ordered by priority (lower first)
+ * then specificity (attribute condition, industry, state, general). A rule with an attribute
+ * applies only when its condition is met. If a rule ranked ahead has a value that wasn't
+ * entered (or can't be compared) and a different outcome, the result needs information:
+ * missing data is never eligible. No applying rule → UNKNOWN.
  */
 
-const OUTCOME_ORDER: AppetiteOutcome[] = ["PREFERRED", "ACCEPTED", "REFERRAL", "PROHIBITED", "UNKNOWN"];
+export type MarketGroup = AppetiteOutcome | "NEEDS_INFO";
+const GROUP_ORDER: MarketGroup[] = ["PREFERRED", "ACCEPTED", "REFERRAL", "NEEDS_INFO", "PROHIBITED", "UNKNOWN"];
 
 const findSchema = z
   .object({
@@ -38,7 +41,7 @@ export type MarketFilters = z.input<typeof findSchema>;
 const ruleInclude = {
   territories: { select: { territoryId: true } },
   industries: { select: { classificationSystem: true, code: true } },
-  attributeDefinition: { select: { label: true, unit: true } },
+  attributeDefinition: { select: { key: true, label: true, unit: true, dataType: true } },
 } satisfies Prisma.AppetiteRuleInclude;
 type Rule = Prisma.AppetiteRuleGetPayload<{ include: typeof ruleInclude }>;
 
@@ -68,11 +71,44 @@ function ruleFilter(territoryIds: string[], wanted: { classificationSystem: stri
   };
 }
 
-const specificity = (r: Rule) => (r.industries.length ? 2 : 0) + (r.territories.length ? 1 : 0);
+const specificity = (r: Rule) => (r.attributeDefinitionId ? 4 : 0) + (r.industries.length ? 2 : 0) + (r.territories.length ? 1 : 0);
+
+/** Risk attributes staff can enter for a line or product, one per key. */
+export async function riskAttributesFor(ctx: AuthContext, f: { lineId?: string | null; productId?: string | null }) {
+  assertCan(ctx, "appetite.read");
+  if (!f.productId && !f.lineId) return [];
+  const defs = await prisma.riskAttributeDefinition.findMany({
+    where: { searchable: true, product: f.productId ? { id: f.productId } : { lineId: f.lineId! } },
+    orderBy: [{ label: "asc" }, { key: "asc" }],
+    select: { key: true, label: true, dataType: true, unit: true },
+  });
+  return [...new Map(defs.map((d) => [d.key, d])).values()];
+}
+
+/** Picks `a_<key>` values out of the request. */
+function riskInputs(input: unknown): Record<string, string> {
+  if (!input || typeof input !== "object") return {};
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(input as Record<string, unknown>)) {
+    const key = k.startsWith("a_") ? k.slice(2) : null;
+    if (key && /^[a-z][a-z0-9_]{1,40}$/.test(key) && typeof v === "string" && v.trim()) out[key] = v.trim().slice(0, 100);
+  }
+  return out;
+}
 
 export async function findMarkets(ctx: AuthContext, input: MarketFilters) {
   assertCan(ctx, "appetite.read");
   const f = parse(findSchema, input);
+  const attributes = await riskAttributesFor(ctx, f);
+  const entered = riskInputs(input);
+  const risk = new Map<string, string>();
+  const inputErrors: string[] = [];
+  for (const a of attributes) {
+    const n = normalizeInput(a.dataType as DataType, entered[a.key]);
+    if (n.error) inputErrors.push(`${a.label}: ${n.error}`);
+    else if (n.value !== null) risk.set(a.key, n.value);
+  }
+  if (inputErrors.length) throw new ValidationError(inputErrors.join("; "));
   const wanted = f.industry ? parseIndustries(/^\d{2,6}$/.test(f.industry.trim()) ? `NAICS ${f.industry.trim()}` : f.industry)[0] ?? null : null;
   if (f.industry && !wanted) throw new ValidationError("Enter an industry code such as NAICS 238160.");
   const today = todayUtc();
@@ -139,7 +175,12 @@ export async function findMarkets(ctx: AuthContext, input: MarketFilters) {
 
   type Result = {
     key: string;
+    group: MarketGroup;
+    /** The outcome from what was entered; for NEEDS_INFO, what it is unless a missing value changes it. */
     outcome: AppetiteOutcome;
+    missing: { label: string; outcome: AppetiteOutcome; reason: string }[];
+    carrierProductId: string;
+    channelId: string | null;
     carrier: { id: string; displayName: string };
     product: string;
     channel: string;
@@ -150,7 +191,7 @@ export async function findMarkets(ctx: AuthContext, input: MarketFilters) {
     sources: number;
     appointed: boolean;
     matchedRules: { id: string; outcome: AppetiteOutcome; scope: string; rationale: string | null }[];
-    conditions: { label: string; outcome: AppetiteOutcome; text: string }[];
+    conditions: { label: string; outcome: AppetiteOutcome; text: string; state: ConditionState; reason?: string }[];
     conflicting: boolean;
     limit: { state: "OK" | "BELOW" | "NOT_STATED" | "NOT_ASKED"; text: string };
     contacts: { id: string; name: string; role: string; email: string | null; phone: string | null }[];
@@ -166,9 +207,18 @@ export async function findMarkets(ctx: AuthContext, input: MarketFilters) {
       const profile = (ch && cp.appetiteProfiles.find((p) => p.marketChannelId === ch.id)) || productWide;
       // Already narrowed to this state/class/date by ruleFilter in the query.
       const rules = profile?.rules ?? [];
-      const plain = rules.filter((r) => !r.attributeDefinitionId).sort((a, b) => a.priority - b.priority || specificity(b) - specificity(a));
-      const outcome: AppetiteOutcome = plain[0]?.outcome ?? "UNKNOWN";
-      const conditions = rules.filter((r) => r.attributeDefinitionId).map((r) => ({ label: r.attributeDefinition!.label, outcome: r.outcome, text: conditionText(r) }));
+      const evaluated = rules.map((r) => ({
+        id: r.id,
+        outcome: r.outcome,
+        priority: r.priority,
+        specificity: specificity(r),
+        evaluation: evaluationFor(r, risk),
+        rule: r,
+      }));
+      const { chosen, applying, blockers } = chooseOutcome(evaluated);
+      const outcome: AppetiteOutcome = chosen?.outcome ?? "UNKNOWN";
+      const conditions = evaluated.filter((e) => e.evaluation).map((e) => ({ label: e.rule.attributeDefinition!.label, outcome: e.outcome, text: conditionText(e.rule), state: e.evaluation!.state, ...(e.evaluation!.reason && { reason: e.evaluation!.reason }) }));
+      const missing = blockers.map((b) => ({ label: b.rule.attributeDefinition!.label, outcome: b.outcome, reason: b.evaluation!.state === "MISSING" ? "not entered" : b.evaluation!.reason ?? "can't be compared" }));
       const appointed = (ch ? [ch] : cp.channels).some((c) => c?.appointments.some((a) => ["CURRENT", "EXPIRING_SOON"].includes(effectiveState(a, { today, warningDays: warnDays }))));
       const cov = cp.coverages.filter((c) => c.maxLimit !== null);
       const limit: Result["limit"] =
@@ -179,7 +229,11 @@ export async function findMarkets(ctx: AuthContext, input: MarketFilters) {
       const orgsForContacts = [cp.writingCompanyId, ...(ch?.intermediaryOrgId ? [ch.intermediaryOrgId] : [])];
       results.push({
         key: `${cp.id}:${ch?.id ?? "none"}`,
+        group: missing.length ? "NEEDS_INFO" : outcome,
         outcome,
+        missing,
+        carrierProductId: cp.id,
+        channelId: ch?.id ?? null,
         carrier: cp.writingCompany,
         product: cp.product.name,
         channel: ch ? (ch.intermediary ? `via ${ch.intermediary.displayName}` : "Direct") : "No channel recorded",
@@ -189,9 +243,9 @@ export async function findMarkets(ctx: AuthContext, input: MarketFilters) {
         nextReviewAt: profile?.nextReviewAt ?? null,
         sources: profile ? (sourceCount.get(profile.id) ?? 0) : 0,
         appointed,
-        matchedRules: plain.map((r) => ({ id: r.id, outcome: r.outcome, scope: scopeText(r, territoryById), rationale: r.rationale })),
+        matchedRules: applying.map((e) => ({ id: e.id, outcome: e.outcome, scope: scopeText(e.rule, territoryById) + (e.rule.attributeDefinition ? ` · ${conditionText(e.rule)}` : ""), rationale: e.rule.rationale })),
         conditions,
-        conflicting: new Set(plain.map((r) => r.outcome)).size > 1,
+        conflicting: new Set(applying.map((r) => r.outcome)).size > 1,
         limit,
         contacts: contacts
           .filter((a) => orgsForContacts.includes(a.organizationId))
@@ -202,14 +256,28 @@ export async function findMarkets(ctx: AuthContext, input: MarketFilters) {
     }
   }
 
-  const rank = (r: Result) => [OUTCOME_ORDER.indexOf(r.outcome), r.limit.state === "BELOW" ? 1 : 0, r.appointed ? 0 : 1, r.stale ? 1 : 0];
+  const rank = (r: Result) => [GROUP_ORDER.indexOf(r.group), OUTCOME_ORDER.indexOf(r.outcome), r.limit.state === "BELOW" ? 1 : 0, r.appointed ? 0 : 1, r.stale ? 1 : 0];
   results.sort((a, b) => {
     const x = rank(a), y = rank(b);
     for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return x[i] - y[i];
     return a.carrier.displayName.localeCompare(b.carrier.displayName);
   });
-  const groups = OUTCOME_ORDER.map((outcome) => ({ outcome, results: results.filter((r) => r.outcome === outcome) }));
-  return { disclaimer, filters: { ...f, industry: wanted ? `${wanted.classificationSystem} ${wanted.code}` : null }, total: results.length, groups };
+  const groups = GROUP_ORDER.map((outcome) => ({ outcome, results: results.filter((r) => r.group === outcome) }));
+  return {
+    disclaimer,
+    filters: { ...f, industry: wanted ? `${wanted.classificationSystem} ${wanted.code}` : null },
+    attributes,
+    risk: Object.fromEntries(risk),
+    total: results.length,
+    groups,
+  };
+}
+
+const OUTCOME_ORDER: AppetiteOutcome[] = ["PREFERRED", "ACCEPTED", "REFERRAL", "PROHIBITED", "UNKNOWN"];
+
+function evaluationFor(r: Rule, risk: Map<string, string>): Evaluation | null {
+  if (!r.attributeDefinition || !r.operator) return null;
+  return evaluateCondition(r.attributeDefinition.dataType as DataType, r.operator as Operator, r.typedValue as Parameters<typeof evaluateCondition>[2], risk.get(r.attributeDefinition.key) ?? null);
 }
 
 function scopeText(r: Rule, territoryById: Map<string, { stateCode: string | null; name: string }>): string {

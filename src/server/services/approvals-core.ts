@@ -3,6 +3,7 @@ import type { RecordType } from "@/generated/prisma/enums";
 import { recordAudit, snapshot } from "@/server/audit";
 import type { AuthContext } from "@/server/auth/context";
 import { ConflictError, ForbiddenError, ValidationError } from "@/server/errors";
+import { onChangeRequestClosed, onChangeRequestOpened } from "./notifications";
 
 type Tx = Prisma.TransactionClient;
 
@@ -22,6 +23,7 @@ export async function openChangeRequest(
     data: { recordType: r.recordType, recordId: r.recordId, proposedPatch: snapshot(r.proposed) ?? {}, proposedById: ctx.userId, rationale: r.note ?? null },
   });
   await recordAudit(tx, ctx, { action: "change_request.open", entityType: "change_request", entityId: cr.id, after: cr });
+  await onChangeRequestOpened(tx, ctx, cr);
   return cr;
 }
 
@@ -49,6 +51,7 @@ export async function closeChangeRequest(
     data: { status, reviewedById: status === "WITHDRAWN" ? null : ctx.userId, reviewedAt: status === "WITHDRAWN" ? null : new Date(), rationale: rationale ?? before.rationale },
   });
   await recordAudit(tx, ctx, { action: `change_request.${status.toLowerCase()}`, entityType: "change_request", entityId: crId, before, after });
+  await onChangeRequestClosed(tx, ctx, after);
   return after;
 }
 

@@ -1,7 +1,40 @@
 # Progress
 
 ## Current state (2026-11-06)
-**All blueprint milestones (M0–M5) and Milestone 6 (email intake) are built and accepted.** Josh accepted M6 ("Proceed", 2026-11-06). Further work is a "later phase" (P1/P2 in IMPLEMENTATION_PLAN) and needs Josh to choose and approve it first. M6 detail: built on the dev mailbox. The real Microsoft 365 mailbox isn't set up yet (docs/EMAIL_SETUP.md), so the Graph reader is untested. Josh moved from M5 to M6 ("Yes, start M6", 2026-11-05). Earlier status: Josh accepted M4 ("Proceed with the next step", 2026-11-05). D14 for appointments/codes was not answered, so they keep saving directly. Josh asked for email intake of carrier bulletins and guideline updates: proposed as Milestone 6 (DECISIONS D20, `prompts/06-email-intake.md`). D7a (real Postgres) is still open. The MVP is **not production-ready**: see `docs/SECURITY.md` "Known gaps" and `docs/OPERATIONS.md`.
+**Milestone 7 (P1: risk matching, market comparison, notifications) is built and waiting for Josh's review.** Josh picked these three P1 items and said "Go ahead and the next milestone" (2026-11-06); he excluded the submission workflow, AMS connection, production dashboard and commission reconciliation. D21–D23 record the defaults used (still PROPOSED). M0–M6 are accepted (M6: "Proceed", 2026-11-06). M6 detail: built on the dev mailbox. The real Microsoft 365 mailbox isn't set up yet (docs/EMAIL_SETUP.md), so the Graph reader is untested. Josh moved from M5 to M6 ("Yes, start M6", 2026-11-05). Earlier status: Josh accepted M4 ("Proceed with the next step", 2026-11-05). D14 for appointments/codes was not answered, so they keep saving directly. Josh asked for email intake of carrier bulletins and guideline updates: proposed as Milestone 6 (DECISIONS D20, `prompts/06-email-intake.md`). D7a (real Postgres) is still open. The MVP is **not production-ready**: see `docs/SECURITY.md` "Known gaps" and `docs/OPERATIONS.md`.
+
+## Milestone 7: risk matching, market comparison, notifications (done; waiting for Josh's review)
+Prompt: `prompts/07-matching-comparison-notifications.md`. Decisions D21–D23 (PROPOSED defaults).
+- **Risk matching (D21):**
+  - The Market Finder shows an input for each risk attribute defined for the product or line (e.g. annual revenue). Inputs are `a_<key>` fields and are not saved.
+  - Attribute rules are evaluated exactly: decimals compare as strings (no floating point); dates, text, lists and yes/no are supported. Logic: `src/lib/matching.ts`.
+  - An attribute rule counts as more specific than a class or state rule.
+  - A missing or non-comparable value that could change the outcome puts the market in a new **Needs information** group. It names the missing detail and what the outcome is otherwise. Missing data is never eligible.
+  - Invalid input (e.g. "a lot" for revenue) is rejected with the field named.
+- **Market comparison (D22):** tick 2–4 results, then **Compare selected** opens `/markets/compare`. It shows, side by side for the same risk:
+  - outcome and why, and each condition (met / not met / not entered);
+  - limits and underwriting requirements;
+  - appointment and active agency codes;
+  - approved commission in effect for new and renewal ("Rate not recorded" otherwise; hidden without `commission.read`; drafts never shown);
+  - the appetite record, contacts and the disclaimer.
+  - API: `GET /api/v1/markets/compare`.
+- **Notifications (D23), in the app only:**
+  - **Follow / Unfollow** on carrier pages (audited).
+  - Events: submissions for approval (to followers), decisions (to the submitter, with the reason), approvals (to followers), inbox emails filed under a carrier (to followers, first filing only), and daily reminders for appointments ending within the warning window and appetite reviews due (to followers and the profile owner).
+  - Never sent to the person who acted, or to inactive users. Reminders are sent once per record and date (unique dedupe key).
+  - A **Notifications** link with an unread count; `/notifications` with All/Unread and Mark read / Mark all read. Admins get **Check reminders now**.
+  - Each user sees only their own; links must be app-relative (DB CHECK).
+  - API: `GET /api/v1/notifications`, `POST /api/v1/notifications/:id/read`, `PUT|DELETE /api/v1/carriers/:id/follow`. Cron: `GET /api/cron/reminders` with `CRON_SECRET` (daily).
+- **Schema** (migration `20261106111944_notifications`, needs Josh's review): tables `carrier_follows` and `notifications`, enum `NotificationType`. No change to existing tables.
+- **Tested (ran and saw pass, 2026-11-06):**
+  - `npm test`: 221 tests in 24 files, including new `tests/unit/matching.test.ts`, `tests/integration/compare.test.ts` and `tests/integration/notifications.test.ts`. `market.test.ts` was updated: a missing revenue value is now "needs information".
+  - `npm run test:e2e`: 8 Playwright tests, including new `m7.spec.ts` (compare two markets with an axe check; follow Summit, file an email as DEMO Admin, see the notification as DEMO Producer and mark it read). Inbox and Notifications were added to the accessibility sweep.
+  - The comparison page was checked by eye in the browser.
+- **Not tested / limits:**
+  - The browser test doesn't enter a risk attribute: the DEMO seed has none defined. Attribute matching is covered by the unit and integration tests.
+  - The reminders cron has never run on a schedule (no hosting yet).
+  - Contacts going stale don't send reminders yet; they still show on the dashboard.
+- **Note for the dev server:** after a schema change, restart `npm run dev`. The running server keeps the old database client, and every page fails with "Cannot read properties of undefined".
 
 ## Milestone 6: email intake (done on the dev mailbox; Microsoft 365 not tested)
 - **Mailbox:** Microsoft 365 shared mailbox (D20 confirmed). `docs/EMAIL_SETUP.md` covers creating it, accepting internal mail only, the Entra app, and Exchange "RBAC for Applications" that limits the app to that one mailbox, read-only.
@@ -295,12 +328,12 @@
 - **ACCEPTANCE_TESTS items for M3–M5:** done; see `docs/ACCEPTANCE_STATUS.md`.
 
 ## Remaining
-No milestone is in progress. Later phases (do not start without Josh's approval):
-- **P1:** risk matching, market comparison, submission workflow, notifications, AMS adapter, production dashboard, commission reconciliation.
+Milestone 7 is waiting for Josh's review. Later phases (do not start without Josh's approval):
+- **P1:** done in M7: risk matching, market comparison, notifications. Josh excluded: submission workflow, AMS adapter, production dashboard, commission reconciliation.
 - **P2:** AI bulletin extraction, chat search, historical recommendations, contingent commission modeling, carrier feeds.
 
 ## Open questions for Josh
-1. **Next phase:** which P1/P2 item, if any.
+1. **Review Milestone 7,** and confirm or change D21–D23 (risks not saved; comparison shows commission; notifications in the app only, no email).
 2. **Shared mailbox** (docs/EMAIL_SETUP.md): send the mailbox address, tenant ID and client ID; put the client secret in `.env.local` yourself. Until then the Graph reader is untested.
 3. **D14 for appointments and codes:** should they go through approval? They currently save directly.
 4. **D7a:** real Postgres for dev/test (Neon connection strings, or OK to install PostgreSQL 17 locally).
@@ -313,3 +346,4 @@ No milestone is in progress. Later phases (do not start without Josh's approval)
 - 2026-11-04: Phase 0 planning, then the blueprint arrived. Built M0 + M1 per the blueprint. Josh approved resetting the local test DB for test runs this session.
 - 2026-11-04/05: Josh confirmed Microsoft 365 sign-in (D9) and approved M1 ("Yes, start M2"). Built M2. Found PGlite instability (D7a); added a pool cap of 1 and a test-server restart.
 - 2026-11-06: Josh declined sample inbox emails and accepted M6 ("Proceed"). All planned milestones complete; next phase awaits his choice.
+- 2026-11-06: Josh chose P1 risk matching, market comparison and notifications ("Go ahead and the next milestone"). Built M7 with defaults D21–D23.

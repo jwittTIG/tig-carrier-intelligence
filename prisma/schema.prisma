@@ -269,6 +269,9 @@ model User {
   settingsUpdated       AppSetting[]
   inboundSent           InboundMessage[]       @relation("InboundSender")
   inboundTriaged        InboundMessage[]       @relation("InboundTriager")
+  notifications         Notification[]         @relation("NotificationRecipient")
+  notificationsCaused   Notification[]         @relation("NotificationActor")
+  follows               CarrierFollow[]
 
   @@map("users")
 }
@@ -385,6 +388,8 @@ model Organization {
   contactAssignments ContactAssignment[]
   activities       RelationshipActivity[]
   inboundMessages  InboundMessage[]
+  followers        CarrierFollow[]
+  notifications    Notification[]
 
   @@index([parentId])
   @@index([ownerUserId])
@@ -1151,4 +1156,56 @@ model MailIntakeState {
   lastCount Int       @default(0) @map("last_count")
 
   @@map("mail_intake_state")
+}
+
+// ───────────────────── Notifications (M7, DECISIONS D23) ─────────────────────
+
+enum NotificationType {
+  CHANGE_REQUEST_SUBMITTED
+  CHANGE_REQUEST_APPROVED
+  CHANGE_REQUEST_REJECTED
+  RECORD_APPROVED
+  INBOX_FILED
+  APPOINTMENT_EXPIRING
+  APPETITE_REVIEW_DUE
+}
+
+/// A staff member follows a carrier (writing company or intermediary) to get its notifications.
+model CarrierFollow {
+  userId         String       @map("user_id") @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@id([userId, organizationId])
+  @@index([organizationId])
+  @@map("carrier_follows")
+}
+
+/// In-app notification for one user. Only the recipient can read or mark it.
+model Notification {
+  id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recipientUserId String           @map("recipient_user_id") @db.Uuid
+  eventType       NotificationType @map("event_type")
+  title           String
+  body            String?
+  /// App-relative link (starts with "/").
+  href            String?
+  organizationId  String?          @map("organization_id") @db.Uuid
+  actorUserId     String?          @map("actor_user_id") @db.Uuid
+  payload         Json             @default("{}")
+  /// Set for reminders so each record and date is sent once.
+  dedupeKey       String?          @map("dedupe_key")
+  readAt          DateTime?        @map("read_at") @db.Timestamptz(6)
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  recipient       User             @relation("NotificationRecipient", fields: [recipientUserId], references: [id], onDelete: Cascade)
+  actor           User?            @relation("NotificationActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  organization    Organization?    @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@unique([recipientUserId, dedupeKey])
+  @@index([recipientUserId, readAt, createdAt])
+  @@index([organizationId])
+  @@index([actorUserId])
+  @@map("notifications")
 }

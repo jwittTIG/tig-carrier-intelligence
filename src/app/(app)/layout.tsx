@@ -4,10 +4,12 @@ import { redirect } from "next/navigation";
 import { can } from "@/server/auth/context";
 import { authDriver, requireAuth } from "@/server/auth/session";
 import { devSignOut } from "@/server/auth/dev";
+import { unreadCount } from "@/server/services/notifications";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const ctx = await requireAuth();
   const dev = authDriver() === "dev";
+  const unread = await unreadCount(ctx);
   async function signOut() {
     "use server";
     await devSignOut();
@@ -39,6 +41,9 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             <label htmlFor="globalSearch" className="sr-only">Search carriers, contacts, codes and documents</label>
             <input id="globalSearch" name="q" type="search" placeholder="Search…" className="w-40 rounded border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-900" />
           </form>
+          <Link href="/notifications" className="hover:underline" aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}>
+            Notifications{unread > 0 && <span className="ml-1 rounded-full bg-blue-700 px-1.5 text-xs font-semibold text-white">{unread}</span>}
+          </Link>
           <span className="text-zinc-600 dark:text-zinc-400">{ctx.name}</span>
           {dev ? <form action={signOut}>{signOutButton}</form> : <SignOutButton>{signOutButton}</SignOutButton>}
         </nav>

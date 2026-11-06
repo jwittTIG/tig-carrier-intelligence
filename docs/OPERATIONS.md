@@ -36,3 +36,8 @@ The `dev` sign-in, `dev` storage and the dev malware-scan stub all refuse to run
 
   A settings screen isn't built yet; change them in the database and the change is audited only if done through the app. A settings screen is a follow-up.
 - **Tests:** `npm run check` (lint, types, unit and integration tests, build) and `npm run test:e2e` (browser tests against the dev server).
+
+## Scheduled jobs
+Both need `CRON_SECRET` (32+ characters) and send `Authorization: Bearer <CRON_SECRET>`. Neither has run on a schedule yet (no hosting).
+- `GET /api/cron/mail-intake`: every 15 minutes (M6).
+- `GET /api/cron/reminders`: once a day, early morning (M7). It sends in-app reminders for appointments ending within `appointment.expiry_warning_days` and for appetite reviews due. It is safe to run more than once: each record and date is sent once.

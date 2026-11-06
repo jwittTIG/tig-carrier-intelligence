@@ -100,14 +100,38 @@ describe("Market Finder: TN roofing contractor, $2M", () => {
     expect(resultFor(r, "NoRoofers").limit.state).toBe("NOT_STATED");
   });
 
-  it("shows appointment, staleness, conflicts and conditions to check by hand", async () => {
+  it("shows appointment, staleness, conflicts, and a missing risk detail as needs information", async () => {
     const r = await find();
     expect(resultFor(r, "RoofersWelcome").appointed).toBe(true);
     expect(resultFor(r, "PrefixMatch").appointed).toBe(false);
     const c = resultFor(r, "Conflicted");
     expect(c.stale).toBe(true);
     expect(c.conflicting).toBe(true);
-    expect(c.conditions).toEqual([{ label: "Annual revenue", outcome: "PROHIBITED", text: "Annual revenue ≤ 5000000 USD" }]);
+    expect(c.conditions).toEqual([{ label: "Annual revenue", outcome: "PROHIBITED", text: "Annual revenue ≤ 5000000 USD", state: "MISSING" }]);
+    // Revenue wasn't entered and could make it prohibited: never shown as acceptable.
+    expect(groupOf(r, "Conflicted")).toBe("NEEDS_INFO");
+    expect(c.outcome).toBe("REFERRAL");
+    expect(c.missing).toEqual([{ label: "Annual revenue", outcome: "PROHIBITED", reason: "not entered" }]);
+  });
+
+  it("evaluates entered risk details (D21)", async () => {
+    const met = await find({ a_annual_revenue: "$3,000,000" });
+    expect(groupOf(met, "Conflicted")).toBe("PROHIBITED");
+    expect(resultFor(met, "Conflicted").conditions[0].state).toBe("MET");
+    const notMet = await find({ a_annual_revenue: "6000000" });
+    expect(groupOf(notMet, "Conflicted")).toBe("REFERRAL");
+    expect(resultFor(notMet, "Conflicted").missing).toEqual([]);
+    expect(resultFor(notMet, "Conflicted").conditions[0].state).toBe("NOT_MET");
+    // Markets without attribute rules are unaffected.
+    expect(groupOf(notMet, "RoofersWelcome")).toBe("ACCEPTED");
+    expect(met.risk).toEqual({ annual_revenue: "3000000" });
+    expect(met.attributes.map((a) => a.key)).toContain("annual_revenue");
+  });
+
+  it("rejects risk details that aren't valid for their type, and ignores unknown ones", async () => {
+    await expect(find({ a_annual_revenue: "a lot" })).rejects.toThrow(/Annual revenue: "a lot" isn't a number/);
+    const r = await find({ a_not_defined: "1", a_annual_revenue: "" });
+    expect(r.risk).toEqual({});
   });
 
   it("without an industry, class-specific rules don't count", async () => {

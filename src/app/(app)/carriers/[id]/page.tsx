@@ -5,6 +5,8 @@ import { requireAuth } from "@/server/auth/session";
 import { NotFoundError } from "@/server/errors";
 import { CARRIER_TYPES, getCarrier, listActivity, listCarrierHistory, listCarrierOptions, listLines, listProducts } from "@/server/services/carriers";
 import { listActiveUsers } from "@/server/services/users";
+import { isFollowing } from "@/server/services/notifications";
+import { followAction } from "../../notifications/actions";
 import { ActionForm } from "@/components/action-form";
 import { Badge, Field, Section, fmtDate, fmtDateTime, inputClass, label } from "@/components/ui";
 import {
@@ -71,6 +73,7 @@ export default async function CarrierPage({ params, searchParams }: PageProps<"/
     throw e;
   }
   const write = can(ctx, "carrier.write");
+  const following = carrier.type !== "AGENCY" && (await isFollowing(ctx, id));
 
   return (
     <>
@@ -79,6 +82,11 @@ export default async function CarrierPage({ params, searchParams }: PageProps<"/
         <h1 className="text-xl font-semibold">{carrier.displayName}</h1>
         <Badge>{label(carrier.type)}</Badge>
         {carrier.archivedAt ? <Badge tone="bad">Archived {fmtDate(carrier.archivedAt)}</Badge> : <Badge tone={carrier.status === "ACTIVE" ? "good" : "neutral"}>{label(carrier.status)}</Badge>}
+        {carrier.type !== "AGENCY" && (
+          <ActionForm action={followAction.bind(null, id, following)} submitLabel={following ? "Unfollow" : "Follow"} variant="secondary" className="ml-auto flex items-center gap-2">
+            {following && <span className="text-xs text-zinc-600 dark:text-zinc-400">You get notifications for this carrier.</span>}
+          </ActionForm>
+        )}
       </div>
       {carrier.legalName !== carrier.displayName && <p className="-mt-3 text-sm text-zinc-600 dark:text-zinc-400">{carrier.legalName}</p>}
 

@@ -13,6 +13,7 @@ import { inspectUpload, scanUpload } from "@/server/storage/inspect";
 import { optionalId, optionalText, parse, requiredText } from "@/server/validation";
 import { createProfile } from "./appetite";
 import { numberSetting } from "./settings";
+import { onInboxFiled } from "./notifications";
 import { addSource } from "./sources";
 import { emailDomainAllowed } from "./users";
 
@@ -305,7 +306,10 @@ export async function fileUnderCarrier(ctx: AuthContext, id: string, input: unkn
       const already = await tx.recordSource.findFirst({ where: { recordType: "ORGANIZATION", recordId: organizationId, documentVersionId: v } });
       if (!already) await tx.recordSource.create({ data: { recordType: "ORGANIZATION", recordId: organizationId, sourceKind: "DOCUMENT", documentVersionId: v, sourceNote: `Email: ${m.subject}`.slice(0, 1000), createdById: ctx.userId } });
     }
-    return markTriaged(tx, ctx, id, { status: m.status, organizationId: m.organizationId }, "inbox.file", { organizationId });
+    const filed = await markTriaged(tx, ctx, id, { status: m.status, organizationId: m.organizationId }, "inbox.file", { organizationId });
+    // Only the first filing under this carrier notifies its followers.
+    if (m.organizationId !== organizationId) await onInboxFiled(tx, ctx, { id: m.id, subject: m.subject }, org);
+    return filed;
   });
 }
 
