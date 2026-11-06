@@ -1,7 +1,7 @@
 # Progress
 
-## Current state (2026-11-05)
-**Milestone 6 (email intake) is built on the dev mailbox and waiting for Josh's review.** The real Microsoft 365 mailbox isn't set up yet (docs/EMAIL_SETUP.md), so the Graph reader is untested. Josh moved from M5 to M6 ("Yes, start M6", 2026-11-05). Earlier status: Josh accepted M4 ("Proceed with the next step", 2026-11-05). D14 for appointments/codes was not answered, so they keep saving directly. Josh asked for email intake of carrier bulletins and guideline updates: proposed as Milestone 6 (DECISIONS D20, `prompts/06-email-intake.md`). D7a (real Postgres) is still open. The MVP is **not production-ready**: see `docs/SECURITY.md` "Known gaps" and `docs/OPERATIONS.md`.
+## Current state (2026-11-06)
+**All blueprint milestones (M0–M5) and Milestone 6 (email intake) are built and accepted.** Josh accepted M6 ("Proceed", 2026-11-06). Further work is a "later phase" (P1/P2 in IMPLEMENTATION_PLAN) and needs Josh to choose and approve it first. M6 detail: built on the dev mailbox. The real Microsoft 365 mailbox isn't set up yet (docs/EMAIL_SETUP.md), so the Graph reader is untested. Josh moved from M5 to M6 ("Yes, start M6", 2026-11-05). Earlier status: Josh accepted M4 ("Proceed with the next step", 2026-11-05). D14 for appointments/codes was not answered, so they keep saving directly. Josh asked for email intake of carrier bulletins and guideline updates: proposed as Milestone 6 (DECISIONS D20, `prompts/06-email-intake.md`). D7a (real Postgres) is still open. The MVP is **not production-ready**: see `docs/SECURITY.md` "Known gaps" and `docs/OPERATIONS.md`.
 
 ## Milestone 6: email intake (done on the dev mailbox; Microsoft 365 not tested)
 - **Mailbox:** Microsoft 365 shared mailbox (D20 confirmed). `docs/EMAIL_SETUP.md` covers creating it, accepting internal mail only, the Entra app, and Exchange "RBAC for Applications" that limits the app to that one mailbox, read-only.
@@ -292,22 +292,24 @@
 ## Not tested (M0/M1)
 - **CI workflow:** never run, because there is no remote yet.
 - **Real Postgres:** everything was run on PGlite-based `prisma dev` (Postgres 17.5 compiled to WASM). The first run on real Postgres will be CI, Neon or a local install (D7a).
-- **ACCEPTANCE_TESTS items for M3–M5:** not started (contacts, appointments, appetite, commissions, approvals, import, search).
+- **ACCEPTANCE_TESTS items for M3–M5:** done; see `docs/ACCEPTANCE_STATUS.md`.
 
-## Remaining (next milestones)
-See `prompts/03…05`.
+## Remaining
+No milestone is in progress. Later phases (do not start without Josh's approval):
+- **P1:** risk matching, market comparison, submission workflow, notifications, AMS adapter, production dashboard, commission reconciliation.
+- **P2:** AI bulletin extraction, chat search, historical recommendations, contingent commission modeling, carrier feeds.
 
 ## Open questions for Josh
-1. **Review Milestone 2.** Sign in with `npm run db:start` then `npm run dev`, open http://localhost:3000, and pick a DEMO user on the development sign-in page.
-2. **D7a: real Postgres for dev/test before M3.** Neon project (send the dev and test connection strings), or OK to install PostgreSQL 17 on this PC.
-3. **Clerk app** for Microsoft sign-in: create it, enable Microsoft, and send the two development keys.
-4. **D18/D19:** invite-only sign-in and the labeled dev sign-in. Confirm.
-5. **D8, D10–D17:** confirm or change the proposed defaults.
-3. **GitHub:** please create an empty private repo (for example `tig-carrier-intelligence`) and send the URL; I'll add the remote and push.
-4. **Spreadsheets:** please send samples of the sheets TIG tracks this in today (headers and a few fake rows), so the M5 import matches real columns.
-5. **Legal entities:** how many agency legal entities and business units does TIG have (D17)?
-6. Please review the schema deviations in DECISIONS N1–N10.
+1. **Next phase:** which P1/P2 item, if any.
+2. **Shared mailbox** (docs/EMAIL_SETUP.md): send the mailbox address, tenant ID and client ID; put the client secret in `.env.local` yourself. Until then the Graph reader is untested.
+3. **D14 for appointments and codes:** should they go through approval? They currently save directly.
+4. **D7a:** real Postgres for dev/test (Neon connection strings, or OK to install PostgreSQL 17 locally).
+5. **Clerk app** for Microsoft sign-in: the two development keys.
+6. **R2, hosting (D8), GitHub repo** (send the URL; I'll add the remote and push).
+7. **Spreadsheets (D16):** sample sheets with headers and fake rows, so the import matches real columns.
+8. **Legal entities (D17):** how many agency legal entities and business units.
 
 ## Session log
 - 2026-11-04: Phase 0 planning, then the blueprint arrived. Built M0 + M1 per the blueprint. Josh approved resetting the local test DB for test runs this session.
 - 2026-11-04/05: Josh confirmed Microsoft 365 sign-in (D9) and approved M1 ("Yes, start M2"). Built M2. Found PGlite instability (D7a); added a pool cap of 1 and a test-server restart.
+- 2026-11-06: Josh declined sample inbox emails and accepted M6 ("Proceed"). All planned milestones complete; next phase awaits his choice.
