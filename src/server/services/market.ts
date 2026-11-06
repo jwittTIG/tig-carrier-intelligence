@@ -7,7 +7,7 @@ import { assertCan, can, type AuthContext } from "@/server/auth/context";
 import { prisma } from "@/server/db/client";
 import { ValidationError } from "@/server/errors";
 import { optionalId, optionalText, parse } from "@/server/validation";
-import { parseIndustries } from "./appetite";
+import { resolveIndustry, type IndustryChoice } from "./industries";
 import { numberSetting, SETTING, textSetting } from "./settings";
 
 /**
@@ -30,7 +30,8 @@ const findSchema = z
     lineId: optionalId,
     productId: optionalId,
     stateCode: z.preprocess((v) => (v === "" ? undefined : typeof v === "string" ? v.toUpperCase() : v), z.string().length(2).optional()),
-    industry: optionalText(80),
+    /** A code ("238160", "NAICS 238160") or words ("roofing"). */
+    industry: optionalText(100),
     limit: z.preprocess((v) => (typeof v === "string" ? v.replace(/[$,\s]/g, "") : v), z.union([z.literal(""), z.string().regex(/^\d+(\.\d+)?$/, "Limit must be an amount")]).optional()).transform((v) => (v ? Number(v) : null)),
     includeIntermediaries: z.preprocess((v) => v === undefined || v === true || v === "on" || v === "true", z.boolean()).default(true),
   })
@@ -96,6 +97,31 @@ function riskInputs(input: unknown): Record<string, string> {
   return out;
 }
 
+type Result = {
+  key: string;
+  group: MarketGroup;
+  /** The outcome from what was entered; for NEEDS_INFO, what it is unless a missing value changes it. */
+  outcome: AppetiteOutcome;
+  missing: { label: string; outcome: AppetiteOutcome; reason: string }[];
+  carrierProductId: string;
+  channelId: string | null;
+  carrier: { id: string; displayName: string };
+  product: string;
+  channel: string;
+  profileId: string | null;
+  version: number | null;
+  stale: boolean;
+  nextReviewAt: Date | null;
+  sources: number;
+  appointed: boolean;
+  matchedRules: { id: string; outcome: AppetiteOutcome; scope: string; rationale: string | null }[];
+  conditions: { label: string; outcome: AppetiteOutcome; text: string; state: ConditionState; reason?: string }[];
+  conflicting: boolean;
+  limit: { state: "OK" | "BELOW" | "NOT_STATED" | "NOT_ASKED"; text: string };
+  contacts: { id: string; name: string; role: string; email: string | null; phone: string | null }[];
+  note: string | null;
+};
+
 export async function findMarkets(ctx: AuthContext, input: MarketFilters) {
   assertCan(ctx, "appetite.read");
   const f = parse(findSchema, input);
@@ -109,10 +135,23 @@ export async function findMarkets(ctx: AuthContext, input: MarketFilters) {
     else if (n.value !== null) risk.set(a.key, n.value);
   }
   if (inputErrors.length) throw new ValidationError(inputErrors.join("; "));
-  const wanted = f.industry ? parseIndustries(/^\d{2,6}$/.test(f.industry.trim()) ? `NAICS ${f.industry.trim()}` : f.industry)[0] ?? null : null;
-  if (f.industry && !wanted) throw new ValidationError("Enter an industry code such as NAICS 238160.");
   const today = todayUtc();
   const [disclaimer, warnDays] = [await textSetting(SETTING.searchDisclaimer), await numberSetting(SETTING.appointmentWarningDays)];
+  // Words ("roofing") become one NAICS code, or a list for staff to choose from; nothing is searched until then.
+  const resolved = f.industry ? await resolveIndustry(ctx, f.industry) : null;
+  if (resolved?.kind === "choices") {
+    return {
+      disclaimer,
+      filters: { ...f, industry: null },
+      attributes,
+      risk: Object.fromEntries(risk),
+      industry: null,
+      industryChoices: resolved.choices as IndustryChoice[],
+      total: 0,
+      groups: GROUP_ORDER.map((outcome) => ({ outcome, results: [] as Result[] })),
+    };
+  }
+  const wanted = resolved ? { classificationSystem: resolved.classificationSystem, code: resolved.code } : null;
 
   const territories = await prisma.territory.findMany({ where: { countryCode: "US", territoryType: { in: ["STATE", "COUNTRY"] } }, select: { id: true, stateCode: true, name: true, territoryType: true } });
   const territoryById = new Map(territories.map((t) => [t.id, t]));
@@ -173,30 +212,6 @@ export async function findMarkets(ctx: AuthContext, input: MarketFilters) {
   });
   const sourceCount = new Map(sourceCounts.map((s) => [s.recordId, s._count]));
 
-  type Result = {
-    key: string;
-    group: MarketGroup;
-    /** The outcome from what was entered; for NEEDS_INFO, what it is unless a missing value changes it. */
-    outcome: AppetiteOutcome;
-    missing: { label: string; outcome: AppetiteOutcome; reason: string }[];
-    carrierProductId: string;
-    channelId: string | null;
-    carrier: { id: string; displayName: string };
-    product: string;
-    channel: string;
-    profileId: string | null;
-    version: number | null;
-    stale: boolean;
-    nextReviewAt: Date | null;
-    sources: number;
-    appointed: boolean;
-    matchedRules: { id: string; outcome: AppetiteOutcome; scope: string; rationale: string | null }[];
-    conditions: { label: string; outcome: AppetiteOutcome; text: string; state: ConditionState; reason?: string }[];
-    conflicting: boolean;
-    limit: { state: "OK" | "BELOW" | "NOT_STATED" | "NOT_ASKED"; text: string };
-    contacts: { id: string; name: string; role: string; email: string | null; phone: string | null }[];
-    note: string | null;
-  };
   const results: Result[] = [];
 
   for (const cp of carrierProducts) {
@@ -268,6 +283,8 @@ export async function findMarkets(ctx: AuthContext, input: MarketFilters) {
     filters: { ...f, industry: wanted ? `${wanted.classificationSystem} ${wanted.code}` : null },
     attributes,
     risk: Object.fromEntries(risk),
+    industry: resolved ? { classificationSystem: resolved.classificationSystem, code: resolved.code, title: resolved.title, matchedWords: resolved.matchedWords } : null,
+    industryChoices: [] as IndustryChoice[],
     total: results.length,
     groups,
   };

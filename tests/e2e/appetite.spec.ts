@@ -71,8 +71,11 @@ test("upload a guide, draft appetite, submit, and have someone else approve it",
   await page.getByRole("link", { name: "Market Finder" }).click();
   await page.locator('select[name="productId"]').selectOption({ label: productLabel });
   await page.locator('select[name="stateCode"]').selectOption({ label: "Tennessee" });
-  await page.getByLabel("Industry code").fill("NAICS 238160");
+  // Search by words: "roofer" offers a choice; pick Roofing Contractors (NAICS 238160).
+  await page.getByLabel("Industry (words or code)").fill("roofer");
   await page.getByRole("button", { name: "Find markets" }).click();
+  await page.getByRole("link", { name: "NAICS 238160: Roofing Contractors" }).click();
+  await expect(page.getByText(/Roofing Contractors/).first()).toBeVisible();
   const accepted = page.locator("section").filter({ has: page.getByRole("heading", { name: /^Accepted/ }) });
   await expect(accepted.getByRole("link", { name })).toBeVisible();
   await expect(page.getByText(/not a commitment to quote or bind/).first()).toBeVisible();

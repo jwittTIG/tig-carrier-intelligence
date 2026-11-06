@@ -4,6 +4,13 @@
 **Milestone 7 (P1: risk matching, market comparison, notifications) is built and waiting for Josh's review.** Josh picked these three P1 items and said "Go ahead and the next milestone" (2026-11-06); he excluded the submission workflow, AMS connection, production dashboard and commission reconciliation. D21–D23 record the defaults used (still PROPOSED). M0–M6 are accepted (M6: "Proceed", 2026-11-06). M6 detail: built on the dev mailbox. The real Microsoft 365 mailbox isn't set up yet (docs/EMAIL_SETUP.md), so the Graph reader is untested. Josh moved from M5 to M6 ("Yes, start M6", 2026-11-05). Earlier status: Josh accepted M4 ("Proceed with the next step", 2026-11-05). D14 for appointments/codes was not answered, so they keep saving directly. Josh asked for email intake of carrier bulletins and guideline updates: proposed as Milestone 6 (DECISIONS D20, `prompts/06-email-intake.md`). D7a (real Postgres) is still open. The MVP is **not production-ready**: see `docs/SECURITY.md` "Known gaps" and `docs/OPERATIONS.md`.
 
 ## Milestone 7: risk matching, market comparison, notifications (done; waiting for Josh's review)
+- **Industry search by words (added 2026-11-06 at Josh's request; DECISIONS N16):**
+  - The Market Finder's Industry field takes words or a code: "roofing", "roofer", "electrician", "restaurant", 238160 or NAICS 238160.
+  - Words are matched to the official 2022 NAICS titles (2,125 codes from the Census Bureau, loaded by the seed). Exactly one six-digit match is used directly, e.g. "roofing contractors" → 238160. Otherwise a **Which industry?** list appears: "roofer" offers Roofing Contractors, roofing material wholesalers, and broader groups.
+  - The chosen code and its title are shown above the results.
+  - API: `GET /api/v1/industries?q=roofing`. Migration `20261106123839_industry_codes` (needs Josh's review).
+  - Tested: unit tests for word matching, Market Finder integration tests (one match, several matches, no match), and the appetite browser test now searches "roofer" and picks Roofing Contractors. Checked by eye in the browser.
+  - Not done: staff-added synonyms (e.g. "HVAC", whose NAICS title is "Plumbing, Heating, and Air-Conditioning Contractors"); word search when entering industries on appetite rules (still codes there); SIC titles.
 Prompt: `prompts/07-matching-comparison-notifications.md`. Decisions D21–D23 (PROPOSED defaults).
 - **Risk matching (D21):**
   - The Market Finder shows an input for each risk attribute defined for the product or line (e.g. annual revenue). Inputs are `a_<key>` fields and are not saved.
@@ -347,3 +354,4 @@ Milestone 7 is waiting for Josh's review. Later phases (do not start without Jos
 - 2026-11-04/05: Josh confirmed Microsoft 365 sign-in (D9) and approved M1 ("Yes, start M2"). Built M2. Found PGlite instability (D7a); added a pool cap of 1 and a test-server restart.
 - 2026-11-06: Josh declined sample inbox emails and accepted M6 ("Proceed"). All planned milestones complete; next phase awaits his choice.
 - 2026-11-06: Josh chose P1 risk matching, market comparison and notifications ("Go ahead and the next milestone"). Built M7 with defaults D21–D23.
+- 2026-11-06: Josh asked for Market Finder search by words ("roofing", "roofer"). Added NAICS 2022 titles (Census Bureau, downloaded with his OK) and word search (N16).

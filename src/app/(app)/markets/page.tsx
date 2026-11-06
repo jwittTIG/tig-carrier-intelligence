@@ -38,6 +38,7 @@ export default async function MarketsPage({ searchParams }: PageProps<"/markets"
   }
   // Carried into the comparison so it uses the same risk.
   const carry = Object.entries(params).filter((e): e is [string, string] => !!e[1] && e[0] !== "pick");
+  const withIndustry = (code: string) => `/markets?${new URLSearchParams({ ...Object.fromEntries(carry), industry: `NAICS ${code}` }).toString()}`;
 
   return (
     <>
@@ -66,8 +67,8 @@ export default async function MarketsPage({ searchParams }: PageProps<"/markets"
             </select>
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            Industry code
-            <input name="industry" defaultValue={params.industry} placeholder="NAICS 238160" className={inputClass} />
+            Industry (words or code)
+            <input name="industry" defaultValue={params.industry} placeholder="roofing or 238160" className={inputClass} />
           </label>
           <label className="flex flex-col gap-1 text-sm">
             Limit wanted ($)
@@ -84,11 +85,32 @@ export default async function MarketsPage({ searchParams }: PageProps<"/markets"
       {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
       {!asked && <p className="text-sm text-zinc-600 dark:text-zinc-400">Choose a line or product to start. Add a state and an industry code to narrow it down.</p>}
 
-      {result && (
+      {result && result.industryChoices.length > 0 && (
+        <Section title={`Which industry? ${result.industryChoices.length} NAICS ${result.industryChoices.length === 1 ? "match" : "matches"} for “${params.industry}”`}>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">Choose the one that describes the risk. Six-digit codes are the most specific; a shorter code covers every industry under it.</p>
+          <ul className="flex flex-col gap-1 text-sm">
+            {result.industryChoices.map((c) => (
+              <li key={c.code}>
+                <Link href={withIndustry(c.code)} className="text-blue-800 hover:underline dark:text-blue-300">NAICS {c.code}: {c.title}</Link>
+                {c.level < 6 && <span className="text-xs text-zinc-500"> (broader group)</span>}
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+
+      {result && result.industryChoices.length === 0 && (
         <>
+          {result.industry && (
+            <p className="text-sm">
+              Industry: <strong>{result.industry.classificationSystem} {result.industry.code}</strong>
+              {result.industry.title ? ` · ${result.industry.title}` : " · title not on file"}
+              {result.industry.matchedWords && <span className="text-zinc-600 dark:text-zinc-400"> (the only six-digit match for “{result.industry.matchedWords}”)</span>}
+            </p>
+          )}
           <p role="note" className="rounded border border-zinc-300 bg-zinc-100 p-2 text-sm dark:border-zinc-600 dark:bg-zinc-800">{result.disclaimer}</p>
           <p className="text-xs text-zinc-500">
-            Only approved appetite in effect today is used. Rules for a specific class only count when you enter an industry code.
+            Only approved appetite in effect today is used. Rules for a specific class only count when you enter an industry.
             Conditions such as revenue limits are checked against the risk details you enter; a missing detail is never treated as acceptable.
           </p>
           {result.total === 0 && <p className="text-sm">No carrier products are recorded for this line.</p>}

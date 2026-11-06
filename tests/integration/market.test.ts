@@ -143,6 +143,25 @@ describe("Market Finder: TN roofing contractor, $2M", () => {
 
   it("requires a line or product and a valid industry code", async () => {
     await expect(findMarkets(staff, { stateCode: "TN" })).rejects.toBeInstanceOf(ValidationError);
-    await expect(findMarkets(staff, { productId, industry: "roofing" })).rejects.toBeInstanceOf(ValidationError);
+    await expect(findMarkets(staff, { productId, industry: "zzqqxx" })).rejects.toThrow(/No NAICS industry matches/);
+    await expect(findMarkets(staff, { productId, industry: "ab" })).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it("finds the industry by words: one six-digit match is used, several are offered to choose from", async () => {
+    const one = await find({ industry: "roofing contractors" });
+    expect(one.industry).toEqual({ classificationSystem: "NAICS", code: "238160", title: "Roofing Contractors", matchedWords: "roofing contractors" });
+    expect(groupOf(one, "RoofersWelcome")).toBe("ACCEPTED");
+    expect(groupOf(one, "PrefixMatch")).toBe("PREFERRED");
+
+    const several = await find({ industry: "roofer" });
+    expect(several.total).toBe(0);
+    expect(several.industry).toBeNull();
+    const codes = several.industryChoices.map((c) => c.code);
+    expect(codes[0]).toBe("238160"); // most specific, shortest title first
+    expect(codes).toContain("423330"); // roofing material wholesalers are a different risk
+    expect(several.industryChoices.every((c) => /roof/i.test(c.title))).toBe(true);
+
+    // A code still works, and now shows its title.
+    expect((await find({ industry: "238160" })).industry?.title).toBe("Roofing Contractors");
   });
 });

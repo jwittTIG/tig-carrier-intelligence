@@ -785,6 +785,21 @@ model AppetiteRuleTerritory {
   @@map("appetite_rule_territories")
 }
 
+/// Reference list of industry codes with official titles, for word search in the Market Finder.
+/// NAICS comes from the U.S. Census Bureau 2022 NAICS list (prisma/data/naics-2022.csv). Public data, not TIG data.
+model IndustryCode {
+  classificationSystem IndustryCodeSystem @map("classification_system")
+  code                 String
+  title                String
+  /// Number of digits for NAICS (2 = sector … 6 = national industry).
+  level                Int
+  sourceVersion        String             @map("source_version")
+
+  @@id([classificationSystem, code])
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin, map: "industry_codes_title_trgm")
+  @@map("industry_codes")
+}
+
 model AppetiteRuleIndustry {
   id                   String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   ruleId               String             @map("rule_id") @db.Uuid

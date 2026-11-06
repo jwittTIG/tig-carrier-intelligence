@@ -6,9 +6,12 @@
  * invented, prefixed "DEMO", and must never be mistaken for actual carrier terms.
  * Safe to run repeatedly: reference data is upserted; DEMO data is created once.
  */
+import fs from "node:fs";
+import path from "node:path";
 import { config } from "dotenv";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Prisma, PrismaClient } from "../src/generated/prisma/client";
+import { parseCsv } from "../src/lib/csv";
 import { assertPropertyCasualtyLine } from "../src/lib/taxonomy/scope";
 import { PERMISSIONS, ROLES } from "../src/server/auth/catalog";
 
@@ -109,6 +112,16 @@ async function seedReference() {
   for (const [key, value] of Object.entries(SETTINGS)) {
     await prisma.appSetting.upsert({ where: { key }, update: {}, create: { key, value } });
   }
+
+  // NAICS 2022 titles from the U.S. Census Bureau (public data, not TIG data), for word search
+  // in the Market Finder. Sectors like "31-33" are stored as written. Regenerate the CSV with
+  // scripts/naics-to-csv.mjs when Census publishes a new edition.
+  const [header, ...rows] = parseCsv(fs.readFileSync(path.join(import.meta.dirname, "data", "naics-2022.csv"), "utf8"));
+  if (header?.join(",") !== "code,title") throw new Error("prisma/data/naics-2022.csv: unexpected header");
+  await prisma.industryCode.createMany({
+    data: rows.filter((r) => r[0] && r[1]).map(([code, title]) => ({ classificationSystem: "NAICS" as const, code, title, level: code.replace(/-\d+$/, "").length, sourceVersion: "NAICS 2022" })),
+    skipDuplicates: true,
+  });
 
   // Non-login system user that "uploads" files taken in from the mailbox (Milestone 6).
   // DEACTIVATED and without roles, so it can never sign in or act.
