@@ -76,3 +76,8 @@ Before deploying, these must be in place:
 - a security review.
 
 Do not treat this as production-ready until TIG stakeholders accept it.
+
+## Troubleshooting
+- **The sign-in page keeps reloading by itself and you can't sign in:** the dev server's build cache is in a bad state. Stop the server (Ctrl-C), delete the `.next` folder, and start it again with `npm.cmd run dev`. The folder holds no data and is rebuilt automatically.
+- **`npm` fails in PowerShell with "running scripts is disabled":** use `npm.cmd` instead of `npm`.
+- **Tests fail with "Connection terminated unexpectedly":** the local test database (PGlite) crashed. Run `npm test` again; it restarts that server first. Moving to real Postgres fixes this for good (DECISIONS D7a).
