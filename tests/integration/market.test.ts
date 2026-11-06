@@ -100,10 +100,9 @@ describe("Market Finder: TN roofing contractor, $2M", () => {
     expect(resultFor(r, "NoRoofers").limit.state).toBe("NOT_STATED");
   });
 
-  it("shows appointment, staleness, conflicts, and a missing risk detail as needs information", async () => {
+  it("shows staleness, conflicts, and a missing risk detail as needs information (no appointment badge, N19)", async () => {
     const r = await find();
-    expect(resultFor(r, "RoofersWelcome").appointed).toBe(true);
-    expect(resultFor(r, "PrefixMatch").appointed).toBe(false);
+    expect(resultFor(r, "RoofersWelcome")).not.toHaveProperty("appointed");
     const c = resultFor(r, "Conflicted");
     expect(c.stale).toBe(true);
     expect(c.conflicting).toBe(true);

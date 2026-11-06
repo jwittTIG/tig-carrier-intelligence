@@ -1,9 +1,21 @@
 # Progress
 
 ## Current state (2026-11-06)
-**Milestone 7 (P1: risk matching, market comparison, notifications) is built and waiting for Josh's review.** Josh picked these three P1 items and said "Go ahead and the next milestone" (2026-11-06); he excluded the submission workflow, AMS connection, production dashboard and commission reconciliation. D21–D23 record the defaults used (still PROPOSED). M0–M6 are accepted (M6: "Proceed", 2026-11-06). M6 detail: built on the dev mailbox. The real Microsoft 365 mailbox isn't set up yet (docs/EMAIL_SETUP.md), so the Graph reader is untested. Josh moved from M5 to M6 ("Yes, start M6", 2026-11-05). Earlier status: Josh accepted M4 ("Proceed with the next step", 2026-11-05). D14 for appointments/codes was not answered, so they keep saving directly. Josh asked for email intake of carrier bulletins and guideline updates: proposed as Milestone 6 (DECISIONS D20, `prompts/06-email-intake.md`). D7a (real Postgres) is still open. The MVP is **not production-ready**: see `docs/SECURITY.md` "Known gaps" and `docs/OPERATIONS.md`.
+**Milestone 7 (P1: risk matching, market comparison, notifications) is built and waiting for Josh's review.** Josh picked these three P1 items and said "Go ahead and the next milestone" (2026-11-06); he excluded the submission workflow, AMS connection, production dashboard and commission reconciliation. D21–D23 record the defaults used (still PROPOSED). M0–M6 are accepted (M6: "Proceed", 2026-11-06). M6 detail: built on the dev mailbox. The real Microsoft 365 mailbox isn't set up yet (docs/EMAIL_SETUP.md), so the Graph reader is untested. Josh moved from M5 to M6 ("Yes, start M6", 2026-11-05). Earlier status: Josh accepted M4 ("Proceed with the next step", 2026-11-05). Appointments are managed by corporate (N19), so codes save directly without approval. Josh asked for email intake of carrier bulletins and guideline updates: proposed as Milestone 6 (DECISIONS D20, `prompts/06-email-intake.md`). D7a (real Postgres) is still open. The MVP is **not production-ready**: see `docs/SECURITY.md` "Known gaps" and `docs/OPERATIONS.md`.
 
 ## Milestone 7: risk matching, market comparison, notifications (done; waiting for Josh's review)
+- **Appointments are managed by corporate (2026-11-06; DECISIONS N19, Josh chose option 1):**
+  - The carrier tab is now **Codes & portals**: a table of agency and producer codes (code, type, product and channel, producer, notes, in use) with add and edit, plus portal links. No appointment dates, statuses or authorizations.
+  - Removed:
+    - the Market Finder "Appointed" badge and its ranking;
+    - the comparison's appointment status (it now shows "Agency codes");
+    - the dashboard's "Appointments ending" list;
+    - appointment-expiry reminders;
+    - the expiry-warning setting;
+    - `/api/v1/appointments`.
+  - `POST /api/v1/agency-codes` now takes `marketChannelId` (plus `agencyEntityId` when there is more than one entity).
+  - No schema change.
+  - Tested: `codes.test.ts` replaces `appointments.test.ts`; the market, compare, overview, notifications and API tests were updated. `npm run check` passes (260 tests), and all 12 browser tests pass.
 - **Menu tidy-up (2026-11-06, Josh):**
   - New **Setup** page (`/setup`) holds Industry codes and search words, which moved to `/setup/industries`.
   - The **Codes** menu item and page were removed. A code is found on the carrier page (Appointments & codes tab) or with the search box. The CSV export stays in the API only.
@@ -194,7 +206,7 @@ Prompt: `prompts/07-matching-comparison-notifications.md`. Decisions D21–D23 (
 - Browser pane: the carrier Appetite tab shows the approved v1 with its review date.
 
 ### M4 not done or not tested
-- **D14 for appointments and codes:** they still save directly (audited). The confirmed D14 wording includes them. **Question for Josh.**
+- **D14 for appointments and codes:** answered 2026-11-06: no approval (appointments are managed by corporate, N19). Codes save directly, audited.
 - **R2 storage:** not built; the dev adapter only. A real malware scanner is also not built (dev stub).
 - **Orphaned files:** if the database write fails after a file is stored, the stored file is left behind. Harmless, but no cleanup job yet.
 - **Coverage limits and underwriting requirements** are per carrier product and save directly (audited); they aren't versioned with appetite profiles.
@@ -361,7 +373,6 @@ Milestone 7 is waiting for Josh's review. Later phases (do not start without Jos
 ## Open questions for Josh
 1. **Review Milestone 7,** and confirm or change D21–D23 (risks not saved; comparison shows commission; notifications in the app only, no email).
 2. **Shared mailbox** (docs/EMAIL_SETUP.md): send the mailbox address, tenant ID and client ID; put the client secret in `.env.local` yourself. Until then the Graph reader is untested.
-3. **D14 for appointments and codes:** should they go through approval? They currently save directly.
 4. **D7a:** real Postgres for dev/test (Neon connection strings, or OK to install PostgreSQL 17 locally).
 5. **Clerk app** for Microsoft sign-in: the two development keys.
 6. **R2, hosting (D8), GitHub repo** (send the URL; I'll add the remote and push).
@@ -378,3 +389,4 @@ Milestone 7 is waiting for Josh's review. Later phases (do not start without Jos
 - 2026-11-06: Josh sent a sample dashboard and asked for a similar look with a pickable main color. Built the sidebar layout and color picker (N18).
 - 2026-11-06: Josh asked to move Industries under a Setup page and drop the Codes tab. Done.
 - 2026-11-06: Moved Import, Users and Audit log under Setup.
+- 2026-11-06: Josh: appointments are managed at corporate. Kept codes and portal links as a reference; removed appointment tracking (N19).

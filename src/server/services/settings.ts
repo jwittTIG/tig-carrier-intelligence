@@ -31,6 +31,5 @@ export async function textSetting(key: string, db: Db = prisma): Promise<string>
 export const SETTING = {
   contactReviewDays: "contact.review_cadence_days",
   appetiteReviewDays: "appetite.review_cadence_days",
-  appointmentWarningDays: "appointment.expiry_warning_days",
   searchDisclaimer: "search.disclaimer",
 } as const;

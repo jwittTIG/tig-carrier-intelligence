@@ -138,11 +138,12 @@ describe("reading your own", () => {
 });
 
 describe("daily reminders", () => {
-  it("expiring appointments and due appetite reviews notify followers and owners once", async () => {
+  it("due appetite reviews notify followers and owners once; appointment end dates send nothing", async () => {
     const { insurer, cp, ch, entity } = await carrierWithAgreement();
     const owner = await ctxFor({ role: "STAFF" });
     await n.follow(follower, insurer.id);
     const soon = new Date(Date.now() + 10 * 86_400_000);
+    // Appointments are managed by corporate (N19): an end date here no longer sends a reminder.
     const appt = await db.agencyAppointment.create({ data: { agencyEntityId: entity.id, marketChannelId: ch.id, appointmentType: "Direct", status: "ACTIVE", effectiveFrom: new Date("2025-01-01"), effectiveTo: new Date(soon.toISOString().slice(0, 10)) } });
     const far = await db.agencyAppointment.create({ data: { agencyEntityId: entity.id, marketChannelId: ch.id, appointmentType: "Other", status: "ACTIVE", effectiveFrom: new Date("2025-01-01"), effectiveTo: new Date("2099-01-01") } });
     const profile = await db.appetiteProfile.create({
@@ -152,9 +153,8 @@ describe("daily reminders", () => {
     await n.runReminders(null);
     await n.runReminders(admin); // again: no duplicates
     const forFollower = await db.notification.findMany({ where: { recipientUserId: follower.userId, organizationId: insurer.id, eventType: { in: ["APPOINTMENT_EXPIRING", "APPETITE_REVIEW_DUE"] } } });
-    expect(forFollower.map((x) => x.eventType).sort()).toEqual(["APPETITE_REVIEW_DUE", "APPOINTMENT_EXPIRING"]);
-    expect(forFollower.find((x) => x.eventType === "APPOINTMENT_EXPIRING")!.payload).toEqual({ appointmentId: appt.id });
-    expect(await db.notification.count({ where: { payload: { path: ["appointmentId"], equals: far.id } } })).toBe(0);
+    expect(forFollower.map((x) => x.eventType)).toEqual(["APPETITE_REVIEW_DUE"]);
+    for (const a of [appt, far]) expect(await db.notification.count({ where: { payload: { path: ["appointmentId"], equals: a.id } } })).toBe(0);
     const forOwner = await mine(owner);
     expect(forOwner.map((x) => [x.eventType, x.href])).toEqual([["APPETITE_REVIEW_DUE", `/appetite/${profile.id}`]]);
     expect(await db.auditEvent.count({ where: { action: "notifications.reminders.run", actorId: admin.userId } })).toBeGreaterThan(0);

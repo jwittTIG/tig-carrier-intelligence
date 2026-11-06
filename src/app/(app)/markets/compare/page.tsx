@@ -80,11 +80,10 @@ export default async function ComparePage({ searchParams }: PageProps<"/markets/
                     </td>
                   ))}
                 </Row>
-                <Row title="Appointment">
+                <Row title="Agency codes">
                   {data.columns.map((c) => (
                     <td key={c.key} className="p-2 text-xs">
-                      {c.appointed ? <Badge tone="good">Appointed</Badge> : <Badge tone="warn">No current appointment</Badge>}
-                      {c.codes && (c.codes.length ? <ul className="mt-1">{c.codes.map((x) => <li key={x.id}>{label(x.type)} code {x.value}</li>)}</ul> : <p className="mt-1">No active agency code</p>)}
+                      {c.codes === null ? "—" : c.codes.length ? <ul>{c.codes.map((x) => <li key={x.id}>{label(x.type)} code {x.value}</li>)}</ul> : "No code recorded"}
                     </td>
                   ))}
                 </Row>

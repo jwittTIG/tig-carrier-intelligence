@@ -15,7 +15,7 @@ Prerequisite: Milestone 6 accepted (2026-11-06).
 - **Market comparison (D22):** tick up to 4 results and compare them side by side for the same risk:
   - outcome and why (each rule, met / not met / needs information);
   - stated limits vs. the limit wanted, and underwriting requirements;
-  - appointment status and active agency codes;
+  - agency codes in use (appointment status removed 2026-11-06, N19);
   - approved commission rate in effect today (new and renewal) for that channel and product, or "Rate not recorded";
   - appetite version, sources, next review, and underwriter contacts;
   - the search disclaimer.
@@ -26,7 +26,7 @@ Prerequisite: Milestone 6 accepted (2026-11-06).
     - something was submitted for approval on a carrier you follow;
     - appetite or a commission was approved on a carrier you follow;
     - an inbox email was filed under a carrier you follow;
-    - daily reminders: appointments expiring within the warning window, and appetite reviews that are due (followers and the profile owner).
+    - daily reminders for appetite reviews that are due (followers and the profile owner). Appointment-expiry reminders were removed 2026-11-06 (N19).
   - The person who made the change isn't notified about their own action.
   - A bell with an unread count; a `/notifications` page with mark read / mark all read.
   - Users only ever see their own notifications.

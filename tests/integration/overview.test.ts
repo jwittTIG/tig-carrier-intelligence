@@ -42,11 +42,10 @@ describe("dashboard", () => {
     const product = await db.insuranceProduct.findFirstOrThrow();
     const cp = await db.carrierProduct.create({ data: { writingCompanyId: org.id, productId: product.id } });
     const ch = await db.marketChannel.create({ data: { carrierProductId: cp.id, distributionType: "DIRECT" } });
-    const entity = await db.agencyEntity.findFirstOrThrow();
-    await db.agencyAppointment.create({ data: { agencyEntityId: entity.id, marketChannelId: ch.id, appointmentType: "Direct", status: "ACTIVE", effectiveFrom: new Date("2025-01-01"), effectiveTo: new Date(Date.now() + 10 * 86_400_000) } });
+    expect(ch.id).toBeTruthy();
     const d = await dashboard(staff);
     expect(d.myCarriers.map((c) => c.id)).toContain(org.id);
-    expect(d.expiring.map((a) => a.marketChannel.carrierProduct.writingCompany.id)).toContain(org.id);
+    expect(d).not.toHaveProperty("expiring"); // appointments are managed by corporate (N19)
   });
 });
 

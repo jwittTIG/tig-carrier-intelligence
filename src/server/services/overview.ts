@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { addDays, todayUtc } from "@/lib/dates";
+import { addDays } from "@/lib/dates";
 import { assertCan, can, type AuthContext } from "@/server/auth/context";
 import { prisma } from "@/server/db/client";
 import { parse } from "@/server/validation";
@@ -54,8 +54,6 @@ export async function globalSearch(ctx: AuthContext, q: unknown) {
 export async function dashboard(ctx: AuthContext) {
   assertCan(ctx, "carrier.read");
   const now = new Date();
-  const today = todayUtc();
-  const warn = await numberSetting(SETTING.appointmentWarningDays);
   const contactDays = await numberSetting(SETTING.contactReviewDays);
 
   const myCarriers = await prisma.organization.findMany({
@@ -86,14 +84,6 @@ export async function dashboard(ctx: AuthContext) {
         include: { carrierProduct: { include: { writingCompany: { select: { id: true, displayName: true } }, product: { select: { name: true } } } }, approvedBy: { select: { name: true } } },
       })
     : [];
-  const expiring = can(ctx, "appointment.read")
-    ? await prisma.agencyAppointment.findMany({
-        where: { status: "ACTIVE", effectiveTo: { gte: today, lte: addDays(today, warn) } },
-        orderBy: { effectiveTo: "asc" },
-        take: 20,
-        include: { marketChannel: { include: { carrierProduct: { include: { writingCompany: { select: { id: true, displayName: true } }, product: { select: { name: true } } } }, intermediary: { select: { displayName: true } } } } },
-      })
-    : [];
   const inboxWaiting = can(ctx, "inbox.read") ? await prisma.inboundMessage.count({ where: { status: "NEW", senderStatus: "ACCEPTED" } }) : 0;
-  return { myCarriers, myOverdueAppetite, overdueAppetiteCount, staleContacts, pending, mySubmissions, recentAppetite, expiring, warn, inboxWaiting };
+  return { myCarriers, myOverdueAppetite, overdueAppetiteCount, staleContacts, pending, mySubmissions, recentAppetite, inboxWaiting };
 }

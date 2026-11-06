@@ -16,15 +16,15 @@ For the TIG pilot, with fictional or sample data only until production is set up
 - [ ] "Confirm still current", then find them through Contacts → carrier + Tennessee.
 
 ## Appointments & codes
-- [ ] Add an appointment and a producer code. Adding the same code twice shows a clear error.
-- [ ] Set the appointment's end date to yesterday. It shows **Expired** and its codes aren't current.
+- [ ] On a carrier's **Codes & portals** tab, add a producer code. Adding the same code twice shows a clear error.
+- [ ] Mark the code **not in use**. It shows "Not in use", and the same code can now be added again.
 - [ ] Add a portal link. Typing "Password: x" in its instructions is refused.
 
 ## Documents, appetite, approvals
 - [ ] Upload an appetite guide PDF to a carrier, download it, and upload a second version.
 - [ ] Draft appetite: a rule for TN + NAICS 238160 → Accepted; cite the guide page; submit.
 - [ ] As the same person, approval is refused. As someone else, approve it.
-- [ ] Market Finder: product + Tennessee + NAICS 238160 + $2,000,000. The carrier appears under **Accepted**, with its appointment status, limits and contacts.
+- [ ] Market Finder: product + Tennessee + NAICS 238160 + $2,000,000. The carrier appears under **Accepted**.
 - [ ] Start version 2, approve it, and see version 1 retired the day before.
 
 ## Commissions

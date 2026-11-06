@@ -33,6 +33,6 @@ test("add a contact, assign them, confirm them, and find them as the rep", async
   // Codes are looked up on the carrier page (no separate Codes page).
   await page.goto("/carriers");
   await page.getByRole("link", { name: "DEMO Summit Mutual", exact: true }).click();
-  await page.getByRole("link", { name: "Appointments & codes" }).click();
+  await page.getByRole("link", { name: "Codes & portals" }).click();
   await expect(page.getByText("DEMO-0001").first()).toBeVisible();
 });

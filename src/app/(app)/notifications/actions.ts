@@ -25,7 +25,7 @@ export async function runRemindersAction(_s: ActionState): Promise<ActionState> 
   return runAction(async () => {
     const r = await notifications.runReminders(await requireAuth());
     revalidatePath("/", "layout");
-    return `Checked ${r.appointments} expiring ${r.appointments === 1 ? "appointment" : "appointments"} and ${r.appetite} appetite ${r.appetite === 1 ? "review" : "reviews"} due: ${r.created} new ${r.created === 1 ? "notification" : "notifications"}.`;
+    return `Checked ${r.appetite} appetite ${r.appetite === 1 ? "review" : "reviews"} due: ${r.created} new ${r.created === 1 ? "notification" : "notifications"}.`;
   });
 }
 

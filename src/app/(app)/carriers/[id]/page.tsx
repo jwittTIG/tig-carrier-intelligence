@@ -23,7 +23,7 @@ import {
   updateCarrierAction,
 } from "../actions";
 import { CarrierFields } from "../carrier-fields";
-import { AppointmentsTab } from "./appointments-tab";
+import { CodesTab } from "./codes-tab";
 import { ContactsTab } from "./contacts-tab";
 import { AppetiteTab, CommissionsTab, DocumentsTab, UpdatesTab } from "./m4-tabs";
 
@@ -31,7 +31,7 @@ const TABS = [
   { key: "overview", name: "Overview" },
   { key: "channels", name: "Writing companies & channels" },
   { key: "contacts", name: "Contacts" },
-  { key: "appointments", name: "Appointments & codes" },
+  { key: "codes", name: "Codes & portals" },
   { key: "appetite", name: "Appetite" },
   { key: "commissions", name: "Commissions" },
   { key: "documents", name: "Documents" },
@@ -106,7 +106,7 @@ export default async function CarrierPage({ params, searchParams }: PageProps<"/
       {tab === "overview" && <Overview carrier={carrier} write={write} />}
       {tab === "channels" && <Channels carrier={carrier} write={write} />}
       {tab === "contacts" && <ContactsTab carrierId={id} />}
-      {tab === "appointments" && <AppointmentsTab carrierId={id} />}
+      {tab === "codes" && <CodesTab carrierId={id} />}
       {tab === "appetite" && <AppetiteTab carrier={carrier} />}
       {tab === "commissions" && <CommissionsTab carrierId={id} />}
       {tab === "documents" && <DocumentsTab carrierId={id} />}

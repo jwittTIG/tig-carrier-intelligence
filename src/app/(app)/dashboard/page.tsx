@@ -31,18 +31,6 @@ export default async function DashboardPage() {
             <ul className="text-sm">{d.myOverdueAppetite.map((p) => <li key={p.id}><Link href={`/appetite/${p.id}`} className="text-blue-800 hover:underline dark:text-blue-300">{p.carrierProduct.writingCompany.displayName} · {p.carrierProduct.product.name} v{p.version}</Link> <span className="text-zinc-600 dark:text-zinc-400">due {fmtDate(p.nextReviewAt)}</span></li>)}</ul>
           )}
         </Section>
-        <Section title={`Appointments ending in the next ${d.warn} days`}>
-          {d.expiring.length === 0 ? <p className="text-sm text-zinc-600 dark:text-zinc-400">None.</p> : (
-            <ul className="text-sm">
-              {d.expiring.map((a) => (
-                <li key={a.id}>
-                  <Link href={`/carriers/${a.marketChannel.carrierProduct.writingCompany.id}?tab=appointments`} className="text-blue-800 hover:underline dark:text-blue-300">{a.marketChannel.carrierProduct.writingCompany.displayName}</Link>
-                  {" "}· {a.marketChannel.carrierProduct.product.name}{a.marketChannel.intermediary ? ` via ${a.marketChannel.intermediary.displayName}` : ""} · ends {fmtDate(a.effectiveTo)}
-                </li>
-              ))}
-            </ul>
-          )}
-        </Section>
         <Section title="Appetite approved in the last 30 days">
           {d.recentAppetite.length === 0 ? <p className="text-sm text-zinc-600 dark:text-zinc-400">None.</p> : (
             <ul className="text-sm">

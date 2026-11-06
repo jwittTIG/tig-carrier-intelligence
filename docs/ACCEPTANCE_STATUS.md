@@ -11,7 +11,7 @@ Run on 2026-11-05: `npm run check` → 168 Vitest tests pass (twice in a row); `
 | Producer without `commission.read` can't see commission screens, APIs, exports or embedded fields | Pass with a limited TEST role; N/A (D1) for real roles | `commissions.test.ts`, `api.test.ts` (CSV 403), carrier responses carry no commission fields |
 | Entity A user can't access entity B appointments, codes or agreements | N/A (D1, D17: one agency entity) | Scoped grants exist in the schema (`user_role_scopes`) but aren't used |
 | Admin without explicit finance permission can't see restricted financial details | N/A (D1: ADMIN has everything) | Restricted documents need `commission.read` (`documents.test.ts`) |
-| ID substitution and direct URLs don't bypass permissions | Pass | `carriers.test.ts`, `contacts.test.ts`, `appointments.test.ts` (another record's children → 404) |
+| ID substitution and direct URLs don't bypass permissions | Pass | `carriers.test.ts`, `contacts.test.ts`, `codes.test.ts` (another record's children → 404) |
 
 ## Carrier model
 | Item | Status | Proof |
@@ -28,12 +28,13 @@ Run on 2026-11-05: `npm run check` → 168 Vitest tests pass (twice in a row); `
 | Verification dates and inactive assignments display correctly | Pass | `contacts.test.ts`, `dates.test.ts` |
 
 ## Appointments and codes
+Appointments are managed by corporate (DECISIONS N19); only codes and portal links are kept here.
 | Item | Status | Proof |
 |---|---|---|
-| One agency entity has many appointments and codes | Pass | `appointments.test.ts`, `constraints.test.ts` |
-| Expired appointments never show as active | Pass | `appointments.test.ts`, `dates.test.ts` |
-| Overlapping active duplicate codes are rejected | Pass | `constraints.test.ts`, `appointments.test.ts` (clear message) |
-| No passwords or credentials in portal records | Pass | `constraints.test.ts` (no columns), `appointments.test.ts`, `dates.test.ts` (credential guard) |
+| One agency entity has many appointments and codes | Codes: Pass; appointments N/A (N19) | `codes.test.ts`, `constraints.test.ts` |
+| Expired appointments never show as active | N/A (N19: appointment dates and statuses aren't kept) | Codes show "In use" / "Not in use": `codes.test.ts` |
+| Overlapping active duplicate codes are rejected | Pass | `constraints.test.ts`, `codes.test.ts` (clear message) |
+| No passwords or credentials in portal records | Pass | `constraints.test.ts` (no columns), `codes.test.ts`, `dates.test.ts` (credential guard) |
 
 ## Appetite
 | Item | Status | Proof |

@@ -1,12 +1,10 @@
 import { z } from "zod";
 import type { Prisma } from "@/generated/prisma/client";
 import type { NotificationType, RecordType } from "@/generated/prisma/enums";
-import { todayUtc } from "@/lib/dates";
 import { recordAudit } from "@/server/audit";
 import { assertCan, type AuthContext } from "@/server/auth/context";
 import { prisma } from "@/server/db/client";
 import { NotFoundError } from "@/server/errors";
-import { numberSetting, SETTING } from "./settings";
 
 /**
  * In-app notifications (M7, DECISIONS D23). Staff follow carriers; events on those carriers
@@ -204,34 +202,15 @@ export async function listFollowing(ctx: AuthContext) {
 const day = (d: Date) => d.toISOString().slice(0, 10);
 
 /**
- * Appointments that end within the warning window, and approved appetite whose review is due.
- * Followers of the carrier (and the appetite owner) are told once per record and date.
+ * Approved appetite whose review is due: followers of the carrier and the profile owner are
+ * told once per profile and review date. (Appointment expiry reminders were removed: appointments
+ * are managed by corporate, DECISIONS N19.)
  * Runs from the cron route (ctx null) or by an admin.
  */
-export async function runReminders(ctx: AuthContext | null): Promise<{ created: number; appointments: number; appetite: number }> {
+export async function runReminders(ctx: AuthContext | null): Promise<{ created: number; appetite: number }> {
   if (ctx) assertCan(ctx, "admin.settings");
-  const today = todayUtc();
-  const warnDays = await numberSetting(SETTING.appointmentWarningDays);
-  const until = new Date(today.getTime() + warnDays * 86_400_000);
   return prisma.$transaction(async (tx) => {
     let created = 0;
-    const appts = await tx.agencyAppointment.findMany({
-      where: { status: "ACTIVE", effectiveTo: { gte: today, lte: until } },
-      include: { marketChannel: { include: { intermediary: { select: { displayName: true } }, carrierProduct: { include: { writingCompany: { select: { id: true, displayName: true } }, product: { select: { name: true } } } } } } },
-    });
-    for (const a of appts) {
-      const ch = a.marketChannel;
-      const wc = ch.carrierProduct.writingCompany;
-      const orgIds = [wc.id, ...(ch.intermediaryOrgId ? [ch.intermediaryOrgId] : [])];
-      created += await send(tx, await followersOf(tx, orgIds), null, {
-        eventType: "APPOINTMENT_EXPIRING",
-        title: `Appointment ends ${day(a.effectiveTo!)}: ${wc.displayName} · ${ch.carrierProduct.product.name}${ch.intermediary ? ` via ${ch.intermediary.displayName}` : ""}`,
-        href: `/carriers/${wc.id}?tab=appointments`,
-        organizationId: wc.id,
-        payload: { appointmentId: a.id },
-        dedupeKey: `appointment-expiring:${a.id}:${day(a.effectiveTo!)}`,
-      });
-    }
     const profiles = await tx.appetiteProfile.findMany({
       where: { status: "APPROVED", nextReviewAt: { lte: new Date() } },
       include: { marketChannel: { select: { intermediaryOrgId: true } }, carrierProduct: { include: { writingCompany: { select: { id: true, displayName: true } }, product: { select: { name: true } } } } },
@@ -249,7 +228,7 @@ export async function runReminders(ctx: AuthContext | null): Promise<{ created: 
         dedupeKey: `appetite-review:${p.id}:${day(p.nextReviewAt!)}`,
       });
     }
-    if (ctx) await recordAudit(tx, ctx, { action: "notifications.reminders.run", entityType: "notification", entityId: null, after: { created, appointments: appts.length, appetite: profiles.length } });
-    return { created, appointments: appts.length, appetite: profiles.length };
+    if (ctx) await recordAudit(tx, ctx, { action: "notifications.reminders.run", entityType: "notification", entityId: null, after: { created, appetite: profiles.length } });
+    return { created, appetite: profiles.length };
   });
 }

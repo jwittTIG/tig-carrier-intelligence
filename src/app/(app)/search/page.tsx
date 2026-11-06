@@ -43,7 +43,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
             {r.codes.map((c) => (
               <li key={c.id}>
                 <span className="font-mono">{c.codeValue}</span> ·{" "}
-                <Link href={`/carriers/${c.appointment.marketChannel.carrierProduct.writingCompany.id}?tab=appointments`} className="text-blue-800 hover:underline dark:text-blue-300">{c.appointment.marketChannel.carrierProduct.writingCompany.displayName}</Link>
+                <Link href={`/carriers/${c.appointment.marketChannel.carrierProduct.writingCompany.id}?tab=codes`} className="text-blue-800 hover:underline dark:text-blue-300">{c.appointment.marketChannel.carrierProduct.writingCompany.displayName}</Link>
                 <span className="text-zinc-600 dark:text-zinc-400"> · {label(c.codeType)} · {label(c.status)}</span>
               </li>
             ))}

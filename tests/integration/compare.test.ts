@@ -60,8 +60,7 @@ describe("compare markets (D22)", () => {
       { type: "NEW", text: "12.5%", agreementId: chain.agreement.id },
       { type: "RENEWAL", text: "Rate not recorded", agreementId: null },
     ]);
-    expect(a.appointed).toBe(true);
-    expect(b.appointed).toBe(false);
+    expect(a).not.toHaveProperty("appointed");
     expect(b.requirements).toEqual([]);
     expect(b.codes).toEqual([]);
     expect(b.commission!.every((x) => x.text === "Rate not recorded")).toBe(true);

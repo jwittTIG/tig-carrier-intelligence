@@ -26,7 +26,7 @@ test("compare two markets side by side for a TN risk", async ({ page }) => {
   await expect(page.getByText(/not a commitment to quote or bind/).first()).toBeVisible();
   const table = page.getByRole("table");
   await expect(table.getByRole("columnheader")).toHaveCount(3);
-  for (const row of ["Outcome", "Underwriting requirements", "Appointment", "Commission in effect", "Contacts"]) {
+  for (const row of ["Outcome", "Underwriting requirements", "Agency codes", "Commission in effect", "Contacts"]) {
     await expect(table.getByRole("rowheader", { name: row })).toBeVisible();
   }
   await expect(page.getByText("Risk: TN")).toBeVisible();

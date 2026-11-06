@@ -9,7 +9,7 @@ import { findMarkets } from "./market";
 /**
  * Market comparison (M7, DECISIONS D22): up to 4 Market Finder results side by side for the
  * same risk. Uses the same filters and risk values as the finder, then adds what staff weigh
- * when choosing: underwriting requirements, active agency codes, and the approved commission
+ * when choosing: underwriting requirements, agency codes in use, and the approved commission
  * in effect today (only with commission.read). Nothing is saved.
  */
 
@@ -48,9 +48,8 @@ export async function compareMarkets(ctx: AuthContext, input: Record<string, unk
     ? await prisma.agencyCode.findMany({
         where: {
           status: "ACTIVE",
-          effectiveFrom: { lte: today },
           OR: [{ effectiveTo: null }, { effectiveTo: { gte: today } }],
-          appointment: { marketChannelId: { in: channelIds }, status: "ACTIVE" },
+          appointment: { marketChannelId: { in: channelIds } },
         },
         select: { id: true, codeType: true, codeValue: true, appointment: { select: { marketChannelId: true } } },
         orderBy: { codeType: "asc" },

@@ -1,9 +1,7 @@
-import { z } from "zod";
 import { apiHandler, jsonBody } from "@/server/http";
 import { addAgencyCode, codesCsv, listAgencyCodes } from "@/server/services/appointments";
-import { parse } from "@/server/validation";
 
-/** GET /api/v1/agency-codes?q=&organizationId=&assignedUserId=&state=&format=csv */
+/** GET /api/v1/agency-codes?q=&organizationId=&assignedUserId=&state=active|inactive&format=csv */
 export const GET = apiHandler(async (req, ctx) => {
   const params = Object.fromEntries(new URL(req.url).searchParams);
   const { format, ...filters } = params;
@@ -20,9 +18,5 @@ export const GET = apiHandler(async (req, ctx) => {
   return Response.json(rows);
 });
 
-/** POST /api/v1/agency-codes  { appointmentId, codeType, codeValue, effectiveFrom, effectiveTo?, assignedUserId?, status?, notes? } */
-export const POST = apiHandler(async (req, ctx) => {
-  const body = (await jsonBody(req)) as Record<string, unknown>;
-  const appointmentId = parse(z.uuid({ error: "appointmentId is required" }), body?.appointmentId ?? "");
-  return Response.json(await addAgencyCode(ctx, appointmentId, body), { status: 201 });
-});
+/** POST /api/v1/agency-codes  { marketChannelId, codeType, codeValue, agencyEntityId?, assignedUserId?, notes? } */
+export const POST = apiHandler(async (req, ctx) => Response.json(await addAgencyCode(ctx, await jsonBody(req)), { status: 201 }));

@@ -1,14 +1,14 @@
 import { z } from "zod";
 import type { Prisma } from "@/generated/prisma/client";
 import type { AppetiteOutcome } from "@/generated/prisma/enums";
-import { effectiveState, todayUtc } from "@/lib/dates";
+import { todayUtc } from "@/lib/dates";
 import { chooseOutcome, evaluateCondition, normalizeInput, type ConditionState, type DataType, type Evaluation, type Operator } from "@/lib/matching";
 import { assertCan, can, type AuthContext } from "@/server/auth/context";
 import { prisma } from "@/server/db/client";
 import { ValidationError } from "@/server/errors";
 import { optionalId, optionalText, parse } from "@/server/validation";
 import { resolveIndustry, type IndustryChoice } from "./industries";
-import { numberSetting, SETTING, textSetting } from "./settings";
+import { SETTING, textSetting } from "./settings";
 
 /**
  * Market Finder (PRD screen 4) with risk matching (M7, DECISIONS D21). Filters APPROVED
@@ -113,7 +113,6 @@ type Result = {
   stale: boolean;
   nextReviewAt: Date | null;
   sources: number;
-  appointed: boolean;
   matchedRules: { id: string; outcome: AppetiteOutcome; scope: string; rationale: string | null }[];
   conditions: { label: string; outcome: AppetiteOutcome; text: string; state: ConditionState; reason?: string }[];
   conflicting: boolean;
@@ -136,7 +135,7 @@ export async function findMarkets(ctx: AuthContext, input: MarketFilters) {
   }
   if (inputErrors.length) throw new ValidationError(inputErrors.join("; "));
   const today = todayUtc();
-  const [disclaimer, warnDays] = [await textSetting(SETTING.searchDisclaimer), await numberSetting(SETTING.appointmentWarningDays)];
+  const disclaimer = await textSetting(SETTING.searchDisclaimer);
   // Words ("roofing") become one NAICS code, or a list for staff to choose from; nothing is searched until then.
   const resolved = f.industry ? await resolveIndustry(ctx, f.industry) : null;
   if (resolved?.kind === "choices") {
@@ -172,7 +171,6 @@ export async function findMarkets(ctx: AuthContext, input: MarketFilters) {
           id: true,
           intermediaryOrgId: true,
           intermediary: { select: { displayName: true } },
-          appointments: { where: { status: "ACTIVE" }, select: { status: true, effectiveFrom: true, effectiveTo: true } },
         },
       },
       appetiteProfiles: {
@@ -234,7 +232,6 @@ export async function findMarkets(ctx: AuthContext, input: MarketFilters) {
       const outcome: AppetiteOutcome = chosen?.outcome ?? "UNKNOWN";
       const conditions = evaluated.filter((e) => e.evaluation).map((e) => ({ label: e.rule.attributeDefinition!.label, outcome: e.outcome, text: conditionText(e.rule), state: e.evaluation!.state, ...(e.evaluation!.reason && { reason: e.evaluation!.reason }) }));
       const missing = blockers.map((b) => ({ label: b.rule.attributeDefinition!.label, outcome: b.outcome, reason: b.evaluation!.state === "MISSING" ? "not entered" : b.evaluation!.reason ?? "can't be compared" }));
-      const appointed = (ch ? [ch] : cp.channels).some((c) => c?.appointments.some((a) => ["CURRENT", "EXPIRING_SOON"].includes(effectiveState(a, { today, warningDays: warnDays }))));
       const cov = cp.coverages.filter((c) => c.maxLimit !== null);
       const limit: Result["limit"] =
         f.limit === null ? { state: "NOT_ASKED", text: cp.coverages.map((c) => `${c.coverageCode}: max ${c.maxLimit ? `$${Number(c.maxLimit).toLocaleString("en-US")}` : "not stated"}`).join("; ") || "Limits not stated" }
@@ -257,7 +254,6 @@ export async function findMarkets(ctx: AuthContext, input: MarketFilters) {
         stale: !!profile?.nextReviewAt && profile.nextReviewAt <= new Date(),
         nextReviewAt: profile?.nextReviewAt ?? null,
         sources: profile ? (sourceCount.get(profile.id) ?? 0) : 0,
-        appointed,
         matchedRules: applying.map((e) => ({ id: e.id, outcome: e.outcome, scope: scopeText(e.rule, territoryById) + (e.rule.attributeDefinition ? ` · ${conditionText(e.rule)}` : ""), rationale: e.rule.rationale })),
         conditions,
         conflicting: new Set(applying.map((r) => r.outcome)).size > 1,
@@ -271,7 +267,7 @@ export async function findMarkets(ctx: AuthContext, input: MarketFilters) {
     }
   }
 
-  const rank = (r: Result) => [GROUP_ORDER.indexOf(r.group), OUTCOME_ORDER.indexOf(r.outcome), r.limit.state === "BELOW" ? 1 : 0, r.appointed ? 0 : 1, r.stale ? 1 : 0];
+  const rank = (r: Result) => [GROUP_ORDER.indexOf(r.group), OUTCOME_ORDER.indexOf(r.outcome), r.limit.state === "BELOW" ? 1 : 0, r.stale ? 1 : 0];
   results.sort((a, b) => {
     const x = rank(a), y = rank(b);
     for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return x[i] - y[i];

@@ -72,27 +72,22 @@ describe("/api/v1/carriers", () => {
   });
 });
 
-describe("/api/v1 contacts, appointments, agency-codes", () => {
+describe("/api/v1 contacts, agency-codes", () => {
   it("all return 401 without a session", async () => {
     const contacts = await import("@/app/api/v1/contacts/route");
-    const appts = await import("@/app/api/v1/appointments/route");
     const codes = await import("@/app/api/v1/agency-codes/route");
     for (const r of [
       await contacts.GET(req("/api/v1/contacts")),
       await contacts.POST(req("/api/v1/contacts", { method: "POST", body: "{}" })),
-      await appts.GET(req("/api/v1/appointments")),
-      await appts.POST(req("/api/v1/appointments", { method: "POST", body: "{}" })),
       await codes.GET(req("/api/v1/agency-codes?format=csv")),
       await codes.POST(req("/api/v1/agency-codes", { method: "POST", body: "{}" })),
     ]) expect(r.status).toBe(401);
   });
 
-  it("lists contacts, requires organizationId for appointments, and exports codes as CSV", async () => {
+  it("lists contacts and exports codes as CSV", async () => {
     const contacts = await import("@/app/api/v1/contacts/route");
-    const appts = await import("@/app/api/v1/appointments/route");
     const codes = await import("@/app/api/v1/agency-codes/route");
     expect((await contacts.GET(req("/api/v1/contacts?stateCode=TN", { cookie: staffCookie }))).status).toBe(200);
-    expect((await appts.GET(req("/api/v1/appointments", { cookie: staffCookie }))).status).toBe(400);
     const csv = await codes.GET(req("/api/v1/agency-codes?format=csv", { cookie: staffCookie }));
     expect(csv.status).toBe(200);
     expect(csv.headers.get("content-type")).toMatch(/text\/csv/);

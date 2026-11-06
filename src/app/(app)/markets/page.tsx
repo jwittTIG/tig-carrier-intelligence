@@ -143,7 +143,6 @@ export default async function MarketsPage({ searchParams }: PageProps<"/markets"
                       <Link href={`/carriers/${r.carrier.id}`} className="font-medium text-blue-800 hover:underline dark:text-blue-300">{r.carrier.displayName}</Link>
                       <span>· {r.product} · {r.channel}</span>
                       {r.group === "NEEDS_INFO" ? <Badge tone="warn">Needs information</Badge> : <OutcomeBadge outcome={r.outcome} />}
-                      {r.appointed ? <Badge tone="good">Appointed</Badge> : <Badge tone="warn">No current appointment</Badge>}
                       {r.stale && <Badge tone="warn">Appetite review overdue</Badge>}
                       {r.conflicting && <Badge tone="bad">Conflicting rules: check</Badge>}
                       {r.limit.state === "BELOW" && <Badge tone="bad">Limit too low</Badge>}

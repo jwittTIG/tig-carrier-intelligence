@@ -69,7 +69,6 @@ export const STATES: [string, string][] = [
 export const SETTINGS: Record<string, Prisma.InputJsonValue> = {
   "appetite.review_cadence_days": 365,
   "contact.review_cadence_days": 365,
-  "appointment.expiry_warning_days": 60,
   "document.max_upload_mb": 25,
   "inbox.stale_days": 7,
   "search.disclaimer":
