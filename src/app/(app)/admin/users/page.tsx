@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { can } from "@/server/auth/context";
 import { ROLES } from "@/server/auth/catalog";
 import { requireAuth } from "@/server/auth/session";
@@ -16,6 +17,7 @@ export default async function UsersPage() {
 
   return (
     <>
+      <Link href="/setup" className="text-sm hover:underline">← Setup</Link>
       <h1 className="text-xl font-semibold">Users</h1>
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
         Everyone sees all carrier information, including commissions and codes (DECISIONS D1). Admins can also manage users and settings.

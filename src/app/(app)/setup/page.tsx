@@ -1,22 +1,16 @@
 import Link from "next/link";
 import { requireAuth } from "@/server/auth/session";
-import { assertCan } from "@/server/auth/context";
+import { ForbiddenError } from "@/server/errors";
 import { Icon } from "@/components/icons";
+import { setupItems } from "./items";
 
 export const metadata = { title: "Setup" };
 
 /** Reference data and configuration staff adjust now and then, kept out of the main menu. */
 export default async function SetupPage() {
   const ctx = await requireAuth();
-  assertCan(ctx, "appetite.read");
-  const items = [
-    {
-      href: "/setup/industries",
-      icon: "industries",
-      title: "Industry codes and search words",
-      text: "NAICS 2022 codes used by the Market Finder. Add the words staff use (e.g. “hvac”) so searches find the right code.",
-    },
-  ];
+  const items = setupItems(ctx);
+  if (!items.length) throw new ForbiddenError();
   return (
     <>
       <h1 className="text-xl font-semibold">Setup</h1>

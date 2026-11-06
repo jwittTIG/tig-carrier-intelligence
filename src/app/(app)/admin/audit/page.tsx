@@ -18,6 +18,7 @@ export default async function AuditPage({ searchParams }: PageProps<"/admin/audi
   const href = (p: number) => `/admin/audit?${new URLSearchParams({ ...params, page: String(p) })}`;
   return (
     <>
+      <Link href="/setup" className="text-sm hover:underline">← Setup</Link>
       <h1 className="text-xl font-semibold">Audit log</h1>
       <p className="text-sm text-zinc-600 dark:text-zinc-400">Every change is recorded here. Entries can&apos;t be edited or deleted.</p>
       <form method="get" role="search" className="grid grid-cols-1 gap-3 rounded-2xl border border-transparent bg-white shadow-sm p-3 sm:grid-cols-3 lg:grid-cols-6 dark:border-zinc-700 dark:bg-zinc-900">

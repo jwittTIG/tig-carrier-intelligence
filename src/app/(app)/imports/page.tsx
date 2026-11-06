@@ -14,6 +14,7 @@ export default async function ImportsPage() {
   const jobs = await listImports(ctx);
   return (
     <>
+      <Link href="/setup" className="text-sm hover:underline">← Setup</Link>
       <h1 className="text-xl font-semibold">Import from a spreadsheet</h1>
       <Section title="Upload a CSV">
         <p className="text-sm text-zinc-600 dark:text-zinc-400">

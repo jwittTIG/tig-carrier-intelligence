@@ -7,26 +7,27 @@ import { setAccentAction } from "@/app/theme-actions";
 import { ACCENT_PRESETS } from "@/lib/theme";
 import { Icon } from "./icons";
 
-export type NavItem = { href: string; label: string; icon: string; badge?: number };
+export type NavItem = { href: string; label: string; icon: string; badge?: number; /** Other paths that highlight this item. */ match?: string[] };
 
 /** Sidebar menu with the current page highlighted. */
 export function SidebarNav({ items }: { items: NavItem[] }) {
   const path = usePathname();
-  const active = (href: string) => path === href || path.startsWith(`${href}/`);
+  const under = (p: string) => path === p || path.startsWith(`${p}/`);
+  const items_ = items.map((i) => ({ ...i, on: [i.href, ...(i.match ?? [])].some(under) }));
   return (
     <ul className="flex flex-col gap-0.5">
-      {items.map((i) => (
+      {items_.map((i) => (
         <li key={i.href}>
           <Link
             href={i.href}
-            aria-current={active(i.href) ? "page" : undefined}
+            aria-current={i.on ? "page" : undefined}
             aria-label={i.badge ? `${i.label}, ${i.badge} unread` : undefined}
-            className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors ${active(i.href) ? "bg-white text-blue-800 shadow-sm dark:bg-blue-950 dark:text-blue-100" : "text-white hover:bg-blue-700"}`}
+            className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors ${i.on ? "bg-white text-blue-800 shadow-sm dark:bg-blue-950 dark:text-blue-100" : "text-white hover:bg-blue-700"}`}
           >
             <Icon name={i.icon} />
             <span className="flex-1">{i.label}</span>
             {!!i.badge && (
-              <span className={`rounded-full px-1.5 text-xs font-semibold ${active(i.href) ? "bg-blue-700 text-white" : "bg-white text-blue-800"}`}>
+              <span className={`rounded-full px-1.5 text-xs font-semibold ${i.on ? "bg-blue-700 text-white" : "bg-white text-blue-800"}`}>
                 {i.badge}
                 <span className="sr-only"> unread</span>
               </span>

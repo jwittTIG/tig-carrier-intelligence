@@ -8,6 +8,7 @@
   - New **Setup** page (`/setup`) holds Industry codes and search words, which moved to `/setup/industries`.
   - The **Codes** menu item and page were removed. A code is found on the carrier page (Appointments & codes tab) or with the search box. The CSV export stays in the API only.
   - The contacts browser test now checks the code on the carrier page.
+  - **Import, Users and Audit log moved onto Setup too** (Josh: "Yes, move them"). Their addresses are unchanged (`/imports`, `/admin/users`, `/admin/audit`); each page has a "← Setup" link, and the menu highlights Setup on them. Setup shows only the items a person can use (Users is admin-only) and appears in the menu if there is at least one.
 - **New look with a color picker (added 2026-11-06; DECISIONS N18):**
   - Colored sidebar (initials avatar, name, role, search, icon menu with the current page highlighted, notification count, sign out) on a light gray page with rounded white cards.
   - Dashboard tiles have icons and the real counts. On phones the menu folds into a **Menu** button.
@@ -376,3 +377,4 @@ Milestone 7 is waiting for Josh's review. Later phases (do not start without Jos
 - 2026-11-06: Josh asked for staff-editable search words ("Yes, add search words"). Added the Industries page and search words (N17).
 - 2026-11-06: Josh sent a sample dashboard and asked for a similar look with a pickable main color. Built the sidebar layout and color picker (N18).
 - 2026-11-06: Josh asked to move Industries under a Setup page and drop the Codes tab. Done.
+- 2026-11-06: Moved Import, Users and Audit log under Setup.

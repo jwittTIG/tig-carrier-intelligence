@@ -9,6 +9,7 @@ import { unreadCount } from "@/server/services/notifications";
 import { ACCENT_COOKIE, DEFAULT_ACCENT, normalizeHex } from "@/lib/theme";
 import { Icon } from "@/components/icons";
 import { AccentPicker, SidebarNav, type NavItem } from "@/components/sidebar";
+import { SETUP_PATHS, setupItems } from "./setup/items";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const ctx = await requireAuth();
@@ -30,10 +31,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
     ...(can(ctx, "inbox.read") ? [{ href: "/inbox", label: "Inbox", icon: "inbox" }] : []),
     ...(can(ctx, "change_request.review") ? [{ href: "/approvals", label: "Approvals", icon: "approvals" }] : []),
     { href: "/notifications", label: "Notifications", icon: "bell", badge: unread },
-    ...(can(ctx, "appetite.read") ? [{ href: "/setup", label: "Setup", icon: "setup" }] : []),
-    ...(can(ctx, "import.run") ? [{ href: "/imports", label: "Import", icon: "imports" }] : []),
-    ...(can(ctx, "admin.users") ? [{ href: "/admin/users", label: "Users", icon: "users" }] : []),
-    ...(can(ctx, "audit.read") ? [{ href: "/admin/audit", label: "Audit log", icon: "audit" }] : []),
+    // Industry codes, Import, Users and Audit log live on Setup.
+    ...(setupItems(ctx).length ? [{ href: "/setup", label: "Setup", icon: "setup", match: SETUP_PATHS }] : []),
   ];
   const initials = ctx.name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("");
   const role = ctx.roles.includes("ADMIN") ? "Admin" : ctx.roles.includes("STAFF") ? "Staff" : "Limited";
