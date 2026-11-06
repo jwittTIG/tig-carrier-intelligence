@@ -1,6 +1,6 @@
 # Milestone 6 (proposed): email intake for carrier updates
 
-Status: PROPOSED (DECISIONS D20). Requested by Josh 2026-11-05. Not started.
+Status: receiving method CONFIRMED 2026-11-05 (Microsoft 365 shared mailbox, read through Graph; setup: docs/EMAIL_SETUP.md). Not started.
 
 Prerequisite: Milestone 5 reviewed; D20 confirmed (receiving method, allowed senders, timing). For the Microsoft 365 option, TIG's Microsoft admin creates the shared mailbox and an Entra app registration with mail-read permission limited to that mailbox (ApplicationAccessPolicy).
 
