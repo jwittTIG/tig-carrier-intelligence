@@ -2,7 +2,7 @@
 
 Status: receiving method CONFIRMED 2026-11-05 (Microsoft 365 shared mailbox, read through Graph; setup: docs/EMAIL_SETUP.md). Not started.
 
-Prerequisite: Milestone 5 reviewed; D20 confirmed (receiving method, allowed senders, timing). For the Microsoft 365 option, TIG's Microsoft admin creates the shared mailbox and an Entra app registration with mail-read permission limited to that mailbox (ApplicationAccessPolicy).
+Prerequisite: Milestone 5 reviewed; D20 confirmed (receiving method, allowed senders, timing). For the Microsoft 365 option, TIG's Microsoft admin creates the shared mailbox and an Entra app registration whose read-only mail access is limited to that one mailbox with Exchange "RBAC for Applications" (step-by-step in `docs/EMAIL_SETUP.md`).
 
 ## Build
 - **Receiving:**
