@@ -8,12 +8,12 @@ import { ActionForm } from "@/components/action-form";
 import { Field, Section, fmtDate, inputClass } from "@/components/ui";
 import { addKeywordAction, removeKeywordAction } from "../../actions";
 
-export async function generateMetadata({ params }: PageProps<"/industries/[system]/[code]">) {
+export async function generateMetadata({ params }: PageProps<"/setup/industries/[system]/[code]">) {
   const { system, code } = await params;
   return { title: `${system} ${decodeURIComponent(code)}` };
 }
 
-export default async function IndustryPage({ params }: PageProps<"/industries/[system]/[code]">) {
+export default async function IndustryPage({ params }: PageProps<"/setup/industries/[system]/[code]">) {
   const ctx = await requireAuth();
   const { system, code: rawCode } = await params;
   const code = decodeURIComponent(rawCode);
@@ -28,7 +28,7 @@ export default async function IndustryPage({ params }: PageProps<"/industries/[s
 
   return (
     <>
-      <Link href="/industries" className="text-sm hover:underline">← Industry codes</Link>
+      <Link href="/setup/industries" className="text-sm hover:underline">← Industry codes</Link>
       <h1 className="text-xl font-semibold">NAICS {industry.code}: {industry.title}</h1>
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
         Source: {industry.sourceVersion} (U.S. Census Bureau).
@@ -38,7 +38,7 @@ export default async function IndustryPage({ params }: PageProps<"/industries/[s
         <p className="text-sm">
           Part of:{" "}
           {industry.parents.map((p, i) => (
-            <span key={p.code}>{i > 0 && " › "}<Link href={`/industries/NAICS/${p.code}`} className="hover:underline">{p.code} {p.title}</Link></span>
+            <span key={p.code}>{i > 0 && " › "}<Link href={`/setup/industries/NAICS/${p.code}`} className="hover:underline">{p.code} {p.title}</Link></span>
           ))}
         </p>
       )}
@@ -76,7 +76,7 @@ export default async function IndustryPage({ params }: PageProps<"/industries/[s
       {industry.children.length > 0 && (
         <Section title="Industries in this group">
           <ul className="flex flex-col gap-1 text-sm">
-            {industry.children.map((c) => <li key={c.code}><Link href={`/industries/NAICS/${c.code}`} className="hover:underline">{c.code} {c.title}</Link></li>)}
+            {industry.children.map((c) => <li key={c.code}><Link href={`/setup/industries/NAICS/${c.code}`} className="hover:underline">{c.code} {c.title}</Link></li>)}
           </ul>
         </Section>
       )}

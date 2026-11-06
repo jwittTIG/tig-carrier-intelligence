@@ -85,7 +85,7 @@ export default async function MarketsPage({ searchParams }: PageProps<"/markets"
       {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
       {error && params.industry && /No NAICS industry matches/.test(error) && (
         <p className="text-sm">
-          Staff call it something the official title doesn&rsquo;t? <Link href="/industries" className="text-blue-800 hover:underline dark:text-blue-300">Find the code</Link> and add “{params.industry}” as a search word.
+          Staff call it something the official title doesn&rsquo;t? <Link href="/setup/industries" className="text-blue-800 hover:underline dark:text-blue-300">Find the code</Link> and add “{params.industry}” as a search word.
         </p>
       )}
       {!asked && <p className="text-sm text-zinc-600 dark:text-zinc-400">Choose a line or product to start. Add a state and an industry code to narrow it down.</p>}
@@ -102,7 +102,7 @@ export default async function MarketsPage({ searchParams }: PageProps<"/markets"
               </li>
             ))}
           </ul>
-          <p className="text-xs text-zinc-600 dark:text-zinc-400">Not here? <Link href={`/industries?q=${encodeURIComponent(params.industry ?? "")}`} className="hover:underline">Look up industry codes</Link> and add search words.</p>
+          <p className="text-xs text-zinc-600 dark:text-zinc-400">Not here? <Link href={`/setup/industries?q=${encodeURIComponent(params.industry ?? "")}`} className="hover:underline">Look up industry codes</Link> and add search words.</p>
         </Section>
       )}
 

@@ -6,7 +6,7 @@ import { Section, inputClass } from "@/components/ui";
 
 export const metadata = { title: "Industry codes" };
 
-export default async function IndustriesPage({ searchParams }: PageProps<"/industries">) {
+export default async function IndustriesPage({ searchParams }: PageProps<"/setup/industries">) {
   const ctx = await requireAuth();
   const raw = (await searchParams).q;
   const q = (Array.isArray(raw) ? raw[0] : raw)?.trim() ?? "";
@@ -24,6 +24,7 @@ export default async function IndustriesPage({ searchParams }: PageProps<"/indus
 
   return (
     <>
+      <Link href="/setup" className="text-sm hover:underline">← Setup</Link>
       <h1 className="text-xl font-semibold">Industry codes</h1>
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
         NAICS 2022 titles from the U.S. Census Bureau. Open a code to add search words staff use for it (for example “hvac” for Plumbing, Heating, and Air-Conditioning Contractors), so the Market Finder finds it.
@@ -38,7 +39,7 @@ export default async function IndustriesPage({ searchParams }: PageProps<"/indus
       {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
       {code && (
         <p className="text-sm">
-          <Link href={`/industries/NAICS/${encodeURIComponent(code)}`} className="text-blue-800 hover:underline dark:text-blue-300">Open NAICS {code}</Link>
+          <Link href={`/setup/industries/NAICS/${encodeURIComponent(code)}`} className="text-blue-800 hover:underline dark:text-blue-300">Open NAICS {code}</Link>
         </p>
       )}
       {q && !code && !error && (
@@ -49,7 +50,7 @@ export default async function IndustriesPage({ searchParams }: PageProps<"/indus
             <ul className="flex flex-col gap-1 text-sm">
               {results.map((r) => (
                 <li key={r.code}>
-                  <Link href={`/industries/NAICS/${r.code}`} className="text-blue-800 hover:underline dark:text-blue-300">NAICS {r.code}: {r.title}</Link>
+                  <Link href={`/setup/industries/NAICS/${r.code}`} className="text-blue-800 hover:underline dark:text-blue-300">NAICS {r.code}: {r.title}</Link>
                   {r.level < 6 && <span className="text-xs text-zinc-600 dark:text-zinc-400"> (broader group)</span>}
                   {r.keywords.length > 0 && <span className="text-xs text-zinc-600 dark:text-zinc-400"> · search words: {r.keywords.join(", ")}</span>}
                 </li>

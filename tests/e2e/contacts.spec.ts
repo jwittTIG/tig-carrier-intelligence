@@ -30,6 +30,9 @@ test("add a contact, assign them, confirm them, and find them as the rep", async
   await page.getByRole("button", { name: "Search" }).click();
   await expect(page.getByRole("link", { name: `Pat ${last}` })).toBeVisible();
 
-  await page.getByRole("link", { name: "Codes", exact: true }).click();
-  await expect(page.getByRole("cell", { name: "DEMO-0001" })).toBeVisible();
+  // Codes are looked up on the carrier page (no separate Codes page).
+  await page.goto("/carriers");
+  await page.getByRole("link", { name: "DEMO Summit Mutual", exact: true }).click();
+  await page.getByRole("link", { name: "Appointments & codes" }).click();
+  await expect(page.getByText("DEMO-0001").first()).toBeVisible();
 });

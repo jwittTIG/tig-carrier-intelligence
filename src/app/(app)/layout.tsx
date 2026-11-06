@@ -23,14 +23,14 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
 
   const items: NavItem[] = [
     { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
-    ...(can(ctx, "appetite.read") ? [{ href: "/markets", label: "Market Finder", icon: "markets" }, { href: "/industries", label: "Industries", icon: "industries" }] : []),
+    ...(can(ctx, "appetite.read") ? [{ href: "/markets", label: "Market Finder", icon: "markets" }] : []),
     { href: "/carriers", label: "Carriers", icon: "carriers" },
     ...(can(ctx, "contact.read") ? [{ href: "/contacts", label: "Contacts", icon: "contacts" }] : []),
-    ...(can(ctx, "appointment.read") ? [{ href: "/codes", label: "Codes", icon: "codes" }] : []),
     ...(can(ctx, "document.read") ? [{ href: "/documents", label: "Documents", icon: "documents" }] : []),
     ...(can(ctx, "inbox.read") ? [{ href: "/inbox", label: "Inbox", icon: "inbox" }] : []),
     ...(can(ctx, "change_request.review") ? [{ href: "/approvals", label: "Approvals", icon: "approvals" }] : []),
     { href: "/notifications", label: "Notifications", icon: "bell", badge: unread },
+    ...(can(ctx, "appetite.read") ? [{ href: "/setup", label: "Setup", icon: "setup" }] : []),
     ...(can(ctx, "import.run") ? [{ href: "/imports", label: "Import", icon: "imports" }] : []),
     ...(can(ctx, "admin.users") ? [{ href: "/admin/users", label: "Users", icon: "users" }] : []),
     ...(can(ctx, "audit.read") ? [{ href: "/admin/audit", label: "Audit log", icon: "audit" }] : []),

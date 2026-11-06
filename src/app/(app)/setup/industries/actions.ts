@@ -6,7 +6,7 @@ import { runAction, type ActionState } from "@/server/actions/run";
 import { formObject } from "@/server/validation";
 import * as industries from "@/server/services/industries";
 
-const page = (system: string, code: string) => `/industries/${system}/${code}`;
+const page = (system: string, code: string) => `/setup/industries/${system}/${code}`;
 
 export async function addKeywordAction(system: string, code: string, _s: ActionState, form: FormData): Promise<ActionState> {
   return runAction(async () => {

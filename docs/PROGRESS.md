@@ -4,6 +4,10 @@
 **Milestone 7 (P1: risk matching, market comparison, notifications) is built and waiting for Josh's review.** Josh picked these three P1 items and said "Go ahead and the next milestone" (2026-11-06); he excluded the submission workflow, AMS connection, production dashboard and commission reconciliation. D21–D23 record the defaults used (still PROPOSED). M0–M6 are accepted (M6: "Proceed", 2026-11-06). M6 detail: built on the dev mailbox. The real Microsoft 365 mailbox isn't set up yet (docs/EMAIL_SETUP.md), so the Graph reader is untested. Josh moved from M5 to M6 ("Yes, start M6", 2026-11-05). Earlier status: Josh accepted M4 ("Proceed with the next step", 2026-11-05). D14 for appointments/codes was not answered, so they keep saving directly. Josh asked for email intake of carrier bulletins and guideline updates: proposed as Milestone 6 (DECISIONS D20, `prompts/06-email-intake.md`). D7a (real Postgres) is still open. The MVP is **not production-ready**: see `docs/SECURITY.md` "Known gaps" and `docs/OPERATIONS.md`.
 
 ## Milestone 7: risk matching, market comparison, notifications (done; waiting for Josh's review)
+- **Menu tidy-up (2026-11-06, Josh):**
+  - New **Setup** page (`/setup`) holds Industry codes and search words, which moved to `/setup/industries`.
+  - The **Codes** menu item and page were removed. A code is found on the carrier page (Appointments & codes tab) or with the search box. The CSV export stays in the API only.
+  - The contacts browser test now checks the code on the carrier page.
 - **New look with a color picker (added 2026-11-06; DECISIONS N18):**
   - Colored sidebar (initials avatar, name, role, search, icon menu with the current page highlighted, notification count, sign out) on a light gray page with rounded white cards.
   - Dashboard tiles have icons and the real counts. On phones the menu folds into a **Menu** button.
@@ -17,7 +21,7 @@
   - API: `GET /api/v1/industries?q=roofing`. Migration `20261106123839_industry_codes` (needs Josh's review).
   - Tested: unit tests for word matching, Market Finder integration tests (one match, several matches, no match), and the appetite browser test now searches "roofer" and picks Roofing Contractors. Checked by eye in the browser.
 - **Staff search words for industry codes (added 2026-11-06; DECISIONS N17):**
-  - New **Industries** page (`/industries`): search NAICS by words or code, then open a code, e.g. `/industries/NAICS/238220`. The code page shows the title, its parent groups, the industries under it, and its search words, with Add and Remove.
+  - **Setup → Industry codes and search words** (`/setup/industries`; moved from its own menu item at Josh's request): search NAICS by words or code, then open a code, e.g. `/setup/industries/NAICS/238220`. The code page shows the title, its parent groups, the industries under it, and its search words, with Add and Remove.
   - Example: add "hvac" to 238220 (Plumbing, Heating, and Air-Conditioning Contractors). Searching "hvac" in the Market Finder then goes straight to it.
   - Words are stored lowercase, 2–60 characters (DB CHECK); duplicates on one code are refused; every add and remove is audited. Needs `appetite.write`.
   - The Market Finder links to the Industries page when nothing matches and below the "Which industry?" list, and shows each code's search words there.
@@ -219,7 +223,7 @@ Prompt: `prompts/07-matching-comparison-notifications.md`. Decisions D21–D23 (
   - Overlapping ACTIVE duplicates come back as a clear 409: "Code X is already active for this appointment during those dates…". That covers adding a code and re-opening an ended one.
   - A code's value, type and start date can't be edited; you end it and add a new one, so history stays readable.
   - Code changes appear in the carrier's Change history.
-- **Codes screen** (`/codes`): filter by code, carrier, producer and status. CSV download: values are quoted, and cells starting with `= + - @` are prefixed with `'` so spreadsheets don't run them as formulas.
+- **Codes screen** (`/codes`; **removed 2026-11-06 at Josh's request**: codes are looked up on the carrier's Appointments & codes tab or with global search; the CSV export is still available at `GET /api/v1/agency-codes?format=csv`): filter by code, carrier, producer and status. CSV download: values are quoted, and cells starting with `= + - @` are prefixed with `'` so spreadsheets don't run them as formulas.
 - **Portal links:** URLs must be http(s) and can't contain a username or password. Instructions and the "where the login lives" field reject text that looks like a credential (best effort, e.g. "Password: …", "PIN: …").
 - **API:**
   - `GET/POST /api/v1/contacts`;
@@ -371,3 +375,4 @@ Milestone 7 is waiting for Josh's review. Later phases (do not start without Jos
 - 2026-11-06: Josh asked for Market Finder search by words ("roofing", "roofer"). Added NAICS 2022 titles (Census Bureau, downloaded with his OK) and word search (N16).
 - 2026-11-06: Josh asked for staff-editable search words ("Yes, add search words"). Added the Industries page and search words (N17).
 - 2026-11-06: Josh sent a sample dashboard and asked for a similar look with a pickable main color. Built the sidebar layout and color picker (N18).
+- 2026-11-06: Josh asked to move Industries under a Setup page and drop the Codes tab. Done.

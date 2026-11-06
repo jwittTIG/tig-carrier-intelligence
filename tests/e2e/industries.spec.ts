@@ -7,7 +7,8 @@ test("add a search word to an industry code and find it in the Market Finder", a
   await page.getByRole("button", { name: /Sign in as DEMO Producer/ }).click();
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 
-  await page.getByRole("link", { name: "Industries", exact: true }).click();
+  await page.getByRole("link", { name: "Setup", exact: true }).click();
+  await page.getByRole("link", { name: /Industry codes and search words/ }).click();
   await page.getByLabel("Words or code").fill("air conditioning");
   await page.getByRole("button", { name: "Search" }).click();
   await page.getByRole("link", { name: "NAICS 238220: Plumbing, Heating, and Air-Conditioning Contractors" }).click();
@@ -24,7 +25,7 @@ test("add a search word to an industry code and find it in the Market Finder", a
   await expect(page.getByText(/the only six-digit match/)).toBeVisible();
 
   // Clean up so reruns and the dev data stay tidy.
-  await page.goto("/industries/NAICS/238220");
+  await page.goto("/setup/industries/NAICS/238220");
   await page.getByRole("listitem").filter({ hasText: word }).getByRole("button", { name: "Remove" }).click();
   await expect(page.getByRole("listitem").filter({ hasText: word })).toHaveCount(0);
 });
