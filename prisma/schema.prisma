@@ -272,6 +272,7 @@ model User {
   notifications         Notification[]         @relation("NotificationRecipient")
   notificationsCaused   Notification[]         @relation("NotificationActor")
   follows               CarrierFollow[]
+  industryKeywords      IndustryKeyword[]
 
   @@map("users")
 }
@@ -794,10 +795,28 @@ model IndustryCode {
   /// Number of digits for NAICS (2 = sector … 6 = national industry).
   level                Int
   sourceVersion        String             @map("source_version")
+  keywords             IndustryKeyword[]
 
   @@id([classificationSystem, code])
   @@index([title(ops: raw("gin_trgm_ops"))], type: Gin, map: "industry_codes_title_trgm")
   @@map("industry_codes")
+}
+
+/// Extra search words staff add to an industry code ("HVAC" → 238220). Stored lowercase.
+model IndustryKeyword {
+  id                   String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  classificationSystem IndustryCodeSystem @map("classification_system")
+  code                 String
+  keyword              String
+  createdById          String             @map("created_by") @db.Uuid
+  createdAt            DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  industry             IndustryCode       @relation(fields: [classificationSystem, code], references: [classificationSystem, code], onDelete: Cascade)
+  createdBy            User               @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@unique([classificationSystem, code, keyword])
+  @@index([keyword(ops: raw("gin_trgm_ops"))], type: Gin, map: "industry_keywords_keyword_trgm")
+  @@index([createdById])
+  @@map("industry_keywords")
 }
 
 model AppetiteRuleIndustry {

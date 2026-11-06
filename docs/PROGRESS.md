@@ -10,7 +10,15 @@
   - The chosen code and its title are shown above the results.
   - API: `GET /api/v1/industries?q=roofing`. Migration `20261106123839_industry_codes` (needs Josh's review).
   - Tested: unit tests for word matching, Market Finder integration tests (one match, several matches, no match), and the appetite browser test now searches "roofer" and picks Roofing Contractors. Checked by eye in the browser.
-  - Not done: staff-added synonyms (e.g. "HVAC", whose NAICS title is "Plumbing, Heating, and Air-Conditioning Contractors"); word search when entering industries on appetite rules (still codes there); SIC titles.
+- **Staff search words for industry codes (added 2026-11-06; DECISIONS N17):**
+  - New **Industries** page (`/industries`): search NAICS by words or code, then open a code, e.g. `/industries/NAICS/238220`. The code page shows the title, its parent groups, the industries under it, and its search words, with Add and Remove.
+  - Example: add "hvac" to 238220 (Plumbing, Heating, and Air-Conditioning Contractors). Searching "hvac" in the Market Finder then goes straight to it.
+  - Words are stored lowercase, 2–60 characters (DB CHECK); duplicates on one code are refused; every add and remove is audited. Needs `appetite.write`.
+  - The Market Finder links to the Industries page when nothing matches and below the "Which industry?" list, and shows each code's search words there.
+  - API: `POST /api/v1/industries/NAICS/:code/keywords`, `DELETE /api/v1/industry-keywords/:id`. Migration `20261106125842_industry_keywords` (needs Josh's review).
+  - None are seeded: TIG adds its own.
+  - Tested: `industries.test.ts` (reference data, add/find/remove, duplicates, bad input, permissions, DB check) and the browser test `industries.spec.ts` (add a word, find it in the Market Finder, remove it). Both industry pages are in the accessibility sweep.
+  - Not done: word search when entering industries on appetite rules (still codes there); SIC titles.
 Prompt: `prompts/07-matching-comparison-notifications.md`. Decisions D21–D23 (PROPOSED defaults).
 - **Risk matching (D21):**
   - The Market Finder shows an input for each risk attribute defined for the product or line (e.g. annual revenue). Inputs are `a_<key>` fields and are not saved.
@@ -355,3 +363,4 @@ Milestone 7 is waiting for Josh's review. Later phases (do not start without Jos
 - 2026-11-06: Josh declined sample inbox emails and accepted M6 ("Proceed"). All planned milestones complete; next phase awaits his choice.
 - 2026-11-06: Josh chose P1 risk matching, market comparison and notifications ("Go ahead and the next milestone"). Built M7 with defaults D21–D23.
 - 2026-11-06: Josh asked for Market Finder search by words ("roofing", "roofer"). Added NAICS 2022 titles (Census Bureau, downloaded with his OK) and word search (N16).
+- 2026-11-06: Josh asked for staff-editable search words ("Yes, add search words"). Added the Industries page and search words (N17).

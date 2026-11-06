@@ -28,6 +28,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           <Link href="/dashboard" className="font-semibold">TIG Carrier Intelligence</Link>
           <Link href="/dashboard" className="hover:underline">Dashboard</Link>
           {can(ctx, "appetite.read") && <Link href="/markets" className="hover:underline">Market Finder</Link>}
+          {can(ctx, "appetite.read") && <Link href="/industries" className="hover:underline">Industries</Link>}
           <Link href="/carriers" className="hover:underline">Carriers</Link>
           {can(ctx, "contact.read") && <Link href="/contacts" className="hover:underline">Contacts</Link>}
           {can(ctx, "appointment.read") && <Link href="/codes" className="hover:underline">Codes</Link>}
