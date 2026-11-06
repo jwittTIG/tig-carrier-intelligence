@@ -81,7 +81,7 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
           </ActionForm>
         )}
         {contact.verifications.length > 0 && (
-          <ul className="text-xs text-zinc-500">
+          <ul className="text-xs text-zinc-600 dark:text-zinc-400">
             {contact.verifications.map((v) => <li key={v.id}>{fmtDateTime(v.verifiedAt)} · {v.verifiedBy.name} · {v.sourceNote}</li>)}
           </ul>
         )}
@@ -98,10 +98,10 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
       </Section>
 
       <Section title="Assignments">
-        {contact.assignments.length === 0 && <p className="text-sm text-zinc-500">No assignments yet.</p>}
+        {contact.assignments.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">No assignments yet.</p>}
         <ul className="flex flex-col gap-3">
           {contact.assignments.map((a) => (
-            <li key={a.id} className={`flex flex-col gap-2 rounded border p-3 text-sm dark:border-zinc-700 ${a.current ? "border-zinc-200" : "border-dashed border-zinc-300 text-zinc-500"}`}>
+            <li key={a.id} className={`flex flex-col gap-2 rounded border p-3 text-sm dark:border-zinc-700 ${a.current ? "border-zinc-200" : "border-dashed border-zinc-300 text-zinc-600 dark:text-zinc-400"}`}>
               <div className="flex flex-wrap items-center gap-2">
                 <strong>{label(a.role)}</strong>
                 {a.title && <span>({a.title})</span>}
@@ -109,14 +109,14 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
                 <Link href={`/carriers/${a.organization.id}`} className="text-blue-800 hover:underline dark:text-blue-300">{a.organization.displayName}</Link>
                 <span>· {a.territory?.name ?? "Territory not recorded"}</span>
                 {a.marketChannel && <span>· {a.marketChannel.carrierProduct.product.name}{a.marketChannel.intermediary ? ` via ${a.marketChannel.intermediary.displayName}` : ""}</span>}
-                <span className="text-zinc-500">{fmtDate(a.effectiveFrom)} → {a.effectiveTo ? fmtDate(a.effectiveTo) : "open"}</span>
+                <span className="text-zinc-600 dark:text-zinc-400">{fmtDate(a.effectiveFrom)} → {a.effectiveTo ? fmtDate(a.effectiveTo) : "open"}</span>
                 {!a.current && <Badge>{a.effectiveTo ? "Ended" : "Not yet started"}</Badge>}
               </div>
               {a.backupContact && <div>Backup: <Link href={`/contacts/${a.backupContact.id}`} className="hover:underline">{a.backupContact.firstName} {a.backupContact.lastName}</Link></div>}
               {a.authorityNotes && <p className="whitespace-pre-wrap">Authority: {a.authorityNotes}</p>}
               <div className="flex flex-wrap items-center gap-2">
                 <span>Specialties:</span>
-                {a.specialties.length === 0 && <span className="text-zinc-500">none recorded</span>}
+                {a.specialties.length === 0 && <span className="text-zinc-600 dark:text-zinc-400">none recorded</span>}
                 {a.specialties.map((s) => (
                   <span key={s.id} className="inline-flex items-center gap-1">
                     <Badge>{s.product.line.name}: {s.product.name}{s.industryCode && ` · ${s.industryCode}`}</Badge>
@@ -222,12 +222,12 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
             <Field label="Note" htmlFor="nNotes"><textarea id="nNotes" name="notes" required rows={3} maxLength={5000} className={inputClass} /></Field>
           </ActionForm>
         )}
-        {write && assignedOrgs.length === 0 && <p className="text-sm text-zinc-500">Add an assignment first; notes are filed under a carrier.</p>}
-        {activity.length === 0 ? <p className="text-sm text-zinc-500">No activity yet.</p> : (
+        {write && assignedOrgs.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">Add an assignment first; notes are filed under a carrier.</p>}
+        {activity.length === 0 ? <p className="text-sm text-zinc-600 dark:text-zinc-400">No activity yet.</p> : (
           <ol className="flex flex-col gap-3">
             {activity.map((n) => (
               <li key={n.id} className="border-l-2 border-zinc-300 pl-3 text-sm dark:border-zinc-600">
-                <div className="text-xs text-zinc-500">{label(n.type)} · {fmtDateTime(n.occurredAt)} · {n.owner.name} · {n.organization.displayName}</div>
+                <div className="text-xs text-zinc-600 dark:text-zinc-400">{label(n.type)} · {fmtDateTime(n.occurredAt)} · {n.owner.name} · {n.organization.displayName}</div>
                 <p className="whitespace-pre-wrap">{n.notes}</p>
               </li>
             ))}

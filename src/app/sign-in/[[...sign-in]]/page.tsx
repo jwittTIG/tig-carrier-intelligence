@@ -35,9 +35,9 @@ export default async function SignInPage() {
           <li key={u.id}>
             <form action={signIn}>
               <input type="hidden" name="userId" value={u.id} />
-              <button type="submit" className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-left text-sm hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900">
+              <button type="submit" className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-left text-sm hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900">
                 Sign in as <strong>{u.name}</strong>{" "}
-                <span className="text-zinc-500">({u.roleScopes.map((s) => s.role.code).join(", ") || "no role"})</span>
+                <span className="text-zinc-600 dark:text-zinc-400">({u.roleScopes.map((s) => s.role.code).join(", ") || "no role"})</span>
               </button>
             </form>
           </li>

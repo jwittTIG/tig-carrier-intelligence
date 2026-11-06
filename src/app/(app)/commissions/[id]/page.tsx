@@ -55,7 +55,7 @@ export default async function AgreementPage({ params }: PageProps<"/commissions/
         {ch.carrierProduct.writingCompany.displayName}: {ch.carrierProduct.product.name}{ch.intermediary ? ` via ${ch.intermediary.displayName}` : " (direct)"} · {a.agencyEntity.organization.displayName}
         {a.approvedBy && ` · approved by ${a.approvedBy.name} ${fmtDateTime(a.approvedAt!)}`}
       </p>
-      <p className="text-xs text-zinc-500">Restricted: commission information. Rates are as agreed in the source document; this app doesn&apos;t calculate or reconcile commissions.</p>
+      <p className="text-xs text-zinc-600 dark:text-zinc-400">Restricted: commission information. Rates are as agreed in the source document; this app doesn&apos;t calculate or reconcile commissions.</p>
 
       {agreementPending && <DecisionPanel ctx={ctx} cr={agreementPending} permission="commission.approve" returnTo={path} />}
 
@@ -104,8 +104,8 @@ export default async function AgreementPage({ params }: PageProps<"/commissions/
       </Section>
 
       <Section title="Schedules" actions={<a href={`/api/v1/commission-schedules?agreementId=${id}&format=csv`} className="text-sm text-blue-800 hover:underline dark:text-blue-300">Download CSV</a>}>
-        <p className="text-xs text-zinc-500">An approved schedule never changes. To change a rate, add a new schedule with a later start date; when it&apos;s approved, the old one ends the day before.</p>
-        {a.schedules.length === 0 && <p className="text-sm text-zinc-500">No schedules yet.</p>}
+        <p className="text-xs text-zinc-600 dark:text-zinc-400">An approved schedule never changes. To change a rate, add a new schedule with a later start date; when it&apos;s approved, the old one ends the day before.</p>
+        {a.schedules.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">No schedules yet.</p>}
         <ul className="flex flex-col gap-3">
           {a.schedules.map((s) => (
             <li key={s.id} id={`schedule-${s.id}`} className={`flex flex-col gap-2 rounded border p-3 text-sm dark:border-zinc-700 ${s.current ? "border-green-300" : "border-zinc-200"}`}>
@@ -114,7 +114,7 @@ export default async function AgreementPage({ params }: PageProps<"/commissions/
                 <span>· {label(s.transactionType)}</span>
                 <span>· {s.territory?.name ?? "All states"}</span>
                 <span>· {s.basis === "RATE" ? fractionToPercent(s.rate) : s.basis === "FLAT" ? `$${s.flatAmount?.toFixed(2)} flat` : "Tiered"}</span>
-                <span className="text-zinc-500">{fmtDate(s.effectiveFrom)} → {s.effectiveTo ? fmtDate(s.effectiveTo) : "open"}</span>
+                <span className="text-zinc-600 dark:text-zinc-400">{fmtDate(s.effectiveFrom)} → {s.effectiveTo ? fmtDate(s.effectiveTo) : "open"}</span>
                 <StatusBadge status={s.status} />
                 {s.current && <Badge tone="good">In effect today</Badge>}
               </div>

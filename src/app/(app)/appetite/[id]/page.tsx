@@ -88,7 +88,7 @@ export default async function AppetiteProfilePage({ params }: PageProps<"/appeti
         {" · "}owner {p.owner?.name ?? "none"}
         {p.approvedBy && ` · approved by ${p.approvedBy.name} ${fmtDateTime(p.approvedAt!)}`}
       </p>
-      <p className="text-xs text-zinc-500">Appetite is a guide, not a commitment to quote or bind, and not binding authority. Confirm eligibility with the underwriter.</p>
+      <p className="text-xs text-zinc-600 dark:text-zinc-400">Appetite is a guide, not a commitment to quote or bind, and not binding authority. Confirm eligibility with the underwriter.</p>
 
       {p.pending && <DecisionPanel ctx={ctx} cr={p.pending} permission="appetite.approve" returnTo={path} />}
 
@@ -104,7 +104,7 @@ export default async function AppetiteProfilePage({ params }: PageProps<"/appeti
           {p.versions.map((v) => (
             <li key={v.id}>
               {v.id === id ? <strong>v{v.version}</strong> : <Link href={`/appetite/${v.id}`} className="text-blue-800 hover:underline dark:text-blue-300">v{v.version}</Link>}{" "}
-              <StatusBadge status={v.status} /> <span className="text-xs text-zinc-500">{fmtDate(v.effectiveFrom)} → {v.effectiveTo ? fmtDate(v.effectiveTo) : "open"}</span>
+              <StatusBadge status={v.status} /> <span className="text-xs text-zinc-600 dark:text-zinc-400">{fmtDate(v.effectiveFrom)} → {v.effectiveTo ? fmtDate(v.effectiveTo) : "open"}</span>
             </li>
           ))}
         </ul>
@@ -131,7 +131,7 @@ export default async function AppetiteProfilePage({ params }: PageProps<"/appeti
             </ActionForm>
             <ActionForm action={deleteDraftAction.bind(null, id, cp.writingCompany.id)} submitLabel="Delete draft" variant="danger" showOk={false} confirm="Delete this draft and its rules?">{null}</ActionForm>
           </div>
-          <p className="text-xs text-zinc-500">To submit: an owner, an effective date, at least one rule, and at least one source.</p>
+          <p className="text-xs text-zinc-600 dark:text-zinc-400">To submit: an owner, an effective date, at least one rule, and at least one source.</p>
         </Section>
       )}
       {p.status === "PENDING" && p.pending?.proposedById === ctx.userId && (
@@ -139,11 +139,11 @@ export default async function AppetiteProfilePage({ params }: PageProps<"/appeti
       )}
 
       <Section title={`Rules (${p.rules.length})`}>
-        <p className="text-xs text-zinc-500">A rule with no states applies in every state, and one with no industry codes applies to every industry. &ldquo;Unknown&rdquo; is never treated as eligible.</p>
-        {p.rules.length === 0 ? <p className="text-sm text-zinc-500">No rules yet.</p> : (
+        <p className="text-xs text-zinc-600 dark:text-zinc-400">A rule with no states applies in every state, and one with no industry codes applies to every industry. &ldquo;Unknown&rdquo; is never treated as eligible.</p>
+        {p.rules.length === 0 ? <p className="text-sm text-zinc-600 dark:text-zinc-400">No rules yet.</p> : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="text-xs uppercase text-zinc-500">
+              <thead className="text-xs uppercase text-zinc-600 dark:text-zinc-400">
                 <tr><th scope="col" className="py-1 pr-2">#</th><th scope="col" className="py-1 pr-2">Outcome</th><th scope="col" className="py-1 pr-2">States</th><th scope="col" className="py-1 pr-2">Industries</th><th scope="col" className="py-1 pr-2">Condition</th><th scope="col" className="py-1 pr-2">Dates</th><th scope="col" className="py-1 pr-2">Why</th><th scope="col" className="py-1"><span className="sr-only">Remove</span></th></tr>
               </thead>
               <tbody>
@@ -223,13 +223,13 @@ export default async function AppetiteProfilePage({ params }: PageProps<"/appeti
               <Field label="How did you confirm?" htmlFor="vNote"><input id="vNote" name="sourceNote" required maxLength={500} className={`${inputClass} min-w-72`} /></Field>
             </ActionForm>
           )}
-          {p.verifications.length > 0 && <ul className="text-xs text-zinc-500">{p.verifications.map((v) => <li key={v.id}>{fmtDateTime(v.verifiedAt)} · {v.verifiedBy.name} · {v.sourceNote}</li>)}</ul>}
+          {p.verifications.length > 0 && <ul className="text-xs text-zinc-600 dark:text-zinc-400">{p.verifications.map((v) => <li key={v.id}>{fmtDateTime(v.verifiedAt)} · {v.verifiedBy.name} · {v.sourceNote}</li>)}</ul>}
         </Section>
       )}
 
       <Section title={`Limits and requirements for ${cp.product.name} (all versions)`}>
         <h3 className="text-sm font-medium">Coverage limits offered</h3>
-        {cp.coverages.length === 0 ? <p className="text-sm text-zinc-500">None recorded. Missing limits are &ldquo;not stated&rdquo;, never &ldquo;no limit&rdquo;.</p> : (
+        {cp.coverages.length === 0 ? <p className="text-sm text-zinc-600 dark:text-zinc-400">None recorded. Missing limits are &ldquo;not stated&rdquo;, never &ldquo;no limit&rdquo;.</p> : (
           <ul className="text-sm">
             {cp.coverages.map((c) => (
               <li key={c.id} className="flex flex-wrap items-center gap-2">
@@ -247,12 +247,12 @@ export default async function AppetiteProfilePage({ params }: PageProps<"/appeti
           </ActionForm>
         )}
         <h3 className="mt-2 text-sm font-medium">Underwriting requirements</h3>
-        {cp.requirements.length === 0 ? <p className="text-sm text-zinc-500">None recorded.</p> : (
+        {cp.requirements.length === 0 ? <p className="text-sm text-zinc-600 dark:text-zinc-400">None recorded.</p> : (
           <ul className="text-sm">
             {cp.requirements.map((r) => (
               <li key={r.id} className="flex flex-wrap items-center gap-2">
                 <Badge>{r.requirementType}</Badge> {r.description}
-                {r.sourceDocumentVersion && <span className="text-xs text-zinc-500">({r.sourceDocumentVersion.document.title} v{r.sourceDocumentVersion.versionNumber})</span>}
+                {r.sourceDocumentVersion && <span className="text-xs text-zinc-600 dark:text-zinc-400">({r.sourceDocumentVersion.document.title} v{r.sourceDocumentVersion.versionNumber})</span>}
                 {write && <ActionForm action={removeRequirementAction.bind(null, id, cp.id, r.id)} submitLabel="Remove" variant="secondary" showOk={false}>{null}</ActionForm>}
               </li>
             ))}

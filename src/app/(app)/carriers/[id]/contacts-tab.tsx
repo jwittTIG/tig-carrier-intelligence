@@ -15,11 +15,11 @@ export async function ContactsTab({ carrierId }: { carrierId: string }) {
       title="Contacts"
       actions={can(ctx, "contact.write") ? <Link href="/contacts/new" className="text-sm text-blue-800 hover:underline dark:text-blue-300">New contact</Link> : undefined}
     >
-      {rows.length === 0 && <p className="text-sm text-zinc-500">No contacts assigned to this carrier. Add one from the Contacts page.</p>}
+      {rows.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">No contacts assigned to this carrier. Add one from the Contacts page.</p>}
       {current.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="text-xs uppercase text-zinc-500">
+            <thead className="text-xs uppercase text-zinc-600 dark:text-zinc-400">
               <tr><th scope="col" className="py-1 pr-3">Name</th><th scope="col" className="py-1 pr-3">Role</th><th scope="col" className="py-1 pr-3">Territory</th><th scope="col" className="py-1 pr-3">Lines</th><th scope="col" className="py-1">Confirmed</th></tr>
             </thead>
             <tbody>
@@ -27,10 +27,10 @@ export async function ContactsTab({ carrierId }: { carrierId: string }) {
                 <tr key={a.id} className="border-t border-zinc-100 align-top dark:border-zinc-800">
                   <td className="py-1 pr-3">
                     <Link href={`/contacts/${a.contact.id}`} className="text-blue-800 hover:underline dark:text-blue-300">{a.contact.firstName} {a.contact.lastName}</Link>
-                    {a.contact.status !== "ACTIVE" && <span className="text-zinc-500"> (inactive)</span>}
-                    {a.contact.email && <div className="text-xs text-zinc-500">{a.contact.email}</div>}
+                    {a.contact.status !== "ACTIVE" && <span className="text-zinc-600 dark:text-zinc-400"> (inactive)</span>}
+                    {a.contact.email && <div className="text-xs text-zinc-600 dark:text-zinc-400">{a.contact.email}</div>}
                   </td>
-                  <td className="py-1 pr-3">{label(a.role)}{a.title && <div className="text-xs text-zinc-500">{a.title}</div>}</td>
+                  <td className="py-1 pr-3">{label(a.role)}{a.title && <div className="text-xs text-zinc-600 dark:text-zinc-400">{a.title}</div>}</td>
                   <td className="py-1 pr-3">{a.territory?.name ?? "Not recorded"}</td>
                   <td className="py-1 pr-3">{a.specialties.map((s) => s.product.name).join(", ") || "—"}</td>
                   <td className="py-1"><FreshnessBadge f={a.freshness} /></td>
@@ -43,7 +43,7 @@ export async function ContactsTab({ carrierId }: { carrierId: string }) {
       {past.length > 0 && (
         <details>
           <summary className="cursor-pointer text-sm">{past.length} past or future {past.length === 1 ? "assignment" : "assignments"}</summary>
-          <ul className="mt-2 text-sm text-zinc-500">
+          <ul className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
             {past.map((a) => (
               <li key={a.id}>
                 <Link href={`/contacts/${a.contact.id}`} className="hover:underline">{a.contact.firstName} {a.contact.lastName}</Link> · {label(a.role)} · {a.territory?.name ?? "—"} <Badge>{a.effectiveTo ? "Ended" : "Not yet started"}</Badge>

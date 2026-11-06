@@ -31,7 +31,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
         {can(ctx, "contact.write") && <ButtonLink href="/contacts/new">New contact</ButtonLink>}
       </div>
 
-      <form method="get" role="search" className="grid grid-cols-1 gap-3 rounded border border-zinc-200 bg-white p-3 sm:grid-cols-3 lg:grid-cols-6 dark:border-zinc-700 dark:bg-zinc-900">
+      <form method="get" role="search" className="grid grid-cols-1 gap-3 rounded-2xl border border-transparent bg-white shadow-sm p-3 sm:grid-cols-3 lg:grid-cols-6 dark:border-zinc-700 dark:bg-zinc-900">
         <p className="text-sm font-medium sm:col-span-3 lg:col-span-6">Who&apos;s my rep for…</p>
         <label className="flex flex-col gap-1 text-sm">
           Carrier
@@ -78,10 +78,10 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
           Include inactive
         </label>
         <div className="flex items-end gap-2">
-          <button type="submit" className="rounded bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800">Search</button>
+          <button type="submit" className="rounded-lg bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800">Search</button>
           <Link href="/contacts" className="px-2 py-1.5 text-sm hover:underline">Clear</Link>
         </div>
-        <p className="text-xs text-zinc-500 sm:col-span-3 lg:col-span-6">
+        <p className="text-xs text-zinc-600 dark:text-zinc-400 sm:col-span-3 lg:col-span-6">
           A state search matches people assigned to that state or to the whole US. People with no territory recorded don&apos;t match a state search.
           Contacts are due for review {result.cadenceDays} days after they were last confirmed.
         </p>
@@ -89,9 +89,9 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
 
       <p className="text-sm text-zinc-600 dark:text-zinc-400" aria-live="polite">{result.total} {result.total === 1 ? "contact" : "contacts"}</p>
 
-      <div className="overflow-x-auto rounded border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+      <div className="overflow-x-auto rounded-2xl border border-transparent bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-zinc-200 text-xs uppercase text-zinc-500 dark:border-zinc-700">
+          <thead className="border-b border-zinc-200 text-xs uppercase text-zinc-600 dark:text-zinc-400 dark:border-zinc-700">
             <tr>
               <th scope="col" className="px-3 py-2">Name</th>
               <th scope="col" className="px-3 py-2">Works with</th>
@@ -100,12 +100,12 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
             </tr>
           </thead>
           <tbody>
-            {result.items.length === 0 && <tr><td colSpan={4} className="px-3 py-6 text-center text-zinc-500">No contacts match these filters.</td></tr>}
+            {result.items.length === 0 && <tr><td colSpan={4} className="px-3 py-6 text-center text-zinc-600 dark:text-zinc-400">No contacts match these filters.</td></tr>}
             {result.items.map((c) => (
               <tr key={c.id} className="border-b border-zinc-100 align-top last:border-0 dark:border-zinc-800">
                 <td className="px-3 py-2">
                   <Link href={`/contacts/${c.id}`} className="font-medium text-blue-800 hover:underline dark:text-blue-300">{c.firstName} {c.lastName}</Link>
-                  {c.status !== "ACTIVE" && <span className="text-xs text-zinc-500"> (inactive)</span>}
+                  {c.status !== "ACTIVE" && <span className="text-xs text-zinc-600 dark:text-zinc-400"> (inactive)</span>}
                 </td>
                 <td className="px-3 py-2">
                   <ul className="flex flex-col gap-0.5">
@@ -113,10 +113,10 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
                       <li key={a.id}>
                         {label(a.role)} · {a.organization.displayName}
                         {a.territory && ` · ${a.territory.name}`}
-                        {a.specialties.length > 0 && <span className="text-zinc-500"> · {a.specialties.map((s) => s.product.name).join(", ")}</span>}
+                        {a.specialties.length > 0 && <span className="text-zinc-600 dark:text-zinc-400"> · {a.specialties.map((s) => s.product.name).join(", ")}</span>}
                       </li>
                     ))}
-                    {c.assignments.length === 0 && <li className="text-zinc-500">No current assignment</li>}
+                    {c.assignments.length === 0 && <li className="text-zinc-600 dark:text-zinc-400">No current assignment</li>}
                   </ul>
                 </td>
                 <td className="px-3 py-2">

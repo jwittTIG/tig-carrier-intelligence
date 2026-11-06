@@ -27,7 +27,7 @@ export default async function CarriersPage({ searchParams }: PageProps<"/carrier
         {can(ctx, "carrier.write") && <ButtonLink href="/carriers/new">New carrier</ButtonLink>}
       </div>
 
-      <form method="get" className="grid grid-cols-1 gap-3 rounded border border-zinc-200 bg-white p-3 sm:grid-cols-3 lg:grid-cols-6 dark:border-zinc-700 dark:bg-zinc-900" role="search">
+      <form method="get" className="grid grid-cols-1 gap-3 rounded-2xl border border-transparent bg-white shadow-sm p-3 sm:grid-cols-3 lg:grid-cols-6 dark:border-zinc-700 dark:bg-zinc-900" role="search">
         <label className="flex flex-col gap-1 text-sm sm:col-span-2">
           Name or identifier
           <input name="q" defaultValue={params.q} className={inputClass} placeholder="e.g. Summit, or a NAIC number" />
@@ -72,10 +72,10 @@ export default async function CarriersPage({ searchParams }: PageProps<"/carrier
           Include archived
         </label>
         <div className="flex items-end gap-2">
-          <button type="submit" className="rounded bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800">Search</button>
+          <button type="submit" className="rounded-lg bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800">Search</button>
           <Link href="/carriers" className="px-2 py-1.5 text-sm hover:underline">Clear</Link>
         </div>
-        <p className="text-xs text-zinc-500 sm:col-span-3 lg:col-span-6">
+        <p className="text-xs text-zinc-600 dark:text-zinc-400 sm:col-span-3 lg:col-span-6">
           State and verification-freshness filters arrive with appointments and appetite (Milestones 3–4).
         </p>
       </form>
@@ -84,9 +84,9 @@ export default async function CarriersPage({ searchParams }: PageProps<"/carrier
         {result.total} {result.total === 1 ? "carrier" : "carriers"}
       </p>
 
-      <div className="overflow-x-auto rounded border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+      <div className="overflow-x-auto rounded-2xl border border-transparent bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-zinc-200 text-xs uppercase text-zinc-500 dark:border-zinc-700">
+          <thead className="border-b border-zinc-200 text-xs uppercase text-zinc-600 dark:text-zinc-400 dark:border-zinc-700">
             <tr>
               <th scope="col" className="px-3 py-2">Name</th>
               <th scope="col" className="px-3 py-2">Type</th>
@@ -98,13 +98,13 @@ export default async function CarriersPage({ searchParams }: PageProps<"/carrier
           </thead>
           <tbody>
             {result.items.length === 0 && (
-              <tr><td colSpan={6} className="px-3 py-6 text-center text-zinc-500">No carriers match these filters.</td></tr>
+              <tr><td colSpan={6} className="px-3 py-6 text-center text-zinc-600 dark:text-zinc-400">No carriers match these filters.</td></tr>
             )}
             {result.items.map((c) => (
               <tr key={c.id} className="border-b border-zinc-100 last:border-0 dark:border-zinc-800">
                 <td className="px-3 py-2">
                   <Link href={`/carriers/${c.id}`} className="font-medium text-blue-800 hover:underline dark:text-blue-300">{c.displayName}</Link>
-                  {c.legalName !== c.displayName && <div className="text-xs text-zinc-500">{c.legalName}</div>}
+                  {c.legalName !== c.displayName && <div className="text-xs text-zinc-600 dark:text-zinc-400">{c.legalName}</div>}
                 </td>
                 <td className="px-3 py-2">{label(c.type)}</td>
                 <td className="px-3 py-2">{c.parent?.displayName ?? "—"}</td>

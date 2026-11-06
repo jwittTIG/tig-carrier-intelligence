@@ -17,7 +17,7 @@ type Props = {
 const variants = {
   primary: "bg-blue-700 text-white hover:bg-blue-800",
   secondary: "border border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100",
-  danger: "border border-red-300 bg-white text-red-700 hover:bg-red-50 dark:bg-zinc-900",
+  danger: "border border-red-300 bg-white text-red-700 hover:bg-red-50 dark:border-red-800 dark:bg-zinc-900 dark:text-red-300",
 };
 
 /** A form bound to a server action, with pending state and inline error/success messages. */
@@ -33,7 +33,7 @@ export function ActionForm({ action, children, submitLabel, className, showOk = 
     >
       {children}
       <div className="flex flex-wrap items-center gap-3">
-        <button type="submit" disabled={pending} className={`rounded px-3 py-1.5 text-sm font-medium disabled:opacity-60 ${variants[variant]}`}>
+        <button type="submit" disabled={pending} className={`rounded-lg px-3 py-1.5 text-sm font-medium disabled:opacity-60 ${variants[variant]}`}>
           {pending ? "Saving…" : submitLabel}
         </button>
         {state?.error && <p role="alert" className="text-sm text-red-700 dark:text-red-400">{state.error}</p>}

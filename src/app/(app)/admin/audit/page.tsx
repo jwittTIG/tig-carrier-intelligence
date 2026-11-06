@@ -20,7 +20,7 @@ export default async function AuditPage({ searchParams }: PageProps<"/admin/audi
     <>
       <h1 className="text-xl font-semibold">Audit log</h1>
       <p className="text-sm text-zinc-600 dark:text-zinc-400">Every change is recorded here. Entries can&apos;t be edited or deleted.</p>
-      <form method="get" role="search" className="grid grid-cols-1 gap-3 rounded border border-zinc-200 bg-white p-3 sm:grid-cols-3 lg:grid-cols-6 dark:border-zinc-700 dark:bg-zinc-900">
+      <form method="get" role="search" className="grid grid-cols-1 gap-3 rounded-2xl border border-transparent bg-white shadow-sm p-3 sm:grid-cols-3 lg:grid-cols-6 dark:border-zinc-700 dark:bg-zinc-900">
         <label className="flex flex-col gap-1 text-sm">
           Record type
           <select name="entityType" defaultValue={params.entityType ?? ""} className={inputClass}>
@@ -39,7 +39,7 @@ export default async function AuditPage({ searchParams }: PageProps<"/admin/audi
         <label className="flex flex-col gap-1 text-sm">From<input name="from" type="date" defaultValue={params.from} className={inputClass} /></label>
         <label className="flex flex-col gap-1 text-sm">To<input name="to" type="date" defaultValue={params.to} className={inputClass} /></label>
         <div className="flex items-end gap-2">
-          <button className="rounded bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800">Filter</button>
+          <button className="rounded-lg bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800">Filter</button>
           <Link href="/admin/audit" className="px-2 py-1.5 text-sm hover:underline">Clear</Link>
         </div>
       </form>

@@ -44,7 +44,7 @@ export default async function DocumentPage({ params }: PageProps<"/documents/[id
 
       <Section title="Versions">
         <table className="w-full text-left text-sm">
-          <thead className="text-xs uppercase text-zinc-500">
+          <thead className="text-xs uppercase text-zinc-600 dark:text-zinc-400">
             <tr><th scope="col" className="py-1 pr-3">Version</th><th scope="col" className="py-1 pr-3">Uploaded</th><th scope="col" className="py-1 pr-3">Type / size</th><th scope="col" className="py-1 pr-3">Cited by</th><th scope="col" className="py-1"><span className="sr-only">Download</span></th></tr>
           </thead>
           <tbody>

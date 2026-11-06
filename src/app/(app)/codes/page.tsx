@@ -19,9 +19,9 @@ export default async function CodesPage({ searchParams }: PageProps<"/codes">) {
     <>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-semibold">Agency and producer codes</h1>
-        <a href={csvHref} className="rounded border border-zinc-300 bg-white px-3 py-1.5 text-sm hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900">Download CSV</a>
+        <a href={csvHref} className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900">Download CSV</a>
       </div>
-      <form method="get" role="search" className="grid grid-cols-1 gap-3 rounded border border-zinc-200 bg-white p-3 sm:grid-cols-5 dark:border-zinc-700 dark:bg-zinc-900">
+      <form method="get" role="search" className="grid grid-cols-1 gap-3 rounded-2xl border border-transparent bg-white shadow-sm p-3 sm:grid-cols-5 dark:border-zinc-700 dark:bg-zinc-900">
         <label className="flex flex-col gap-1 text-sm">Code<input name="q" defaultValue={params.q} className={inputClass} /></label>
         <label className="flex flex-col gap-1 text-sm">
           Carrier
@@ -48,16 +48,16 @@ export default async function CodesPage({ searchParams }: PageProps<"/codes">) {
           </select>
         </label>
         <div className="flex items-end gap-2">
-          <button type="submit" className="rounded bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800">Filter</button>
+          <button type="submit" className="rounded-lg bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800">Filter</button>
           <Link href="/codes" className="px-2 py-1.5 text-sm hover:underline">Clear</Link>
         </div>
       </form>
 
       <p className="text-sm text-zinc-600 dark:text-zinc-400" aria-live="polite">{codes.length} {codes.length === 1 ? "code" : "codes"}. A code is never shown as current when its appointment has ended.</p>
 
-      <div className="overflow-x-auto rounded border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+      <div className="overflow-x-auto rounded-2xl border border-transparent bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-zinc-200 text-xs uppercase text-zinc-500 dark:border-zinc-700">
+          <thead className="border-b border-zinc-200 text-xs uppercase text-zinc-600 dark:text-zinc-400 dark:border-zinc-700">
             <tr>
               <th scope="col" className="px-3 py-2">Carrier</th>
               <th scope="col" className="px-3 py-2">Channel</th>
@@ -69,7 +69,7 @@ export default async function CodesPage({ searchParams }: PageProps<"/codes">) {
             </tr>
           </thead>
           <tbody>
-            {codes.length === 0 && <tr><td colSpan={7} className="px-3 py-6 text-center text-zinc-500">No codes match these filters.</td></tr>}
+            {codes.length === 0 && <tr><td colSpan={7} className="px-3 py-6 text-center text-zinc-600 dark:text-zinc-400">No codes match these filters.</td></tr>}
             {codes.map((c) => {
               const ch = c.appointment.marketChannel;
               return (

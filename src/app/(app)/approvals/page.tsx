@@ -16,8 +16,8 @@ export default async function ApprovalsPage() {
       <h1 className="text-xl font-semibold">Approvals &amp; data quality</h1>
 
       <Section title={`Waiting for approval (${queue.pending.length})`}>
-        <p className="text-xs text-zinc-500">You can&apos;t approve your own submissions. An admin can, with a written reason (DECISIONS D14).</p>
-        {queue.pending.length === 0 && <p className="text-sm text-zinc-500">Nothing is waiting.</p>}
+        <p className="text-xs text-zinc-600 dark:text-zinc-400">You can&apos;t approve your own submissions. An admin can, with a written reason (DECISIONS D14).</p>
+        {queue.pending.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">Nothing is waiting.</p>}
         <ul className="flex flex-col gap-3">
           {queue.pending.map((cr) => (
             <li key={cr.id} className="flex flex-col gap-2">
@@ -35,12 +35,12 @@ export default async function ApprovalsPage() {
       </Section>
 
       <Section title="Due for review">
-        {quality.staleAppetite.length === 0 ? <p className="text-sm text-zinc-500">No approved appetite profiles are past their review date.</p> : (
+        {quality.staleAppetite.length === 0 ? <p className="text-sm text-zinc-600 dark:text-zinc-400">No approved appetite profiles are past their review date.</p> : (
           <ul className="text-sm">
             {quality.staleAppetite.map((p) => (
               <li key={p.id}>
                 <Link href={`/appetite/${p.id}`} className="text-blue-800 hover:underline dark:text-blue-300">{p.carrierProduct.writingCompany.displayName} · {p.carrierProduct.product.name} v{p.version}</Link>
-                <span className="text-zinc-500"> · review was due {fmtDate(p.nextReviewAt)}</span>
+                <span className="text-zinc-600 dark:text-zinc-400"> · review was due {fmtDate(p.nextReviewAt)}</span>
               </li>
             ))}
           </ul>
@@ -54,27 +54,27 @@ export default async function ApprovalsPage() {
       </Section>
 
       <Section title="Possible duplicate carriers">
-        {quality.duplicates.length === 0 ? <p className="text-sm text-zinc-500">No similar names found.</p> : (
+        {quality.duplicates.length === 0 ? <p className="text-sm text-zinc-600 dark:text-zinc-400">No similar names found.</p> : (
           <ul className="text-sm">
             {quality.duplicates.map((d) => (
               <li key={`${d.a_id}-${d.b_id}`}>
                 <Link href={`/carriers/${d.a_id}`} className="hover:underline">{d.a_name}</Link> and <Link href={`/carriers/${d.b_id}`} className="hover:underline">{d.b_name}</Link>
-                <span className="text-zinc-500"> · {Math.round(d.score * 100)}% similar</span>
+                <span className="text-zinc-600 dark:text-zinc-400"> · {Math.round(d.score * 100)}% similar</span>
               </li>
             ))}
           </ul>
         )}
-        <p className="text-xs text-zinc-500">Merging duplicates isn&apos;t built yet. Archive the extra record and move its details by hand.</p>
+        <p className="text-xs text-zinc-600 dark:text-zinc-400">Merging duplicates isn&apos;t built yet. Archive the extra record and move its details by hand.</p>
       </Section>
 
       <Section title="Recent decisions">
-        {queue.recent.length === 0 ? <p className="text-sm text-zinc-500">None yet.</p> : (
+        {queue.recent.length === 0 ? <p className="text-sm text-zinc-600 dark:text-zinc-400">None yet.</p> : (
           <ul className="text-sm">
             {queue.recent.map((cr) => (
               <li key={cr.id}>
                 {label(cr.recordType)} · <Badge tone={cr.status === "APPROVED" ? "good" : cr.status === "REJECTED" ? "bad" : "neutral"}>{label(cr.status)}</Badge>
                 {" "}submitted by {cr.proposedBy.name}{cr.reviewedBy && `, decided by ${cr.reviewedBy.name}`} {cr.reviewedAt && fmtDateTime(cr.reviewedAt)}
-                {cr.rationale && <span className="text-zinc-500"> · {cr.rationale}</span>}
+                {cr.rationale && <span className="text-zinc-600 dark:text-zinc-400"> · {cr.rationale}</span>}
               </li>
             ))}
           </ul>

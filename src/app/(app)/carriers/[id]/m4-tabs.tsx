@@ -20,11 +20,11 @@ export async function AppetiteTab({ carrier }: { carrier: Carrier }) {
   const products = carrier.carrierProducts.filter((p) => !p.archivedAt);
   return (
     <Section title="Appetite profiles">
-      <p className="text-xs text-zinc-500">Appetite is a guide, not a commitment to quote or bind. Each product (or product + channel) has numbered versions; only one draft at a time.</p>
-      {profiles.length === 0 && <p className="text-sm text-zinc-500">No appetite recorded for this carrier.</p>}
+      <p className="text-xs text-zinc-600 dark:text-zinc-400">Appetite is a guide, not a commitment to quote or bind. Each product (or product + channel) has numbered versions; only one draft at a time.</p>
+      {profiles.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">No appetite recorded for this carrier.</p>}
       {profiles.length > 0 && (
         <table className="w-full text-left text-sm">
-          <thead className="text-xs uppercase text-zinc-500">
+          <thead className="text-xs uppercase text-zinc-600 dark:text-zinc-400">
             <tr><th scope="col" className="py-1 pr-3">Product</th><th scope="col" className="py-1 pr-3">Version</th><th scope="col" className="py-1 pr-3">Status</th><th scope="col" className="py-1 pr-3">Effective</th><th scope="col" className="py-1 pr-3">Rules</th><th scope="col" className="py-1">Review</th></tr>
           </thead>
           <tbody>
@@ -32,8 +32,8 @@ export async function AppetiteTab({ carrier }: { carrier: Carrier }) {
               <tr key={p.id} className="border-t border-zinc-100 dark:border-zinc-800">
                 <td className="py-1 pr-3">
                   <Link href={`/appetite/${p.id}`} className="text-blue-800 hover:underline dark:text-blue-300">{p.carrierProduct.product.name}</Link>
-                  {p.marketChannel?.intermediary && <span className="text-zinc-500"> via {p.marketChannel.intermediary.displayName}</span>}
-                  {p.carrierProduct.writingCompany.id !== carrier.id && <span className="text-zinc-500"> ({p.carrierProduct.writingCompany.displayName})</span>}
+                  {p.marketChannel?.intermediary && <span className="text-zinc-600 dark:text-zinc-400"> via {p.marketChannel.intermediary.displayName}</span>}
+                  {p.carrierProduct.writingCompany.id !== carrier.id && <span className="text-zinc-600 dark:text-zinc-400"> ({p.carrierProduct.writingCompany.displayName})</span>}
                 </td>
                 <td className="py-1 pr-3">v{p.version}</td>
                 <td className="py-1 pr-3"><StatusBadge status={p.status} /></td>
@@ -59,7 +59,7 @@ export async function AppetiteTab({ carrier }: { carrier: Carrier }) {
           <Field label="Effective from (optional)" htmlFor="apFrom"><input id="apFrom" name="effectiveFrom" type="date" className={inputClass} /></Field>
         </ActionForm>
       )}
-      {products.length === 0 && <p className="text-sm text-zinc-500">Appetite is recorded on products this carrier writes. Add a product on the Writing companies &amp; channels tab.</p>}
+      {products.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">Appetite is recorded on products this carrier writes. Add a product on the Writing companies &amp; channels tab.</p>}
     </Section>
   );
 }
@@ -70,8 +70,8 @@ export async function CommissionsTab({ carrierId }: { carrierId: string }) {
   const [agreements, channels, entities, versions] = await Promise.all([listAgreementsForCarrier(ctx, carrierId), listChannelsForOrg(ctx, carrierId), listAgencyEntities(ctx), listCitableVersions(ctx)]);
   return (
     <Section title="Commission agreements" actions={<a href="/api/v1/commission-schedules?format=csv" className="text-sm text-blue-800 hover:underline dark:text-blue-300">All schedules (CSV)</a>}>
-      <p className="text-xs text-zinc-500">Restricted: commission information.</p>
-      {agreements.length === 0 && <p className="text-sm text-zinc-500">No commission agreements recorded.</p>}
+      <p className="text-xs text-zinc-600 dark:text-zinc-400">Restricted: commission information.</p>
+      {agreements.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">No commission agreements recorded.</p>}
       <ul className="flex flex-col gap-3">
         {agreements.map((a) => (
           <li key={a.id} className="rounded border border-zinc-200 p-3 text-sm dark:border-zinc-700">
@@ -80,7 +80,7 @@ export async function CommissionsTab({ carrierId }: { carrierId: string }) {
               <span>· {channelLabel(a.marketChannel)} · {a.agencyEntity.organization.displayName}</span>
               <StatusBadge status={a.status} />
             </div>
-            {a.currentSchedules.length === 0 ? <p className="text-zinc-500">No schedule in effect today.</p> : (
+            {a.currentSchedules.length === 0 ? <p className="text-zinc-600 dark:text-zinc-400">No schedule in effect today.</p> : (
               <ul className="mt-1">
                 {a.currentSchedules.map((s) => (
                   <li key={s.id}>{s.product.name} · {label(s.transactionType)} · {s.territory?.name ?? "All states"}: <strong>{s.basis === "RATE" ? fractionToPercent(s.rate) : s.basis === "FLAT" ? `$${s.flatAmount?.toFixed(2)} flat` : "Tiered"}</strong> since {fmtDate(s.effectiveFrom)}</li>
@@ -113,13 +113,13 @@ export async function DocumentsTab({ carrierId }: { carrierId: string }) {
   const docs = await listDocuments(ctx, { organizationId: carrierId });
   return (
     <Section title="Documents filed under this carrier">
-      {docs.length === 0 ? <p className="text-sm text-zinc-500">No documents.</p> : (
+      {docs.length === 0 ? <p className="text-sm text-zinc-600 dark:text-zinc-400">No documents.</p> : (
         <ul className="text-sm">
           {docs.map((d) => (
             <li key={d.id}>
               <Link href={`/documents/${d.id}`} className="text-blue-800 hover:underline dark:text-blue-300">{d.title}</Link>
               {" "}<Badge>{label(d.documentType)}</Badge>{d.classification === "RESTRICTED" && <> <Badge tone="warn">Restricted</Badge></>}
-              {d.latest && <span className="text-xs text-zinc-500"> · v{d.latest.versionNumber} · {fmtDateTime(d.latest.uploadedAt)}</span>}
+              {d.latest && <span className="text-xs text-zinc-600 dark:text-zinc-400"> · v{d.latest.versionNumber} · {fmtDateTime(d.latest.uploadedAt)}</span>}
             </li>
           ))}
         </ul>
@@ -135,13 +135,13 @@ export async function UpdatesTab({ carrierId }: { carrierId: string }) {
   const items = await listCarrierUpdates(ctx, carrierId);
   return (
     <Section title="Updates by email">
-      <p className="text-xs text-zinc-500">Bulletins and guideline emails forwarded to the carrier-updates mailbox and filed under this carrier.</p>
-      {items.length === 0 ? <p className="text-sm text-zinc-500">None yet.</p> : (
+      <p className="text-xs text-zinc-600 dark:text-zinc-400">Bulletins and guideline emails forwarded to the carrier-updates mailbox and filed under this carrier.</p>
+      {items.length === 0 ? <p className="text-sm text-zinc-600 dark:text-zinc-400">None yet.</p> : (
         <ul className="text-sm">
           {items.map((m) => (
             <li key={m.id}>
               <Link href={`/inbox/${m.id}`} className="text-blue-800 dark:text-blue-300">{m.subject}</Link>
-              <span className="text-xs text-zinc-500"> · {fmtDateTime(m.receivedAt)} · {m.originalFrom ?? m.fromAddress}{m._count.attachments ? ` · ${m._count.attachments} file(s)` : ""}</span>
+              <span className="text-xs text-zinc-600 dark:text-zinc-400"> · {fmtDateTime(m.receivedAt)} · {m.originalFrom ?? m.fromAddress}{m._count.attachments ? ` · ${m._count.attachments} file(s)` : ""}</span>
             </li>
           ))}
         </ul>

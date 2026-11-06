@@ -7,13 +7,13 @@ export function Field({ label, htmlFor, hint, children }: { label: string; htmlF
     <div className="flex flex-col gap-1">
       <label htmlFor={htmlFor} className="text-sm font-medium">{label}</label>
       {children}
-      {hint && <p className="text-xs text-zinc-500 dark:text-zinc-400">{hint}</p>}
+      {hint && <p className="text-xs text-zinc-600 dark:text-zinc-400">{hint}</p>}
     </div>
   );
 }
 
 export const inputClass =
-  "w-full rounded border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-600 dark:bg-zinc-900 focus:outline-2 focus:outline-blue-600";
+  "w-full rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-600 dark:bg-zinc-900 focus:outline-2 focus:outline-blue-600 focus:border-blue-500";
 
 export function Badge({ children, tone = "neutral" }: { children: React.ReactNode; tone?: "neutral" | "warn" | "good" | "bad" }) {
   const tones = {
@@ -22,14 +22,14 @@ export function Badge({ children, tone = "neutral" }: { children: React.ReactNod
     good: "bg-green-100 text-green-900 dark:bg-green-900/40 dark:text-green-200",
     bad: "bg-red-100 text-red-900 dark:bg-red-900/40 dark:text-red-200",
   };
-  return <span className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${tones[tone]}`}>{children}</span>;
+  return <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${tones[tone]}`}>{children}</span>;
 }
 
 export function Section({ title, children, actions }: { title: string; children: React.ReactNode; actions?: React.ReactNode }) {
   return (
-    <section className="flex flex-col gap-3 rounded border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
+    <section className="flex flex-col gap-3 rounded-2xl border border-transparent bg-white shadow-sm p-4 dark:border-zinc-700 dark:bg-zinc-900">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-base font-semibold">{title}</h2>
+        <h2 className="text-base font-semibold text-blue-800 dark:text-blue-200">{title}</h2>
         {actions}
       </div>
       {children}
@@ -39,7 +39,7 @@ export function Section({ title, children, actions }: { title: string; children:
 
 export function ButtonLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <Link href={href} className="inline-block rounded bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800">
+    <Link href={href} className="inline-block rounded-lg bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800">
       {children}
     </Link>
   );

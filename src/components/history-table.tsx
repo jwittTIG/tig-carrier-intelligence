@@ -16,11 +16,11 @@ export function changedFields(before: unknown, after: unknown): string {
 }
 
 export function HistoryTable({ events }: { events: Event[] }) {
-  if (events.length === 0) return <p className="text-sm text-zinc-500">No recorded changes.</p>;
+  if (events.length === 0) return <p className="text-sm text-zinc-600 dark:text-zinc-400">No recorded changes.</p>;
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
-        <thead className="text-xs uppercase text-zinc-500">
+        <thead className="text-xs uppercase text-zinc-600 dark:text-zinc-400">
           <tr><th scope="col" className="py-1 pr-3">When</th><th scope="col" className="py-1 pr-3">Who</th><th scope="col" className="py-1 pr-3">What</th><th scope="col" className="py-1">Changes</th></tr>
         </thead>
         <tbody>

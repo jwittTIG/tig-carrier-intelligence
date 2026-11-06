@@ -159,7 +159,7 @@ async function Overview({ carrier, write }: { carrier: Carrier; write: boolean }
       </Section>
 
       <Section title="Identifiers">
-        {carrier.identifiers.length === 0 ? <p className="text-sm text-zinc-500">None recorded.</p> : (
+        {carrier.identifiers.length === 0 ? <p className="text-sm text-zinc-600 dark:text-zinc-400">None recorded.</p> : (
           <ul className="flex flex-col gap-2 text-sm">
             {carrier.identifiers.map((i) => (
               <li key={i.id} className="flex flex-wrap items-center gap-3">
@@ -185,14 +185,14 @@ async function Overview({ carrier, write }: { carrier: Carrier; write: boolean }
       </Section>
 
       <Section title="Relationships">
-        {rels.length === 0 ? <p className="text-sm text-zinc-500">No relationships recorded.</p> : (
+        {rels.length === 0 ? <p className="text-sm text-zinc-600 dark:text-zinc-400">No relationships recorded.</p> : (
           <ul className="flex flex-col gap-3 text-sm">
             {rels.map((r) => (
               <li key={r.id} className="flex flex-col gap-1">
                 <div className="flex flex-wrap items-center gap-2">
                   {r.direction === "out" ? <span>This carrier is <strong>{label(r.relationshipType)}</strong></span> : <span><strong>{label(r.relationshipType)}</strong> this carrier:</span>}
                   <Link href={`/carriers/${r.other.id}`} className="text-blue-800 hover:underline dark:text-blue-300">{r.other.displayName}</Link>
-                  <span className="text-zinc-500">{fmtDate(r.effectiveFrom)} → {r.effectiveTo ? fmtDate(r.effectiveTo) : "open"}</span>
+                  <span className="text-zinc-600 dark:text-zinc-400">{fmtDate(r.effectiveFrom)} → {r.effectiveTo ? fmtDate(r.effectiveTo) : "open"}</span>
                   {!isCurrent(r) && <Badge>Ended</Badge>}
                 </div>
                 {write && !r.effectiveTo && (
@@ -275,13 +275,13 @@ async function Channels({ carrier, write }: { carrier: Carrier; write: boolean }
         </p>
       ) : (
         <Section title="Products written">
-          {carrier.carrierProducts.length === 0 && <p className="text-sm text-zinc-500">No products recorded.</p>}
+          {carrier.carrierProducts.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">No products recorded.</p>}
           <ul className="flex flex-col gap-4">
             {carrier.carrierProducts.map((cp) => (
               <li key={cp.id} className="flex flex-col gap-2 rounded border border-zinc-200 p-3 dark:border-zinc-700">
                 <div className="flex flex-wrap items-center gap-2 text-sm">
                   <strong>{cp.product.name}</strong>
-                  <span className="text-zinc-500">{cp.product.line.name}</span>
+                  <span className="text-zinc-600 dark:text-zinc-400">{cp.product.line.name}</span>
                   {cp.programName && <Badge>{cp.programName}</Badge>}
                   {cp.archivedAt && <Badge tone="bad">Archived</Badge>}
                   {write && (
@@ -291,11 +291,11 @@ async function Channels({ carrier, write }: { carrier: Carrier; write: boolean }
                   )}
                 </div>
                 <table className="w-full text-left text-sm">
-                  <thead className="text-xs uppercase text-zinc-500">
+                  <thead className="text-xs uppercase text-zinc-600 dark:text-zinc-400">
                     <tr><th scope="col" className="py-1">Channel</th><th scope="col" className="py-1">Through</th><th scope="col" className="py-1">Access</th><th scope="col" className="py-1"><span className="sr-only">Actions</span></th></tr>
                   </thead>
                   <tbody>
-                    {cp.channels.length === 0 && <tr><td colSpan={4} className="py-1 text-zinc-500">No channels yet.</td></tr>}
+                    {cp.channels.length === 0 && <tr><td colSpan={4} className="py-1 text-zinc-600 dark:text-zinc-400">No channels yet.</td></tr>}
                     {cp.channels.map((ch) => (
                       <tr key={ch.id} className={ch.archivedAt ? "text-zinc-400" : ""}>
                         <td className="py-1">{label(ch.distributionType)}{ch.archivedAt && " (archived)"}</td>
@@ -381,11 +381,11 @@ async function Activity({ id, write }: { id: string; write: boolean }) {
           </Field>
         </ActionForm>
       )}
-      {items.length === 0 ? <p className="text-sm text-zinc-500">No activity yet.</p> : (
+      {items.length === 0 ? <p className="text-sm text-zinc-600 dark:text-zinc-400">No activity yet.</p> : (
         <ol className="flex flex-col gap-3">
           {items.map((a) => (
             <li key={a.id} className="border-l-2 border-zinc-300 pl-3 text-sm dark:border-zinc-600">
-              <div className="text-xs text-zinc-500">{label(a.type)} · {fmtDateTime(a.occurredAt)} · {a.owner.name}</div>
+              <div className="text-xs text-zinc-600 dark:text-zinc-400">{label(a.type)} · {fmtDateTime(a.occurredAt)} · {a.owner.name}</div>
               <p className="whitespace-pre-wrap">{a.notes}</p>
             </li>
           ))}
@@ -410,10 +410,10 @@ async function History({ id }: { id: string }) {
   const events = await listCarrierHistory(ctx, id);
   return (
     <Section title="Change history">
-      {events.length === 0 ? <p className="text-sm text-zinc-500">No recorded changes.</p> : (
+      {events.length === 0 ? <p className="text-sm text-zinc-600 dark:text-zinc-400">No recorded changes.</p> : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="text-xs uppercase text-zinc-500">
+            <thead className="text-xs uppercase text-zinc-600 dark:text-zinc-400">
               <tr><th scope="col" className="py-1 pr-3">When</th><th scope="col" className="py-1 pr-3">Who</th><th scope="col" className="py-1 pr-3">What</th><th scope="col" className="py-1">Changes</th></tr>
             </thead>
             <tbody>

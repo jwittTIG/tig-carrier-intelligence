@@ -13,7 +13,7 @@ const PLACEHOLDER: Record<string, string> = { MONEY: "5,000,000", NUMBER: "12.5"
 export function RiskAttributeInputs({ attributes, values, asked }: { attributes: Attribute[]; values: Record<string, string | undefined>; asked: boolean }) {
   if (!asked) return null;
   if (!attributes.length) {
-    return <p className="text-xs text-zinc-500">No risk details (revenue, TIV…) are defined for this product. They are added on an appetite draft.</p>;
+    return <p className="text-xs text-zinc-600 dark:text-zinc-400">No risk details (revenue, TIV…) are defined for this product. They are added on an appetite draft.</p>;
   }
   return (
     <fieldset className="flex flex-col gap-2">
@@ -41,7 +41,7 @@ export function RiskAttributeInputs({ attributes, values, asked }: { attributes:
           </label>
         ))}
       </div>
-      <p className="text-xs text-zinc-500">Enter only what describes the risk. No client names are needed.</p>
+      <p className="text-xs text-zinc-600 dark:text-zinc-400">Enter only what describes the risk. No client names are needed.</p>
     </fieldset>
   );
 }
@@ -49,7 +49,7 @@ export function RiskAttributeInputs({ attributes, values, asked }: { attributes:
 const STATE_TEXT: Record<string, string> = { MET: "met", NOT_MET: "not met", MISSING: "not entered", CANNOT_EVALUATE: "can't be checked" };
 const STATE_CLASS: Record<string, string> = {
   MET: "text-zinc-800 dark:text-zinc-200",
-  NOT_MET: "text-zinc-500",
+  NOT_MET: "text-zinc-600 dark:text-zinc-400",
   MISSING: "text-amber-800 dark:text-amber-300",
   CANNOT_EVALUATE: "text-amber-800 dark:text-amber-300",
 };

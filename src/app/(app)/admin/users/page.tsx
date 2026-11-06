@@ -36,9 +36,9 @@ export default async function UsersPage() {
         </ActionForm>
       </Section>
 
-      <div className="overflow-x-auto rounded border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+      <div className="overflow-x-auto rounded-2xl border border-transparent bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-zinc-200 text-xs uppercase text-zinc-500 dark:border-zinc-700">
+          <thead className="border-b border-zinc-200 text-xs uppercase text-zinc-600 dark:text-zinc-400 dark:border-zinc-700">
             <tr>
               <th scope="col" className="px-3 py-2">Name</th>
               <th scope="col" className="px-3 py-2">Email</th>
@@ -50,11 +50,11 @@ export default async function UsersPage() {
           <tbody>
             {users.map((u) => (
               <tr key={u.id} className="border-b border-zinc-100 align-top last:border-0 dark:border-zinc-800">
-                <td className="px-3 py-2">{u.name}{u.id === ctx.userId && <span className="text-zinc-500"> (you)</span>}</td>
+                <td className="px-3 py-2">{u.name}{u.id === ctx.userId && <span className="text-zinc-600 dark:text-zinc-400"> (you)</span>}</td>
                 <td className="px-3 py-2">{u.email}</td>
                 <td className="px-3 py-2">
                   <Badge tone={u.status === "ACTIVE" ? "good" : u.status === "INVITED" ? "warn" : "bad"}>{label(u.status)}</Badge>
-                  {u.status === "INVITED" && <div className="text-xs text-zinc-500">Not signed in yet</div>}
+                  {u.status === "INVITED" && <div className="text-xs text-zinc-600 dark:text-zinc-400">Not signed in yet</div>}
                 </td>
                 <td className="px-3 py-2">
                   <ActionForm action={setRoleAction.bind(null, u.id)} submitLabel="Set" variant="secondary" className="flex flex-wrap items-center gap-2">

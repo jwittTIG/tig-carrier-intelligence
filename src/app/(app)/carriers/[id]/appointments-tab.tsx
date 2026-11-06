@@ -40,13 +40,13 @@ export async function AppointmentsTab({ carrierId }: { carrierId: string }) {
         <p className="text-xs text-zinc-600 dark:text-zinc-400">
           Never store passwords here. Keep logins in the password manager and note where to find them.
         </p>
-        {portals.length === 0 ? <p className="text-sm text-zinc-500">No portal links.</p> : (
+        {portals.length === 0 ? <p className="text-sm text-zinc-600 dark:text-zinc-400">No portal links.</p> : (
           <ul className="flex flex-col gap-2 text-sm">
             {portals.map((p) => (
               <li key={p.id} className="flex flex-wrap items-center gap-3">
                 <a href={p.url} target="_blank" rel="noopener noreferrer" className="font-medium text-blue-800 hover:underline dark:text-blue-300">{p.name}</a>
-                {p.credentialVaultReference && <span className="text-zinc-500">Login: {p.credentialVaultReference}</span>}
-                {p.accessInstructions && <span className="text-zinc-500">{p.accessInstructions}</span>}
+                {p.credentialVaultReference && <span className="text-zinc-600 dark:text-zinc-400">Login: {p.credentialVaultReference}</span>}
+                {p.accessInstructions && <span className="text-zinc-600 dark:text-zinc-400">{p.accessInstructions}</span>}
                 {write && <ActionForm action={removePortalAction.bind(null, carrierId, p.id)} submitLabel="Remove" variant="danger" showOk={false} confirm={`Remove ${p.name}?`}>{null}</ActionForm>}
               </li>
             ))}
@@ -63,7 +63,7 @@ export async function AppointmentsTab({ carrierId }: { carrierId: string }) {
       </Section>
 
       <Section title="Appointments and codes">
-        {appointments.length === 0 && <p className="text-sm text-zinc-500">No appointments recorded for this carrier.</p>}
+        {appointments.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">No appointments recorded for this carrier.</p>}
         <ul className="flex flex-col gap-4">
           {appointments.map((a) => (
             <li key={a.id} className="flex flex-col gap-3 rounded border border-zinc-200 p-3 text-sm dark:border-zinc-700">
@@ -72,13 +72,13 @@ export async function AppointmentsTab({ carrierId }: { carrierId: string }) {
                 <span>· {a.agencyEntity.organization.displayName}</span>
                 <span>· {a.appointmentType}</span>
                 <EffectiveBadge state={a.state} />
-                {a.state === "NOT_ACTIVE" && <span className="text-zinc-500">({label(a.status)})</span>}
-                <span className="text-zinc-500">{fmtDate(a.effectiveFrom)} → {a.effectiveTo ? fmtDate(a.effectiveTo) : "open"}</span>
+                {a.state === "NOT_ACTIVE" && <span className="text-zinc-600 dark:text-zinc-400">({label(a.status)})</span>}
+                <span className="text-zinc-600 dark:text-zinc-400">{fmtDate(a.effectiveFrom)} → {a.effectiveTo ? fmtDate(a.effectiveTo) : "open"}</span>
               </div>
 
               <div>
-                <h3 className="text-xs font-semibold uppercase text-zinc-500">Authorized for</h3>
-                {a.authorizations.length === 0 ? <p className="text-zinc-500">No states or products recorded.</p> : (
+                <h3 className="text-xs font-semibold uppercase text-zinc-600 dark:text-zinc-400">Authorized for</h3>
+                {a.authorizations.length === 0 ? <p className="text-zinc-600 dark:text-zinc-400">No states or products recorded.</p> : (
                   <ul className="flex flex-wrap gap-2">
                     {a.authorizations.map((z) => (
                       <li key={z.id} className="inline-flex items-center gap-1 rounded bg-zinc-100 px-2 py-0.5 dark:bg-zinc-800">
@@ -91,13 +91,13 @@ export async function AppointmentsTab({ carrierId }: { carrierId: string }) {
               </div>
 
               <div className="overflow-x-auto">
-                <h3 className="text-xs font-semibold uppercase text-zinc-500">Codes</h3>
+                <h3 className="text-xs font-semibold uppercase text-zinc-600 dark:text-zinc-400">Codes</h3>
                 <table className="w-full text-left">
-                  <thead className="text-xs text-zinc-500">
+                  <thead className="text-xs text-zinc-600 dark:text-zinc-400">
                     <tr><th scope="col" className="py-1 pr-2">Code</th><th scope="col" className="py-1 pr-2">Type</th><th scope="col" className="py-1 pr-2">Producer</th><th scope="col" className="py-1 pr-2">Dates</th><th scope="col" className="py-1 pr-2">Status</th><th scope="col" className="py-1"><span className="sr-only">Edit</span></th></tr>
                   </thead>
                   <tbody>
-                    {a.codes.length === 0 && <tr><td colSpan={6} className="py-1 text-zinc-500">No codes.</td></tr>}
+                    {a.codes.length === 0 && <tr><td colSpan={6} className="py-1 text-zinc-600 dark:text-zinc-400">No codes.</td></tr>}
                     {a.codes.map((c) => (
                       <tr key={c.id} className="border-t border-zinc-100 align-top dark:border-zinc-800">
                         <td className="py-1 pr-2 font-mono">{c.codeValue}</td>
@@ -132,7 +132,7 @@ export async function AppointmentsTab({ carrierId }: { carrierId: string }) {
                     ))}
                   </tbody>
                 </table>
-                <p className="mt-1 text-xs text-zinc-500">Changes to codes are recorded in the carrier&apos;s change history. To change a code&apos;s value, end it and add the new one.</p>
+                <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">Changes to codes are recorded in the carrier&apos;s change history. To change a code&apos;s value, end it and add the new one.</p>
               </div>
 
               {write && (
@@ -200,7 +200,7 @@ export async function AppointmentsTab({ carrierId }: { carrierId: string }) {
             <Field label="Ends (optional)" htmlFor="apTo"><input id="apTo" name="effectiveTo" type="date" className={inputClass} /></Field>
           </ActionForm>
         )}
-        {write && channels.length === 0 && <p className="text-sm text-zinc-500">Add a product and channel on the Writing companies &amp; channels tab first.</p>}
+        {write && channels.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">Add a product and channel on the Writing companies &amp; channels tab first.</p>}
       </Section>
     </div>
   );

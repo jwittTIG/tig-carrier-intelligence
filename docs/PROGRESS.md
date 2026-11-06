@@ -4,6 +4,12 @@
 **Milestone 7 (P1: risk matching, market comparison, notifications) is built and waiting for Josh's review.** Josh picked these three P1 items and said "Go ahead and the next milestone" (2026-11-06); he excluded the submission workflow, AMS connection, production dashboard and commission reconciliation. D21–D23 record the defaults used (still PROPOSED). M0–M6 are accepted (M6: "Proceed", 2026-11-06). M6 detail: built on the dev mailbox. The real Microsoft 365 mailbox isn't set up yet (docs/EMAIL_SETUP.md), so the Graph reader is untested. Josh moved from M5 to M6 ("Yes, start M6", 2026-11-05). Earlier status: Josh accepted M4 ("Proceed with the next step", 2026-11-05). D14 for appointments/codes was not answered, so they keep saving directly. Josh asked for email intake of carrier bulletins and guideline updates: proposed as Milestone 6 (DECISIONS D20, `prompts/06-email-intake.md`). D7a (real Postgres) is still open. The MVP is **not production-ready**: see `docs/SECURITY.md` "Known gaps" and `docs/OPERATIONS.md`.
 
 ## Milestone 7: risk matching, market comparison, notifications (done; waiting for Josh's review)
+- **New look with a color picker (added 2026-11-06; DECISIONS N18):**
+  - Colored sidebar (initials avatar, name, role, search, icon menu with the current page highlighted, notification count, sign out) on a light gray page with rounded white cards.
+  - Dashboard tiles have icons and the real counts. On phones the menu folds into a **Menu** button.
+  - **Color** at the bottom of the sidebar: 8 presets or a custom color, saved per browser (cookie). Shades are derived so text stays readable.
+  - Also fixed: secondary gray text was a shade too light on the gray page, and red buttons failed contrast in dark mode.
+  - Tested: unit tests for the palette (contrast for presets and extreme colors such as yellow, white and black). The accessibility sweep now runs 4 times: light, dark, a yellow accent and a very dark accent. It passes on all 15 screens. All 12 browser tests pass. Checked by eye at desktop and phone width, in teal and purple.
 - **Industry search by words (added 2026-11-06 at Josh's request; DECISIONS N16):**
   - The Market Finder's Industry field takes words or a code: "roofing", "roofer", "electrician", "restaurant", 238160 or NAICS 238160.
   - Words are matched to the official 2022 NAICS titles (2,125 codes from the Census Bureau, loaded by the seed). Exactly one six-digit match is used directly, e.g. "roofing contractors" → 238160. Otherwise a **Which industry?** list appears: "roofer" offers Roofing Contractors, roofing material wholesalers, and broader groups.
@@ -364,3 +370,4 @@ Milestone 7 is waiting for Josh's review. Later phases (do not start without Jos
 - 2026-11-06: Josh chose P1 risk matching, market comparison and notifications ("Go ahead and the next milestone"). Built M7 with defaults D21–D23.
 - 2026-11-06: Josh asked for Market Finder search by words ("roofing", "roofer"). Added NAICS 2022 titles (Census Bureau, downloaded with his OK) and word search (N16).
 - 2026-11-06: Josh asked for staff-editable search words ("Yes, add search words"). Added the Industries page and search words (N17).
+- 2026-11-06: Josh sent a sample dashboard and asked for a similar look with a pickable main color. Built the sidebar layout and color picker (N18).

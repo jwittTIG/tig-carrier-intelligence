@@ -30,9 +30,9 @@ export default async function ImportsPage() {
         </ActionForm>
       </Section>
       <Section title="Recent imports">
-        {jobs.length === 0 ? <p className="text-sm text-zinc-500">None yet.</p> : (
+        {jobs.length === 0 ? <p className="text-sm text-zinc-600 dark:text-zinc-400">None yet.</p> : (
           <table className="w-full text-left text-sm">
-            <thead className="text-xs uppercase text-zinc-500"><tr><th scope="col" className="py-1 pr-3">File</th><th scope="col" className="py-1 pr-3">Contents</th><th scope="col" className="py-1 pr-3">Status</th><th scope="col" className="py-1 pr-3">Rows</th><th scope="col" className="py-1">By</th></tr></thead>
+            <thead className="text-xs uppercase text-zinc-600 dark:text-zinc-400"><tr><th scope="col" className="py-1 pr-3">File</th><th scope="col" className="py-1 pr-3">Contents</th><th scope="col" className="py-1 pr-3">Status</th><th scope="col" className="py-1 pr-3">Rows</th><th scope="col" className="py-1">By</th></tr></thead>
             <tbody>
               {jobs.map((j) => (
                 <tr key={j.id} className="border-t border-zinc-100 dark:border-zinc-800">

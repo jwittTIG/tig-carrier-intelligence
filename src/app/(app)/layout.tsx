@@ -1,21 +1,61 @@
-import Link from "next/link";
+import { cookies } from "next/headers";
 import { SignOutButton } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { can } from "@/server/auth/context";
 import { authDriver, requireAuth } from "@/server/auth/session";
 import { devSignOut } from "@/server/auth/dev";
 import { unreadCount } from "@/server/services/notifications";
+import { ACCENT_COOKIE, DEFAULT_ACCENT, normalizeHex } from "@/lib/theme";
+import { Icon } from "@/components/icons";
+import { AccentPicker, SidebarNav, type NavItem } from "@/components/sidebar";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const ctx = await requireAuth();
   const dev = authDriver() === "dev";
   const unread = await unreadCount(ctx);
+  const accent = normalizeHex((await cookies()).get(ACCENT_COOKIE)?.value) ?? DEFAULT_ACCENT;
   async function signOut() {
     "use server";
     await devSignOut();
     redirect("/sign-in");
   }
-  const signOutButton = <button className="hover:underline">Sign out</button>;
+
+  const items: NavItem[] = [
+    { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
+    ...(can(ctx, "appetite.read") ? [{ href: "/markets", label: "Market Finder", icon: "markets" }, { href: "/industries", label: "Industries", icon: "industries" }] : []),
+    { href: "/carriers", label: "Carriers", icon: "carriers" },
+    ...(can(ctx, "contact.read") ? [{ href: "/contacts", label: "Contacts", icon: "contacts" }] : []),
+    ...(can(ctx, "appointment.read") ? [{ href: "/codes", label: "Codes", icon: "codes" }] : []),
+    ...(can(ctx, "document.read") ? [{ href: "/documents", label: "Documents", icon: "documents" }] : []),
+    ...(can(ctx, "inbox.read") ? [{ href: "/inbox", label: "Inbox", icon: "inbox" }] : []),
+    ...(can(ctx, "change_request.review") ? [{ href: "/approvals", label: "Approvals", icon: "approvals" }] : []),
+    { href: "/notifications", label: "Notifications", icon: "bell", badge: unread },
+    ...(can(ctx, "import.run") ? [{ href: "/imports", label: "Import", icon: "imports" }] : []),
+    ...(can(ctx, "admin.users") ? [{ href: "/admin/users", label: "Users", icon: "users" }] : []),
+    ...(can(ctx, "audit.read") ? [{ href: "/admin/audit", label: "Audit log", icon: "audit" }] : []),
+  ];
+  const initials = ctx.name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("");
+  const role = ctx.roles.includes("ADMIN") ? "Admin" : ctx.roles.includes("STAFF") ? "Staff" : "Limited";
+  const signOutButton = (
+    <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-white hover:bg-blue-700">
+      <Icon name="logout" />
+      Sign out
+    </button>
+  );
+
+  const sidebarBody = (
+    <>
+      <nav aria-label="Main">
+        <SidebarNav items={items} />
+      </nav>
+      <div className="mt-auto flex flex-col gap-2 pt-4">
+        <AccentPicker current={accent} />
+        {dev ? <form action={signOut}>{signOutButton}</form> : <SignOutButton>{signOutButton}</SignOutButton>}
+      </div>
+    </>
+  );
+
   return (
     <>
       {dev && (
@@ -23,33 +63,29 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           Development sign-in (AUTH_DRIVER=dev). Not for real data.
         </div>
       )}
-      <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        <nav aria-label="Main" className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3 text-sm">
-          <Link href="/dashboard" className="font-semibold">TIG Carrier Intelligence</Link>
-          <Link href="/dashboard" className="hover:underline">Dashboard</Link>
-          {can(ctx, "appetite.read") && <Link href="/markets" className="hover:underline">Market Finder</Link>}
-          {can(ctx, "appetite.read") && <Link href="/industries" className="hover:underline">Industries</Link>}
-          <Link href="/carriers" className="hover:underline">Carriers</Link>
-          {can(ctx, "contact.read") && <Link href="/contacts" className="hover:underline">Contacts</Link>}
-          {can(ctx, "appointment.read") && <Link href="/codes" className="hover:underline">Codes</Link>}
-          {can(ctx, "document.read") && <Link href="/documents" className="hover:underline">Documents</Link>}
-          {can(ctx, "inbox.read") && <Link href="/inbox" className="hover:underline">Inbox</Link>}
-          {can(ctx, "change_request.review") && <Link href="/approvals" className="hover:underline">Approvals</Link>}
-          {can(ctx, "admin.users") && <Link href="/admin/users" className="hover:underline">Users</Link>}
-          {can(ctx, "audit.read") && <Link href="/admin/audit" className="hover:underline">Audit log</Link>}
-          {can(ctx, "import.run") && <Link href="/imports" className="hover:underline">Import</Link>}
-          <form action="/search" method="get" role="search" className="ml-auto">
+      <div className="flex flex-1 flex-col gap-4 bg-zinc-100 p-3 lg:flex-row lg:p-4 dark:bg-zinc-950">
+        <aside className="flex flex-col gap-4 rounded-3xl bg-blue-600 p-4 text-white shadow-md lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:w-64 lg:shrink-0 lg:overflow-y-auto dark:bg-blue-900">
+          <Link href="/dashboard" className="text-base font-semibold tracking-tight text-white">TIG Carrier Intelligence</Link>
+          <div className="flex items-center gap-3 lg:flex-col lg:gap-2 lg:py-2">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full border-4 border-white/40 bg-white text-lg font-semibold text-blue-800 lg:h-16 lg:w-16 lg:text-xl" aria-hidden="true">{initials}</span>
+            <div className="flex flex-col lg:items-center">
+              <span className="font-semibold">{ctx.name}</span>
+              <span className="w-fit rounded-full bg-blue-800 px-2 text-xs font-medium">{role}</span>
+            </div>
+          </div>
+          <form action="/search" method="get" role="search">
             <label htmlFor="globalSearch" className="sr-only">Search carriers, contacts, codes and documents</label>
-            <input id="globalSearch" name="q" type="search" placeholder="Search…" className="w-40 rounded border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-900" />
+            <input id="globalSearch" name="q" type="search" placeholder="Search…" className="w-full rounded-xl border-0 bg-white px-3 py-1.5 text-sm text-zinc-900 placeholder:text-zinc-600 dark:bg-zinc-900 dark:text-zinc-100" />
           </form>
-          <Link href="/notifications" className="hover:underline" aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}>
-            Notifications{unread > 0 && <span className="ml-1 rounded-full bg-blue-700 px-1.5 text-xs font-semibold text-white">{unread}</span>}
-          </Link>
-          <span className="text-zinc-600 dark:text-zinc-400">{ctx.name}</span>
-          {dev ? <form action={signOut}>{signOutButton}</form> : <SignOutButton>{signOutButton}</SignOutButton>}
-        </nav>
-      </header>
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 py-6">{children}</main>
+          {/* Phones and narrow windows: the menu folds away. */}
+          <details className="lg:hidden">
+            <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl bg-blue-700 px-3 py-2 text-sm font-medium dark:bg-blue-800"><Icon name="menu" />Menu</summary>
+            <div className="mt-2 flex flex-col">{sidebarBody}</div>
+          </details>
+          <div className="hidden flex-1 flex-col lg:flex">{sidebarBody}</div>
+        </aside>
+        <main className="flex w-full min-w-0 flex-1 flex-col gap-4 lg:py-2">{children}</main>
+      </div>
     </>
   );
 }

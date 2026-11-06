@@ -43,7 +43,7 @@ export default async function MarketsPage({ searchParams }: PageProps<"/markets"
   return (
     <>
       <h1 className="text-xl font-semibold">Market Finder</h1>
-      <form method="get" role="search" className="flex flex-col gap-3 rounded border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-900">
+      <form method="get" role="search" className="flex flex-col gap-3 rounded-2xl border border-transparent bg-white shadow-sm p-3 dark:border-zinc-700 dark:bg-zinc-900">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <label className="flex flex-col gap-1 text-sm">
             Line
@@ -76,7 +76,7 @@ export default async function MarketsPage({ searchParams }: PageProps<"/markets"
           </label>
           <div className="flex flex-col justify-end gap-2">
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="includeIntermediaries" defaultChecked={params.includeIntermediaries !== "false" && (params.includeIntermediaries === "on" || !asked)} />Include wholesalers/MGAs</label>
-            <button type="submit" className="rounded bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800">Find markets</button>
+            <button type="submit" className="rounded-lg bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800">Find markets</button>
           </div>
         </div>
         <RiskAttributeInputs attributes={attributes} values={params} asked={asked} />
@@ -97,12 +97,12 @@ export default async function MarketsPage({ searchParams }: PageProps<"/markets"
             {result.industryChoices.map((c) => (
               <li key={c.code}>
                 <Link href={withIndustry(c.code)} className="text-blue-800 hover:underline dark:text-blue-300">NAICS {c.code}: {c.title}</Link>
-                {c.level < 6 && <span className="text-xs text-zinc-500"> (broader group)</span>}
+                {c.level < 6 && <span className="text-xs text-zinc-600 dark:text-zinc-400"> (broader group)</span>}
                 {c.keywords.length > 0 && <span className="text-xs text-zinc-600 dark:text-zinc-400"> · search words: {c.keywords.join(", ")}</span>}
               </li>
             ))}
           </ul>
-          <p className="text-xs text-zinc-500">Not here? <Link href={`/industries?q=${encodeURIComponent(params.industry ?? "")}`} className="hover:underline">Look up industry codes</Link> and add search words.</p>
+          <p className="text-xs text-zinc-600 dark:text-zinc-400">Not here? <Link href={`/industries?q=${encodeURIComponent(params.industry ?? "")}`} className="hover:underline">Look up industry codes</Link> and add search words.</p>
         </Section>
       )}
 
@@ -116,7 +116,7 @@ export default async function MarketsPage({ searchParams }: PageProps<"/markets"
             </p>
           )}
           <p role="note" className="rounded border border-zinc-300 bg-zinc-100 p-2 text-sm dark:border-zinc-600 dark:bg-zinc-800">{result.disclaimer}</p>
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-zinc-600 dark:text-zinc-400">
             Only approved appetite in effect today is used. Rules for a specific class only count when you enter an industry.
             Conditions such as revenue limits are checked against the risk details you enter; a missing detail is never treated as acceptable.
           </p>
@@ -124,8 +124,8 @@ export default async function MarketsPage({ searchParams }: PageProps<"/markets"
           {result.total > 1 && (
             <form id="compare" method="get" action="/markets/compare" className="flex flex-wrap items-center gap-3 text-sm">
               {carry.map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
-              <button type="submit" className="rounded border border-zinc-300 bg-white px-3 py-1.5 font-medium hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900">Compare selected</button>
-              <span className="text-xs text-zinc-500">Tick 2 to {MAX_COMPARE} markets below.</span>
+              <button type="submit" className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 font-medium hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900">Compare selected</button>
+              <span className="text-xs text-zinc-600 dark:text-zinc-400">Tick 2 to {MAX_COMPARE} markets below.</span>
             </form>
           )}
           {result.groups.filter((g) => g.results.length).map((g) => (

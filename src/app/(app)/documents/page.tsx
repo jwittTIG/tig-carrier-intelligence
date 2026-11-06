@@ -21,7 +21,7 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/docume
       {can(ctx, "document.write") && (
         <Section title="Upload a document">
           <UploadForm carriers={carriers} />
-          <p className="text-xs text-zinc-500">Files are checked by content, scanned, and stored privately. Downloads use links that expire after 5 minutes.</p>
+          <p className="text-xs text-zinc-600 dark:text-zinc-400">Files are checked by content, scanned, and stored privately. Downloads use links that expire after 5 minutes.</p>
         </Section>
       )}
       <form method="get" role="search" className="flex flex-wrap items-end gap-3 text-sm">
@@ -41,16 +41,16 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/docume
           </select>
         </label>
         <label className="flex items-center gap-2"><input type="checkbox" name="includeArchived" defaultChecked={params.includeArchived === "on"} />Include archived</label>
-        <button className="rounded bg-blue-700 px-3 py-1.5 font-medium text-white hover:bg-blue-800">Filter</button>
+        <button className="rounded-lg bg-blue-700 px-3 py-1.5 font-medium text-white hover:bg-blue-800">Filter</button>
         <Link href="/documents" className="px-2 py-1.5 hover:underline">Clear</Link>
       </form>
-      <div className="overflow-x-auto rounded border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+      <div className="overflow-x-auto rounded-2xl border border-transparent bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-zinc-200 text-xs uppercase text-zinc-500 dark:border-zinc-700">
+          <thead className="border-b border-zinc-200 text-xs uppercase text-zinc-600 dark:text-zinc-400 dark:border-zinc-700">
             <tr><th scope="col" className="px-3 py-2">Title</th><th scope="col" className="px-3 py-2">Type</th><th scope="col" className="px-3 py-2">Visibility</th><th scope="col" className="px-3 py-2">Latest</th><th scope="col" className="px-3 py-2">Owner</th></tr>
           </thead>
           <tbody>
-            {docs.length === 0 && <tr><td colSpan={5} className="px-3 py-6 text-center text-zinc-500">No documents.</td></tr>}
+            {docs.length === 0 && <tr><td colSpan={5} className="px-3 py-6 text-center text-zinc-600 dark:text-zinc-400">No documents.</td></tr>}
             {docs.map((d) => (
               <tr key={d.id} className="border-b border-zinc-100 last:border-0 dark:border-zinc-800">
                 <td className="px-3 py-2">

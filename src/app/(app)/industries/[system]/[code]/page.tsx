@@ -54,7 +54,7 @@ export default async function IndustryPage({ params }: PageProps<"/industries/[s
             {industry.keywords.map((k) => (
               <li key={k.id} className="flex flex-wrap items-center gap-3">
                 <span className="font-medium">{k.keyword}</span>
-                <span className="text-xs text-zinc-500">added by {k.createdBy.name} on {fmtDate(k.createdAt)}</span>
+                <span className="text-xs text-zinc-600 dark:text-zinc-400">added by {k.createdBy.name} on {fmtDate(k.createdAt)}</span>
                 {write && (
                   <ActionForm action={removeKeywordAction.bind(null, industry.classificationSystem, industry.code, k.id)} submitLabel="Remove" variant="danger" className="flex items-center gap-2">
                     <span className="sr-only">Remove the search word {k.keyword}</span>
@@ -83,7 +83,7 @@ export default async function IndustryPage({ params }: PageProps<"/industries/[s
 
       <p className="text-sm">
         <Link href={`/markets?industry=${encodeURIComponent(`NAICS ${industry.code}`)}`} className="text-blue-800 hover:underline dark:text-blue-300">Find markets for this industry</Link>
-        <span className="text-xs text-zinc-500"> (choose a line or product there)</span>
+        <span className="text-xs text-zinc-600 dark:text-zinc-400"> (choose a line or product there)</span>
       </p>
     </>
   );

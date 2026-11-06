@@ -44,7 +44,7 @@ export default async function NotificationsPage({ searchParams }: PageProps<"/no
                     {n.href ? <Link href={n.href} className="font-medium hover:underline">{n.title}</Link> : <span className="font-medium">{n.title}</span>}
                   </span>
                   {n.body && <span className="text-zinc-700 dark:text-zinc-300">“{n.body}”</span>}
-                  <span className="text-xs text-zinc-500">{fmtDateTime(n.createdAt)}{n.organization && <> · <Link href={`/carriers/${n.organization.id}`} className="hover:underline">{n.organization.displayName}</Link></>}</span>
+                  <span className="text-xs text-zinc-600 dark:text-zinc-400">{fmtDateTime(n.createdAt)}{n.organization && <> · <Link href={`/carriers/${n.organization.id}`} className="hover:underline">{n.organization.displayName}</Link></>}</span>
                 </div>
                 {!n.readAt && <ActionForm action={markReadAction.bind(null, n.id)} submitLabel="Mark read" variant="secondary" showOk={false} className="flex items-center gap-2">{null}</ActionForm>}
               </li>

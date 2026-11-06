@@ -45,7 +45,7 @@ export default async function InboxMessagePage({ params }: PageProps<"/inbox/[id
       {m.senderStatus === "HELD" && (
         <Section title="Unknown sender">
           <p className="text-sm">This email didn&apos;t come from an active TIG user, so its attachments haven&apos;t been opened or stored. Only an admin can accept or discard it.</p>
-          {m.authResults && <p className="break-all font-mono text-xs text-zinc-500">{m.authResults}</p>}
+          {m.authResults && <p className="break-all font-mono text-xs text-zinc-600 dark:text-zinc-400">{m.authResults}</p>}
           {can(ctx, "inbox.manage") && (
             <div className="flex flex-wrap gap-4">
               <ActionForm action={heldAction.bind(null, m.id, "ACCEPT")} submitLabel="Accept" className="flex flex-wrap items-end gap-2">
@@ -73,13 +73,13 @@ export default async function InboxMessagePage({ params }: PageProps<"/inbox/[id
                   <a href={`/api/v1/document-versions/${a.documentVersion.id}/download`} className="text-xs">Download</a>
                 </>
               ) : (
-                <><span>{a.filename}</span> <Badge tone="neutral">Not stored</Badge> <span className="text-xs text-zinc-500">{a.rejectedReason}</span></>
+                <><span>{a.filename}</span> <Badge tone="neutral">Not stored</Badge> <span className="text-xs text-zinc-600 dark:text-zinc-400">{a.rejectedReason}</span></>
               )}
             </li>
           ))}
-          {m.attachments.length === 0 && <li className="text-zinc-500">No attachments.</li>}
+          {m.attachments.length === 0 && <li className="text-zinc-600 dark:text-zinc-400">No attachments.</li>}
         </ul>
-        {m.citedBy.length > 0 && <p className="text-xs text-zinc-500">Cited as a source on: {m.citedBy.map((c) => `${label(c.recordType)}${c.pageOrSection ? ` (${c.pageOrSection})` : ""}`).join(", ")}</p>}
+        {m.citedBy.length > 0 && <p className="text-xs text-zinc-600 dark:text-zinc-400">Cited as a source on: {m.citedBy.map((c) => `${label(c.recordType)}${c.pageOrSection ? ` (${c.pageOrSection})` : ""}`).join(", ")}</p>}
       </Section>
 
       {triage && m.status !== "DISMISSED" && (
@@ -112,9 +112,9 @@ export default async function InboxMessagePage({ params }: PageProps<"/inbox/[id
               )}
             </ActionForm>
           ) : (
-            <p className="text-sm text-zinc-500">To start an appetite draft, the carrier needs a product (Writing companies &amp; channels tab).</p>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">To start an appetite draft, the carrier needs a product (Writing companies &amp; channels tab).</p>
           )}
-          <p className="text-xs text-zinc-500">A draft opens with this email as its source; add the rules and submit it for approval as usual. If a draft is already open for that product, the email is added to it.</p>
+          <p className="text-xs text-zinc-600 dark:text-zinc-400">A draft opens with this email as its source; add the rules and submit it for approval as usual. If a draft is already open for that product, the email is added to it.</p>
           <ActionForm action={dismissAction.bind(null, m.id)} submitLabel="Dismiss" variant="secondary" className="flex flex-wrap items-end gap-2">
             <Field label="Why (required)" htmlFor="dReason"><input id="dReason" name="reason" required placeholder="e.g. marketing only, duplicate" className={`${inputClass} min-w-64`} /></Field>
           </ActionForm>
@@ -122,7 +122,7 @@ export default async function InboxMessagePage({ params }: PageProps<"/inbox/[id
       )}
 
       <Section title="Message">
-        <p className="text-xs text-zinc-500">Shown as plain text. Links and images in the original aren&apos;t loaded.</p>
+        <p className="text-xs text-zinc-600 dark:text-zinc-400">Shown as plain text. Links and images in the original aren&apos;t loaded.</p>
         <pre className="max-h-[40rem] overflow-auto whitespace-pre-wrap break-words rounded bg-zinc-50 p-3 font-sans text-sm dark:bg-zinc-950">{m.bodyText || "(empty)"}</pre>
       </Section>
     </>

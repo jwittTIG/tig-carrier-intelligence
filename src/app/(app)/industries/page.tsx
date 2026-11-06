@@ -33,7 +33,7 @@ export default async function IndustriesPage({ searchParams }: PageProps<"/indus
           Words or code
           <input name="q" defaultValue={q} placeholder="air conditioning or 238220" className={inputClass} />
         </label>
-        <button type="submit" className="rounded bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800">Search</button>
+        <button type="submit" className="rounded-lg bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800">Search</button>
       </form>
       {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
       {code && (
@@ -50,7 +50,7 @@ export default async function IndustriesPage({ searchParams }: PageProps<"/indus
               {results.map((r) => (
                 <li key={r.code}>
                   <Link href={`/industries/NAICS/${r.code}`} className="text-blue-800 hover:underline dark:text-blue-300">NAICS {r.code}: {r.title}</Link>
-                  {r.level < 6 && <span className="text-xs text-zinc-500"> (broader group)</span>}
+                  {r.level < 6 && <span className="text-xs text-zinc-600 dark:text-zinc-400"> (broader group)</span>}
                   {r.keywords.length > 0 && <span className="text-xs text-zinc-600 dark:text-zinc-400"> · search words: {r.keywords.join(", ")}</span>}
                 </li>
               ))}

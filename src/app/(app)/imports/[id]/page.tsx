@@ -44,7 +44,7 @@ export default async function ImportPage({ params }: PageProps<"/imports/[id]">)
         <Section title="Result">
           <p className="text-sm">{job.acceptedRows} rows imported; {job.rejectedRows} not imported.</p>
           {job.errorObjectKey && <a href={`/api/v1/imports/${job.id}/errors`} className="text-sm text-blue-800 hover:underline dark:text-blue-300">Download the rows that weren&apos;t imported (CSV)</a>}
-          <p className="text-xs text-zinc-500">Each imported record shows this file and row as its source.</p>
+          <p className="text-xs text-zinc-600 dark:text-zinc-400">Each imported record shows this file and row as its source.</p>
         </Section>
       ) : (
         <>
@@ -84,7 +84,7 @@ export default async function ImportPage({ params }: PageProps<"/imports/[id]">)
             {job.status !== "PREVIEWED" && <p className="text-sm text-amber-700">Check the column matches above and press &ldquo;Update preview&rdquo; before committing.</p>}
             <div className="max-h-[32rem] overflow-auto">
               <table className="w-full text-left text-sm">
-                <thead className="sticky top-0 bg-white text-xs uppercase text-zinc-500 dark:bg-zinc-900"><tr><th scope="col" className="py-1 pr-2">Row</th><th scope="col" className="py-1 pr-2">Result</th><th scope="col" className="py-1 pr-2">Record</th><th scope="col" className="py-1">Why</th></tr></thead>
+                <thead className="sticky top-0 bg-white text-xs uppercase text-zinc-600 dark:text-zinc-400 dark:bg-zinc-900"><tr><th scope="col" className="py-1 pr-2">Row</th><th scope="col" className="py-1 pr-2">Result</th><th scope="col" className="py-1 pr-2">Record</th><th scope="col" className="py-1">Why</th></tr></thead>
                 <tbody>
                   {preview?.slice(0, 500).map((p) => (
                     <tr key={p.row} className="border-t border-zinc-100 align-top dark:border-zinc-800">
@@ -96,7 +96,7 @@ export default async function ImportPage({ params }: PageProps<"/imports/[id]">)
                   ))}
                 </tbody>
               </table>
-              {preview && preview.length > 500 && <p className="text-xs text-zinc-500">Showing the first 500 of {preview.length} rows.</p>}
+              {preview && preview.length > 500 && <p className="text-xs text-zinc-600 dark:text-zinc-400">Showing the first 500 of {preview.length} rows.</p>}
             </div>
           </Section>
 

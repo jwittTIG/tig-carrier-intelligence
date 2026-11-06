@@ -62,7 +62,7 @@ type Source = {
 };
 
 export function SourcesList({ sources }: { sources: Source[] }) {
-  if (sources.length === 0) return <p className="text-sm text-zinc-500">No sources recorded.</p>;
+  if (sources.length === 0) return <p className="text-sm text-zinc-600 dark:text-zinc-400">No sources recorded.</p>;
   return (
     <ul className="flex flex-col gap-1 text-sm">
       {sources.map((s) => (
@@ -76,7 +76,7 @@ export function SourcesList({ sources }: { sources: Source[] }) {
           {s.pageOrSection && <span> · {s.pageOrSection}</span>}
           {s.sourceNote && <span> · {s.sourceNote}</span>}
           {s.importJob && <span> · import {s.importJob.sourceFilename}</span>}
-          <span className="text-xs text-zinc-500"> · {s.createdBy.name}, {fmtDateTime(s.createdAt)}</span>
+          <span className="text-xs text-zinc-600 dark:text-zinc-400"> · {s.createdBy.name}, {fmtDateTime(s.createdAt)}</span>
         </li>
       ))}
     </ul>
