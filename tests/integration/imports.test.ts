@@ -56,6 +56,19 @@ describe("carrier import", () => {
     await expect(imp.commitImport(staff, job.id)).rejects.toBeInstanceOf(ConflictError);
   });
 
+  it("imports the carrier portal site from a Portal column, refusing addresses with a login in them", async () => {
+    const n = randomUUID().slice(0, 6);
+    const file = [`Carrier,Portal`, `TEST Portal Ok ${n},https://agents.example.invalid/login`, `TEST Portal Bad ${n},https://jsmith:pw@agents.example.invalid/`].join("\n");
+    const job = await imp.uploadImport(staff, { targetType: "ORGANIZATION" }, csv(file));
+    const draft = await imp.getImport(staff, job.id);
+    expect(draft.job.map.columns).toMatchObject({ displayName: "Carrier", portalUrl: "Portal" });
+    const { preview } = await imp.saveMapping(staff, job.id, { columns: draft.job.map.columns });
+    expect(preview.map((p) => p.action)).toEqual(["CREATE", "ERROR"]);
+    expect(preview[1].messages.join(" ")).toMatch(/must not contain a username or password/);
+    await imp.commitImport(staff, job.id);
+    expect((await db.organization.findFirstOrThrow({ where: { displayName: `TEST Portal Ok ${n}` } })).portalUrl).toBe("https://agents.example.invalid/login");
+  });
+
   it("creates possible duplicates only when asked", async () => {
     const job = await imp.uploadImport(staff, { targetType: "ORGANIZATION" }, csv(`Name\nDEMO Ridgeline Specialtyy ${randomUUID().slice(0, 2)}\n`));
     const { preview } = await imp.saveMapping(staff, job.id, { columns: { displayName: "Name" }, createPossibleDuplicates: "on" });

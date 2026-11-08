@@ -371,6 +371,8 @@ model Organization {
   status      OrganizationStatus @default(ACTIVE)
   ownerUserId String?            @map("owner_user_id") @db.Uuid
   website     String?
+  /// Carrier portal site staff use to log in (link only; logins live in the password manager).
+  portalUrl   String?            @map("portal_url")
   /// Soft archive: archived organizations stay referenced by history; never hard-deleted.
   archivedAt  DateTime?          @map("archived_at") @db.Timestamptz(6)
   createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)

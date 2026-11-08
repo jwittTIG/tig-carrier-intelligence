@@ -82,6 +82,11 @@ export default async function CarrierPage({ params, searchParams }: PageProps<"/
         <h1 className="text-xl font-semibold">{carrier.displayName}</h1>
         <Badge>{label(carrier.type)}</Badge>
         {carrier.archivedAt ? <Badge tone="bad">Archived {fmtDate(carrier.archivedAt)}</Badge> : <Badge tone={carrier.status === "ACTIVE" ? "good" : "neutral"}>{label(carrier.status)}</Badge>}
+        {carrier.portalUrl && (
+          <a href={carrier.portalUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-lg bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800">
+            Log in to carrier portal <span aria-hidden="true">↗</span><span className="sr-only"> (opens in a new tab)</span>
+          </a>
+        )}
         {carrier.type !== "AGENCY" && (
           <ActionForm action={followAction.bind(null, id, following)} submitLabel={following ? "Unfollow" : "Follow"} variant="secondary" className="ml-auto flex items-center gap-2">
             {following && <span className="text-xs text-zinc-600 dark:text-zinc-400">You get notifications for this carrier.</span>}
@@ -145,6 +150,7 @@ async function Overview({ carrier, write }: { carrier: Carrier; write: boolean }
           <dl className="grid grid-cols-2 gap-2 text-sm">
             <dt>Owner</dt><dd>{carrier.owner?.name ?? "Unassigned"}</dd>
             <dt>Parent</dt><dd>{carrier.parent?.displayName ?? "None"}</dd>
+            <dt>Carrier portal site</dt><dd>{carrier.portalUrl ? <a href={carrier.portalUrl} target="_blank" rel="noopener noreferrer" className="text-blue-800 hover:underline dark:text-blue-300">{carrier.portalUrl}</a> : "—"}</dd>
             <dt>Website</dt><dd>{carrier.website ?? "—"}</dd>
           </dl>
         )}

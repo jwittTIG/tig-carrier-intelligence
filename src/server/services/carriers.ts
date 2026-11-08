@@ -85,6 +85,7 @@ export async function listCarriers(ctx: AuthContext, filters: CarrierListFilters
       archivedAt: o.archivedAt,
       parent: o.parent,
       owner: o.owner,
+      portalUrl: o.portalUrl,
       lines: [...new Set(o.carrierProducts.map((p) => p.product.line.name))].sort(),
       updatedAt: o.updatedAt,
     })),
@@ -186,6 +187,17 @@ export async function listCarrierHistory(ctx: AuthContext, carrierId: string) {
 
 // ───────────────────────────── Writes ─────────────────────────────
 
+/** Portal sites are links only: no username or password in the address (DECISIONS D4). */
+const portalUrl = optionalUrl.refine((u) => {
+  if (!u) return true;
+  try {
+    const url = new URL(u);
+    return !url.username && !url.password;
+  } catch {
+    return true; // not a URL at all: the URL check above already reports it
+  }
+}, "Don't put a username or password in the portal address. Keep logins in the password manager.");
+
 const carrierFields = {
   legalName: requiredText(200),
   displayName: requiredText(120),
@@ -194,6 +206,7 @@ const carrierFields = {
   parentId: optionalId,
   ownerUserId: optionalId,
   website: optionalUrl,
+  portalUrl,
 };
 const createSchema = z.object(carrierFields);
 const updateSchema = z.object({
@@ -204,6 +217,7 @@ const updateSchema = z.object({
   parentId: optionalId,
   ownerUserId: optionalId,
   website: optionalUrl,
+  portalUrl,
 });
 
 async function checkParent(tx: Prisma.TransactionClient, selfId: string | null, parentId: string | null | undefined) {
@@ -230,7 +244,7 @@ export async function createCarrier(ctx: AuthContext, input: unknown) {
   return prisma.$transaction(async (tx) => {
     await checkParent(tx, null, data.parentId);
     await checkOwner(tx, data.ownerUserId);
-    const org = await tx.organization.create({ data: { ...data, parentId: data.parentId ?? null, ownerUserId: data.ownerUserId ?? null, website: data.website ?? null } });
+    const org = await tx.organization.create({ data: { ...data, parentId: data.parentId ?? null, ownerUserId: data.ownerUserId ?? null, website: data.website ?? null, portalUrl: data.portalUrl ?? null } });
     await recordAudit(tx, ctx, { action: "carrier.create", entityType: "organization", entityId: org.id, after: org });
     return org;
   });
@@ -243,7 +257,10 @@ export async function updateCarrier(ctx: AuthContext, id: string, input: unknown
     const before = await findCarrier(tx, id);
     if (data.parentId !== undefined) await checkParent(tx, id, data.parentId);
     if (data.ownerUserId !== undefined) await checkOwner(tx, data.ownerUserId);
-    const after = await tx.organization.update({ where: { id }, data });
+    // A blank portal or website field clears it.
+    const raw = (input ?? {}) as Record<string, unknown>;
+    const patch = { ...data, ...("portalUrl" in raw && { portalUrl: data.portalUrl ?? null }), ...("website" in raw && { website: data.website ?? null }) };
+    const after = await tx.organization.update({ where: { id }, data: patch });
     await recordAudit(tx, ctx, { action: "carrier.update", entityType: "organization", entityId: id, before, after });
     return after;
   });

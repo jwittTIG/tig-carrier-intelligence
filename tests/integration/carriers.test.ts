@@ -173,3 +173,31 @@ describe("history", () => {
     expect(actions).toEqual(expect.arrayContaining(["carrier.create", "carrier.update", "carrier.relationship.add", "carrier.identifier.add", "carrier.identifier.remove"]));
   });
 });
+
+describe("carrier portal site", () => {
+  it("is saved, shown in the list, audited, and cleared when blanked", async () => {
+    const c = await newCarrier({ portalUrl: "https://agents.example.invalid/login" });
+    expect(c.portalUrl).toBe("https://agents.example.invalid/login");
+    const listed = (await svc.listCarriers(staff, { q: c.displayName })).items.find((x) => x.id === c.id);
+    expect(listed?.portalUrl).toBe("https://agents.example.invalid/login");
+    await svc.updateCarrier(staff, c.id, { portalUrl: "https://portal2.example.invalid/" });
+    const audits = await auditsFor(c.id);
+    expect((audits.at(-1)!.afterState as { portalUrl: string }).portalUrl).toBe("https://portal2.example.invalid/");
+    // Editing other fields leaves it alone; a blank field clears it.
+    await svc.updateCarrier(staff, c.id, { status: "PROSPECT" });
+    expect((await svc.getCarrier(staff, c.id)).portalUrl).toBe("https://portal2.example.invalid/");
+    await svc.updateCarrier(staff, c.id, { portalUrl: "" });
+    expect((await svc.getCarrier(staff, c.id)).portalUrl).toBeNull();
+  });
+
+  it("refuses non-web addresses and any username or password in the address", async () => {
+    await expect(newCarrier({ portalUrl: "https://jsmith:secret@agents.example.invalid/" })).rejects.toBeInstanceOf(ValidationError);
+    await expect(newCarrier({ portalUrl: "https://jsmith@agents.example.invalid/" })).rejects.toBeInstanceOf(ValidationError);
+    await expect(newCarrier({ portalUrl: "ftp://agents.example.invalid/" })).rejects.toBeInstanceOf(ValidationError);
+    await expect(newCarrier({ portalUrl: "not a url" })).rejects.toBeInstanceOf(ValidationError);
+    // The database refuses it too, whatever the app does.
+    const c = await newCarrier();
+    await expect(db.organization.update({ where: { id: c.id }, data: { portalUrl: "https://u:p@agents.example.invalid/" } })).rejects.toThrow();
+    await expect(db.organization.update({ where: { id: c.id }, data: { portalUrl: "javascript:alert(1)" } })).rejects.toThrow();
+  });
+});

@@ -103,9 +103,9 @@ export async function CodesTab({ carrierId }: { carrierId: string }) {
         {write && channels.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">Add a product and channel on the Writing companies &amp; channels tab first.</p>}
       </Section>
 
-      <Section title="Portal links">
+      <Section title="Other portal links">
         <p className="text-xs text-zinc-600 dark:text-zinc-400">
-          Never store passwords here. Keep logins in the password manager and note where to find them.
+          The main login is the carrier portal site in the carrier&apos;s details. Add other sites here (billing, claims, a wholesaler&apos;s portal). Never store passwords: keep logins in the password manager and note where to find them.
         </p>
         {portals.length === 0 ? <p className="text-sm text-zinc-600 dark:text-zinc-400">No portal links.</p> : (
           <ul className="flex flex-col gap-2 text-sm">

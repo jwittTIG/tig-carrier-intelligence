@@ -90,12 +90,13 @@ export default async function CarriersPage({ searchParams }: PageProps<"/carrier
               <th scope="col" className="px-3 py-2">Group</th>
               <th scope="col" className="px-3 py-2">Lines</th>
               <th scope="col" className="px-3 py-2">Owner</th>
+              <th scope="col" className="px-3 py-2">Portal</th>
               <th scope="col" className="px-3 py-2">Status</th>
             </tr>
           </thead>
           <tbody>
             {result.items.length === 0 && (
-              <tr><td colSpan={6} className="px-3 py-6 text-center text-zinc-600 dark:text-zinc-400">No carriers match these filters.</td></tr>
+              <tr><td colSpan={7} className="px-3 py-6 text-center text-zinc-600 dark:text-zinc-400">No carriers match these filters.</td></tr>
             )}
             {result.items.map((c) => (
               <tr key={c.id} className="border-b border-zinc-100 last:border-0 dark:border-zinc-800">
@@ -107,6 +108,9 @@ export default async function CarriersPage({ searchParams }: PageProps<"/carrier
                 <td className="px-3 py-2">{c.parent?.displayName ?? "—"}</td>
                 <td className="px-3 py-2">{c.lines.join(", ") || "—"}</td>
                 <td className="px-3 py-2">{c.owner?.name ?? "—"}</td>
+                <td className="px-3 py-2">
+                  {c.portalUrl ? <a href={c.portalUrl} target="_blank" rel="noopener noreferrer" className="text-blue-800 hover:underline dark:text-blue-300">Log in<span className="sr-only"> to the {c.displayName} portal (opens in a new tab)</span> ↗</a> : "—"}
+                </td>
                 <td className="px-3 py-2">
                   {c.archivedAt ? <Badge tone="bad">Archived</Badge> : <Badge tone={c.status === "ACTIVE" ? "good" : "neutral"}>{label(c.status)}</Badge>}
                 </td>

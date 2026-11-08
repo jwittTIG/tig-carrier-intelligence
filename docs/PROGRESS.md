@@ -6,6 +6,11 @@
 **Milestone 7 (P1: risk matching, market comparison, notifications) is built and waiting for Josh's review.** Josh picked these three P1 items and said "Go ahead and the next milestone" (2026-11-06); he excluded the submission workflow, AMS connection, production dashboard and commission reconciliation. D21–D23 record the defaults used (still PROPOSED). M0–M6 are accepted (M6: "Proceed", 2026-11-06). M6 detail: built on the dev mailbox. The real Microsoft 365 mailbox isn't set up yet (docs/EMAIL_SETUP.md), so the Graph reader is untested. Josh moved from M5 to M6 ("Yes, start M6", 2026-11-05). Earlier status: Josh accepted M4 ("Proceed with the next step", 2026-11-05). Appointments are managed by corporate (N19), so codes save directly without approval. Josh asked for email intake of carrier bulletins and guideline updates: proposed as Milestone 6 (DECISIONS D20, `prompts/06-email-intake.md`). D7a (real Postgres) is still open. The MVP is **not production-ready**: see `docs/SECURITY.md` "Known gaps" and `docs/OPERATIONS.md`.
 
 ## Milestone 7: risk matching, market comparison, notifications (done; waiting for Josh's review)
+- **Carrier portal site (2026-11-08; DECISIONS N20):**
+  - New field on each carrier (New carrier and Details forms). A **Log in to carrier portal** button at the top of the carrier page opens it in a new tab; the Carriers list has a Portal column; the carrier import maps a "Portal" column.
+  - Addresses with a username or password are refused, by the app and by a database CHECK (migration `20261108183227_carrier_portal_url`).
+  - The Codes & portals tab's list is now "Other portal links".
+  - Tested: carrier and import integration tests, and the smoke browser test (fills it in and checks the button). 263 tests pass, and all 12 browser tests pass.
 - **Real data in the dev database (2026-11-08, Josh: "remove the demo data and let me put in actual data"; he confirmed the wipe and keeping it local for now):**
   - The dev database was wiped (`scripts/reset-dev-db.ts`) and reloaded with reference data only: lines, states, NAICS, roles, settings and the system user.
   - `scripts/bootstrap.ts` added Josh as the only Admin and **The Insurance Group** as the agency entity. Its domicile state is not set.
@@ -400,3 +405,4 @@ Milestone 7 is waiting for Josh's review. Later phases (do not start without Jos
 - 2026-11-06: Moved Import, Users and Audit log under Setup.
 - 2026-11-06: Josh: appointments are managed at corporate. Kept codes and portal links as a reference; removed appointment tracking (N19).
 - 2026-11-08: Josh asked to remove the demo data and enter real data. Wiped the dev database (his OK), added him as Admin and TIG as the agency entity, and moved the browser tests to their own server and database.
+- 2026-11-08: Added the carrier portal site field (N20).

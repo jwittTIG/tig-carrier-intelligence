@@ -34,6 +34,7 @@ export const TARGETS = {
       { key: "type", label: "Type", aliases: ["type", "org type", "category"] },
       { key: "status", label: "Status", aliases: ["status", "active"] },
       { key: "website", label: "Website", aliases: ["website", "url", "web"] },
+      { key: "portalUrl", label: "Carrier portal site", aliases: ["portal", "portal site", "portal url", "carrier portal", "carrier portal site", "agent portal", "login", "login url"] },
       { key: "naic", label: "NAIC number", aliases: ["naic", "naic #", "naic number", "naic code"] },
       { key: "parentName", label: "Group (existing carrier name)", aliases: ["group", "parent", "parent company"] },
       { key: "ownerEmail", label: "Relationship owner email", aliases: ["owner", "owner email", "relationship owner"] },
@@ -160,6 +161,7 @@ async function buildPreview(target: ImportTarget, map: Mapping, rows: string[][]
       if (values.displayName.length > 120) msgs.push("Display name is longer than 120 characters.");
       if (values.type && !ORG_TYPES[values.type.toLowerCase()]) msgs.push(`Unknown type "${values.type}" (use Insurer, Group, MGA, MGU, Wholesaler, Program administrator, General agency or Other).`);
       if (values.website && !/^https?:\/\/\S+$/i.test(values.website)) msgs.push("Website must start with http:// or https://.");
+      if (values.portalUrl && !/^https?:\/\/[^/?#@\s]+([/?#]\S*)?$/i.test(values.portalUrl)) msgs.push("Carrier portal site must start with http:// or https:// and must not contain a username or password.");
       if (values.parentName && !byName.has(normalizeName(values.parentName))) msgs.push(`Group "${values.parentName}" isn't in the directory yet. Import groups first.`);
       if (values.ownerEmail && !users.has(values.ownerEmail.toLowerCase())) msgs.push(`Owner ${values.ownerEmail} isn't an active user.`);
       if (values.status && !["active", "prospect", "inactive"].includes(values.status.toLowerCase())) msgs.push(`Unknown status "${values.status}".`);
@@ -296,6 +298,7 @@ async function runCommit(ctx: AuthContext, job: Awaited<ReturnType<typeof findJo
               type: v.type ? ORG_TYPES[v.type.toLowerCase()] : "INSURER",
               status: (v.status?.toUpperCase() as "ACTIVE" | "PROSPECT" | "INACTIVE") || "ACTIVE",
               website: v.website || null,
+              portalUrl: v.portalUrl || null,
               parentId: v.parentName ? nameToId.get(normalizeName(v.parentName)) ?? null : null,
               ownerUserId: v.ownerEmail ? userByEmail.get(v.ownerEmail.toLowerCase()) ?? null : null,
             },

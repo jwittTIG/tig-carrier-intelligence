@@ -23,8 +23,13 @@ test("sign in, create a carrier, find it, archive it", async ({ page }) => {
   await page.getByLabel("Display name").fill(name);
   await page.getByLabel("Legal name").fill(`${name} Insurance Company`);
   await page.getByLabel("Type").selectOption("INSURER");
+  await page.getByLabel("Carrier portal site").fill("https://agents.example.invalid/login");
   await page.getByRole("button", { name: "Create carrier" }).click();
   await expect(page.getByRole("heading", { name })).toBeVisible();
+  // The portal site becomes a login button that opens in a new tab.
+  const login = page.getByRole("link", { name: /Log in to carrier portal/ });
+  await expect(login).toHaveAttribute("href", "https://agents.example.invalid/login");
+  await expect(login).toHaveAttribute("target", "_blank");
 
   await page.getByRole("link", { name: "Change history" }).click();
   await expect(page.getByRole("cell", { name: "carrier.create" })).toBeVisible();
@@ -32,9 +37,10 @@ test("sign in, create a carrier, find it, archive it", async ({ page }) => {
   await page.getByRole("link", { name: "Carriers", exact: true }).first().click();
   await page.getByLabel("Name or identifier").fill(name);
   await page.getByRole("button", { name: "Search" }).click();
-  await expect(page.getByRole("link", { name })).toBeVisible();
+  await expect(page.getByRole("link", { name, exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: new RegExp(`Log in to the ${name} portal`) })).toHaveAttribute("href", "https://agents.example.invalid/login");
 
-  await page.getByRole("link", { name }).click();
+  await page.getByRole("link", { name, exact: true }).click();
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "Archive carrier" }).click();
   await expect(page.getByText(/Archived \d{4}-\d{2}-\d{2}/)).toBeVisible();

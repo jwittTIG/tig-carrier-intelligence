@@ -10,6 +10,7 @@ export type CarrierDefaults = {
   parentId?: string | null;
   ownerUserId?: string | null;
   website?: string | null;
+  portalUrl?: string | null;
 };
 
 /** Shared inputs for creating and editing a carrier. */
@@ -43,6 +44,9 @@ export function CarrierFields({ d = {}, types, parents, owners }: { d?: CarrierD
           <option value="">Unassigned</option>
           {owners.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
         </select>
+      </Field>
+      <Field label="Carrier portal site" htmlFor="portalUrl" hint="The agent login page. Keep the username and password in the password manager, not here.">
+        <input id="portalUrl" name="portalUrl" type="url" placeholder="https://" defaultValue={d.portalUrl ?? ""} className={inputClass} />
       </Field>
       <Field label="Website" htmlFor="website">
         <input id="website" name="website" type="url" placeholder="https://" defaultValue={d.website ?? ""} className={inputClass} />
