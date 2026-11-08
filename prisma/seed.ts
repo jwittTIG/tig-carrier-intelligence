@@ -201,7 +201,8 @@ async function seedDemo() {
 
 async function main() {
   await seedReference();
-  if (process.env.SEED_DEMO !== "0") await seedDemo();
+  // DEMO records only when asked for (the test databases). The dev and production databases hold real data.
+  if (process.env.SEED_DEMO === "1") await seedDemo();
   console.log("Seed complete.");
 }
 

@@ -47,7 +47,7 @@ test("follow a carrier, then get notified when an email is filed under it", asyn
   await expect(page.getByRole("button", { name: "Unfollow" })).toBeVisible();
 
   const subject = `E2E notify ${Date.now()}`;
-  const dir = path.resolve(".data/inbox");
+  const dir = process.env.E2E_INBOX_DIR!;
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, `${Date.now()}-notify.eml`), [
     "From: DEMO Admin <demo.admin@example.invalid>",

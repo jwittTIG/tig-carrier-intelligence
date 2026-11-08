@@ -48,7 +48,7 @@ export default async function setup() {
     await client.end();
   }
 
-  const env = { ...process.env, DATABASE_URL: testUrl, NODE_NO_WARNINGS: "1" };
+  const env = { ...process.env, DATABASE_URL: testUrl, SEED_DEMO: "1", NODE_NO_WARNINGS: "1" };
   for (const cmd of ["npx prisma migrate deploy", "npx tsx prisma/seed.ts"]) {
     const r = spawnSync(cmd, { stdio: "inherit", shell: true, env });
     if (r.status !== 0) throw new Error(`Test DB setup failed: ${cmd}`);

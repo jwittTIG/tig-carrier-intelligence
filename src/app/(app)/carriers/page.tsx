@@ -75,9 +75,6 @@ export default async function CarriersPage({ searchParams }: PageProps<"/carrier
           <button type="submit" className="rounded-lg bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800">Search</button>
           <Link href="/carriers" className="px-2 py-1.5 text-sm hover:underline">Clear</Link>
         </div>
-        <p className="text-xs text-zinc-600 dark:text-zinc-400 sm:col-span-3 lg:col-span-6">
-          State and verification-freshness filters arrive with appointments and appetite (Milestones 3–4).
-        </p>
       </form>
 
       <p className="text-sm text-zinc-600 dark:text-zinc-400" aria-live="polite">

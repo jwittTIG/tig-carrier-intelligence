@@ -3,7 +3,7 @@
 For the TIG pilot, with fictional or sample data only until production is set up (docs/OPERATIONS.md). Tick each item and note problems. Run `npm.cmd run db:start` and `npm.cmd run dev`, then open http://localhost:3000.
 
 ## Getting in
-- [ ] Sign in as DEMO Producer and as DEMO Admin. Only Admin sees **Users**.
+- [ ] Sign in as yourself (Admin). Invite a colleague as Staff on Setup → Users, sign in as them (dev sign-in), and check they don't see **Users** on Setup.
 - [ ] As Admin, invite a test person, deactivate them, and reactivate them.
 
 ## Carriers

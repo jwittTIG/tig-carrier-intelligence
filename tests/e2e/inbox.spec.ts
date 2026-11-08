@@ -3,12 +3,12 @@ import path from "node:path";
 import { expect, test } from "@playwright/test";
 
 /**
- * Email intake with the dev mailbox: drop an .eml into .data/inbox (what the dev server reads),
+ * Email intake with the dev mailbox: drop an .eml into the e2e mailbox folder (what the test server reads),
  * check the mailbox, file it under a carrier, and start an appetite draft from it.
  */
 test("forwarded bulletin → inbox → file under carrier → appetite draft", async ({ page }) => {
   const subject = `E2E Fwd: Roofing appetite ${Date.now()}`;
-  const dir = path.resolve(".data/inbox");
+  const dir = process.env.E2E_INBOX_DIR!;
   fs.mkdirSync(dir, { recursive: true });
   const pdf = Buffer.from("%PDF-1.4\n% E2E bulletin\n%%EOF\n").toString("base64");
   fs.writeFileSync(path.join(dir, `${Date.now()}.eml`), [

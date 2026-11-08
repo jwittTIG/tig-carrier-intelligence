@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // The browser tests run a second dev server with its own build folder (playwright.config.ts).
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   // Every app page shows signed-in, internal data. Cache Components stays off so pages
   // render per request and nothing private lands in a shared cache.
   cacheComponents: false,

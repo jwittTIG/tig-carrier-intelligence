@@ -43,7 +43,9 @@ See `.env.example`:
 - `STORAGE_DRIVER` / `DEV_STORAGE_DIR`: document storage, used from Milestone 4.
 
 ## Signing in
-- **Now:** `AUTH_DRIVER=dev`. `/sign-in` lists the seeded DEMO users (DEMO Admin, DEMO Producer). A yellow banner shows on every page while this is on.
+- **Now:** `AUTH_DRIVER=dev`. `/sign-in` lists the active users in the database (the browser tests use the DEMO users in the test database). A yellow banner shows on every page while this is on.
+- **Fresh dev database with real data** (no DEMO records): `npx tsx scripts/reset-dev-db.ts --yes-delete-everything` wipes it (stop `npm run dev` first; local only), then `npx tsx scripts/bootstrap.ts --admin-email <you> --admin-name "<name>" --agency "<agency>"` creates the first Admin and the agency entity. Add other staff on Setup → Users.
+- **Browser tests** (`npm run test:e2e`) run their own server on port 3100 against the TEST database, so they never touch the dev data.
 - **Later:** `AUTH_DRIVER=clerk`. Staff sign in with Microsoft 365. Access is invite-only: an admin invites them on **Users** first (DECISIONS D18).
 
 ## Migrations and seed
@@ -54,7 +56,7 @@ See `.env.example`:
   - US states;
   - roles and permissions;
   - settings;
-  - fictional `DEMO` records (`SEED_DEMO=0` skips these).
+  - fictional `DEMO` records only with `SEED_DEMO=1` (the test databases use them; the dev database holds real data).
 
 ## Testing
 - `npm test`: Vitest unit + integration tests. **It wipes and rebuilds the test database** (`TEST_DATABASE_URL`) before running.

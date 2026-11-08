@@ -11,7 +11,7 @@
    - `STORAGE_DRIVER=r2` with its keys, once built;
    - a fresh `STORAGE_SIGNING_SECRET`.
 2. Run migrations against the hosted database: `npm run db:migrate`.
-3. Seed reference data only: `SEED_DEMO=0 npm run db:seed`. This adds the line taxonomy, states, roles and settings. Never load DEMO data in production.
+3. Seed reference data only: `npm run db:seed` (DEMO records are added only with `SEED_DEMO=1`). This adds the line taxonomy, states, roles and settings. Never load DEMO data in production.
 4. Invite the first admin directly in the database (one row in `users` plus a `user_role_scopes` ADMIN row), then invite everyone else from **Users**.
 5. Smoke test: `/api/health` returns ok; sign in with Microsoft; open each main screen.
 
