@@ -156,7 +156,7 @@ export default async function AppetiteProfilePage({ params }: PageProps<"/appeti
                     <td className="py-1 pr-2">{r.attributeDefinition ? `${r.attributeDefinition.label} ${OPERATOR_LABEL[r.operator!]} ${valueText(r.typedValue)}${r.attributeDefinition.unit ? ` ${r.attributeDefinition.unit}` : ""}` : "—"}</td>
                     <td className="py-1 pr-2">{r.effectiveFrom || r.effectiveTo ? `${fmtDate(r.effectiveFrom)} → ${r.effectiveTo ? fmtDate(r.effectiveTo) : "open"}` : "Profile dates"}</td>
                     <td className="py-1 pr-2">{r.rationale ?? ""}</td>
-                    <td className="py-1">{draft && write && <ActionForm action={removeRuleAction.bind(null, id, r.id)} submitLabel="Remove" variant="secondary" showOk={false}>{null}</ActionForm>}</td>
+                    <td className="py-1">{draft && write && <ActionForm action={removeRuleAction.bind(null, id, r.id)} submitLabel="Remove" submitHint={`rule ${i + 1}`} variant="secondary" showOk={false}>{null}</ActionForm>}</td>
                   </tr>
                 ))}
               </tbody>
