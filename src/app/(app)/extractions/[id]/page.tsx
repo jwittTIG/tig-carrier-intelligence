@@ -14,7 +14,8 @@ export const metadata = { title: "Review AI draft" };
 const OPS: Record<string, string> = { EQ: "is", NEQ: "is not", IN: "is one of", NOT_IN: "is not one of", LT: "<", LTE: "≤", GT: ">", GTE: "≥", BETWEEN: "between", EXISTS: "is present" };
 
 function Evidence({ versionId, item }: { versionId: string; item: { page: number; quote: string; confidence: number } }) {
-  const low = item.confidence < 0.6;
+  // Below 80%: the AI is unsure or simplified the guide's wording (e.g. a rule that applies only with another condition).
+  const low = item.confidence < 0.8;
   return (
     <div className="flex flex-col gap-0.5 text-xs text-zinc-600 dark:text-zinc-400">
       <blockquote className="italic">“{item.quote}”</blockquote>
@@ -22,7 +23,7 @@ function Evidence({ versionId, item }: { versionId: string; item: { page: number
         <a href={`/api/v1/document-versions/${versionId}/download?view=1#page=${item.page}`} target="_blank" rel="noopener noreferrer" className="text-blue-800 hover:underline dark:text-blue-300">
           Page {item.page} <span aria-hidden="true">↗</span><span className="sr-only"> (opens the guide in a new tab)</span>
         </a>
-        {low ? <Badge tone="warn">Low confidence ({Math.round(item.confidence * 100)}%): check it</Badge> : <span>confidence {Math.round(item.confidence * 100)}%</span>}
+        {low ? <Badge tone="warn">Check this ({Math.round(item.confidence * 100)}% sure; may be simplified)</Badge> : <span>confidence {Math.round(item.confidence * 100)}%</span>}
       </span>
     </div>
   );

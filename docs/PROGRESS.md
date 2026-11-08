@@ -1,7 +1,7 @@
 # Progress
 
 ## Current state (2026-11-08)
-**Milestone 9 (AI drafts appetite from a guide) is built and waiting for Josh's review; its real AI read hasn't been run yet.** Milestone 8 (Ask the guides) works with Josh's key.
+**Milestone 9 (AI drafts appetite from a guide) is built; the first real read (Travelers, $2.23) is waiting for Josh's review on /extractions.** Milestone 8 (Ask the guides) works with Josh's key.
 
 **Milestone 8 (Ask the guides) is built and waiting for Josh's review; it is not tested against the real Claude API yet** (no key in `.env.local`). See the Milestone 8 section.
 
@@ -21,7 +21,7 @@ Prompt: `prompts/09-draft-appetite-from-guides.md`; DECISIONS N22. Josh wanted a
   - Every item has a page, a quote and a confidence level.
   - The run is stored in `guide_extractions`.
 - **Review screen** (`/extractions/:id`):
-  - every item has a checkbox, the quote, a page link and a confidence badge; below 60% shows "Low confidence: check it".
+  - every item has a checkbox, the quote, a page link and a confidence badge; below 80% shows "Check this".
   - **Create draft from selected**:
     - adds the ticked risk details;
     - fills an appetite DRAFT (reusing an open one and giving it the guide's date if it had none), with the guide cited on the profile;
@@ -45,7 +45,15 @@ Prompt: `prompts/09-draft-appetite-from-guides.md`; DECISIONS N22. Josh wanted a
     - after approval, the Market Finder gives Prohibited for wood shake, Accepted for metal, Refer for a 25-year roof, and Needs information when details are missing;
     - restricted documents, permissions, failure log, no key, DB checks.
   - browser: `draft-appetite.spec.ts` (lines, guide, draft, review, untick, apply, submit, approve, Market Finder).
+- **First real read (2026-11-08)**: Travelers Quantum Home 2.0 → Personal Homeowners, run by Claude at Josh's request; review left to Josh.
+  - Proposals: effective 2026-08-23, state TN; 48 risk details; 59 rules (1 general Accepted, 44 Prohibited, 14 Refer); 9 limits; 20 requirements.
+  - Cost $2.23: 327,120 input tokens written to the cache, 29,606 output (10,513 of them thinking).
+  - Rules looked right where checked (for example wood/T-lock/asbestos roofs, more than 2 roof layers, knob-and-tube wiring, >7 road miles to the fire department).
+  - **But** about 15 rules drop a second condition the guide attaches. For example, Coverage A ≥ $1.5M is only ineligible *without* a central station alarm; the 15-year roof rule only applies to High 3 wind/hail areas; some rules apply only to landlord forms. Applied as-is, these would mark too many risks Prohibited or Refer.
+  - The AI scored those 0.6–0.8, so the review now flags anything below 80% as "Check this" (17 items on this run).
+  - Not applied yet: Josh reviews.
 - **Not tested**:
+  - applying and approving a real AI draft;
   - **the real AI read** (quality of the rules on a real guide, cost, whether a long guide fits in one answer: up to 64,000 output tokens);
   - quotes come from the AI's structured output and aren't machine-checked against the PDF. The review says to check the page.
 - **Cost estimate** (not measured): a ~350,000-token guide is about $1.40–1.80 to read, plus the output (a long list of rules is maybe $0.30–1.00), if the guide isn't already in the 5-minute cache.
