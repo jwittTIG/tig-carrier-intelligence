@@ -6,6 +6,12 @@
 **Milestone 7 (P1: risk matching, market comparison, notifications) is built and waiting for Josh's review.** Josh picked these three P1 items and said "Go ahead and the next milestone" (2026-11-06); he excluded the submission workflow, AMS connection, production dashboard and commission reconciliation. D21–D23 record the defaults used (still PROPOSED). M0–M6 are accepted (M6: "Proceed", 2026-11-06). M6 detail: built on the dev mailbox. The real Microsoft 365 mailbox isn't set up yet (docs/EMAIL_SETUP.md), so the Graph reader is untested. Josh moved from M5 to M6 ("Yes, start M6", 2026-11-05). Earlier status: Josh accepted M4 ("Proceed with the next step", 2026-11-05). Appointments are managed by corporate (N19), so codes save directly without approval. Josh asked for email intake of carrier bulletins and guideline updates: proposed as Milestone 6 (DECISIONS D20, `prompts/06-email-intake.md`). D7a (real Postgres) is still open. The MVP is **not production-ready**: see `docs/SECURITY.md` "Known gaps" and `docs/OPERATIONS.md`.
 
 ## Milestone 7: risk matching, market comparison, notifications (done; waiting for Josh's review)
+- **Upload the appetite guide right in Sources (2026-11-08, Josh):**
+  - An appetite draft's Sources section has **Upload the appetite guide**: file, optional title (defaults to the file name) and page or section. One step uploads it, files it under the carrier's Documents (type Appetite guide) and adds it as a source.
+  - Commission agreements have the same ("Upload a document", type Agreement, classification Restricted, needs `commission.read`).
+  - Same file checks as any upload. Permissions are checked before the file is stored; the database writes are one transaction, so a refused upload leaves nothing behind.
+  - Citing an existing document or a staff note works as before.
+  - Tested: `documents.test.ts` (appetite guide, restricted agreement, bad file, unknown record, missing permissions, nothing saved on refusal); the appetite browser test now uploads the guide from Sources.
 - **Lines as checkboxes when adding products (2026-11-08, Josh):**
   - On Writing companies & channels, tick every line the carrier writes, then **Add lines**. Each ticked line becomes a product named after the line (e.g. "General Liability"), shared across carriers. Lines already written show as ticked and "(added)".
   - An optional product name (e.g. "Contractors GL") works with one ticked line; program name is optional too.
@@ -412,3 +418,4 @@ Milestone 7 is waiting for Josh's review. Later phases (do not start without Jos
 - 2026-11-08: Josh asked to remove the demo data and enter real data. Wiped the dev database (his OK), added him as Admin and TIG as the agency entity, and moved the browser tests to their own server and database.
 - 2026-11-08: Added the carrier portal site field (N20).
 - 2026-11-08: Product lines are now checkboxes when adding products to a carrier.
+- 2026-11-08: Upload an appetite guide (or agreement) directly from the Sources section.

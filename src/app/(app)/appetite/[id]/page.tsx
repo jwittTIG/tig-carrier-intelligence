@@ -212,7 +212,7 @@ export default async function AppetiteProfilePage({ params }: PageProps<"/appeti
 
       <Section title="Sources">
         <SourcesList sources={sources} />
-        {draft && write && <AddSourceForm returnTo={path} recordType="APPETITE_PROFILE" recordId={id} versions={versions} />}
+        {draft && write && <AddSourceForm returnTo={path} recordType="APPETITE_PROFILE" recordId={id} versions={versions} uploadLabel={can(ctx, "document.write") ? "Upload the appetite guide" : undefined} />}
       </Section>
 
       {p.status === "APPROVED" && (

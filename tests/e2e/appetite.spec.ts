@@ -18,6 +18,7 @@ test("upload a guide, draft appetite, submit, and have someone else approve it",
   await page.getByLabel("Legal name").fill(`${name} Insurance Company`);
   await page.getByRole("button", { name: "Create carrier" }).click();
   await expect(page.getByRole("heading", { name })).toBeVisible();
+  const carrierUrl = page.url().split("?")[0];
   await page.getByRole("link", { name: "Writing companies & channels" }).click();
   // Tick the line it writes; the product is named after the line.
   const productLabel = "General Liability: General Liability";
@@ -26,16 +27,7 @@ test("upload a guide, draft appetite, submit, and have someone else approve it",
   await expect(page.getByText("Added General Liability.")).toBeVisible();
   await expect(page.getByRole("checkbox", { name: "General Liability (added)" })).toBeDisabled();
 
-  // File the appetite guide under the carrier.
-  await page.getByRole("link", { name: "Documents", exact: true }).nth(1).click();
-  await page.getByLabel("Title").fill(`${name} guide`);
-  await page.getByLabel("Type").selectOption("APPETITE_GUIDE");
-  await page.getByLabel("File", { exact: true }).setInputFiles({ name: "guide.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4\n% E2E appetite guide\n%%EOF\n") });
-  await page.getByRole("button", { name: "Upload" }).click();
-  await expect(page.getByText("Uploaded.")).toBeVisible();
-  await expect(page.getByRole("link", { name: `${name} guide` })).toBeVisible();
-
-  // Draft a profile with one rule and a source, then submit.
+  // Draft a profile with one rule; upload the guide straight into its sources; submit.
   await page.getByRole("link", { name: "Appetite", exact: true }).click();
   await page.getByLabel("Effective from (optional)").fill("2026-01-01");
   await page.getByRole("button", { name: "Start appetite profile" }).click();
@@ -47,10 +39,20 @@ test("upload a guide, draft appetite, submit, and have someone else approve it",
   await page.getByLabel("Industry codes (optional)").fill("NAICS 238160");
   await page.getByRole("button", { name: "Add rule" }).click();
   await expect(page.getByText("Rule added.")).toBeVisible();
-  await page.getByLabel("Document", { exact: true }).selectOption({ label: `${name} guide v1` });
-  await page.getByLabel("Page or section").fill("p. 2");
-  await page.getByRole("button", { name: "Add source" }).click();
-  await expect(page.getByText("Source added.")).toBeVisible();
+  const upload = page.locator("form").filter({ has: page.getByRole("heading", { name: "Upload the appetite guide" }) });
+  await upload.getByLabel("File", { exact: true }).setInputFiles({ name: "guide.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4\n% E2E appetite guide\n%%EOF\n") });
+  await upload.getByLabel("Title (optional)").fill(`${name} guide`);
+  await upload.getByLabel("Page or section (optional)").fill("p. 2");
+  await upload.getByRole("button", { name: "Upload and add as source" }).click();
+  await expect(page.getByText(`Uploaded "${name} guide" and added it as a source.`)).toBeVisible();
+  const sources = page.locator("section").filter({ has: page.getByRole("heading", { name: "Sources" }) });
+  await expect(sources.getByRole("link", { name: `${name} guide v1` })).toBeVisible();
+  await expect(sources.getByText("· p. 2")).toBeVisible();
+  // It's also filed under the carrier's Documents.
+  const draftUrl = page.url();
+  await page.goto(`${carrierUrl}?tab=documents`);
+  await expect(page.getByRole("link", { name: `${name} guide` }).first()).toBeVisible();
+  await page.goto(draftUrl);
   await page.getByRole("button", { name: "Submit for approval" }).click();
   await expect(page.getByText("Waiting for approval").first()).toBeVisible();
   await expect(page.getByText("Someone else needs to review it.")).toBeVisible();

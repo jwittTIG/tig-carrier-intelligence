@@ -9,6 +9,7 @@ import { ALLOWED_TYPES, inspectUpload, scanUpload } from "@/server/storage/inspe
 import { SIGNED_URL_TTL_MS, storage } from "@/server/storage";
 import { optionalId, optionalText, parse, requiredText } from "@/server/validation";
 import { numberSetting } from "./settings";
+import { addSource, writePermissionFor } from "./sources";
 
 /**
  * Private documents and versions (PRD screen 8, P0-07). Files are checked by content,
@@ -65,6 +66,51 @@ export async function uploadDocument(ctx: AuthContext, input: unknown, file: Upl
     }
     await recordAudit(tx, ctx, { action: "document.upload", entityType: "document", entityId: doc.id, after: { ...doc, version: { ...version, originalName: file.name, scanner: stored.scanner } } });
     return { document: doc, version };
+  });
+}
+
+const sourceUploadSchema = z.object({
+  recordType: z.enum(["APPETITE_PROFILE", "COMMISSION_AGREEMENT"]),
+  recordId: z.uuid(),
+  title: optionalText(200),
+  pageOrSection: optionalText(120),
+});
+
+/** What a record's source upload becomes: its carrier, document type and classification. */
+async function sourceTarget(recordType: "APPETITE_PROFILE" | "COMMISSION_AGREEMENT", recordId: string) {
+  if (recordType === "APPETITE_PROFILE") {
+    const p = await prisma.appetiteProfile.findUnique({ where: { id: recordId }, select: { carrierProduct: { select: { writingCompanyId: true } } } });
+    if (!p) throw new NotFoundError("Appetite profile not found.");
+    return { organizationId: p.carrierProduct.writingCompanyId, documentType: "APPETITE_GUIDE" as const, classification: "INTERNAL" as const };
+  }
+  const a = await prisma.commissionAgreement.findUnique({ where: { id: recordId }, select: { marketChannel: { select: { carrierProduct: { select: { writingCompanyId: true } } } } } });
+  if (!a) throw new NotFoundError("Commission agreement not found.");
+  return { organizationId: a.marketChannel.carrierProduct.writingCompanyId, documentType: "AGREEMENT" as const, classification: "RESTRICTED" as const };
+}
+
+/**
+ * Uploads a file (an appetite guide, or an agreement) and cites it as the record's source in
+ * one step. The document is filed under the record's carrier and gets the same checks as any
+ * upload. If citing fails, nothing is saved in the database.
+ */
+export async function uploadAsSource(ctx: AuthContext, input: unknown, file: UploadedFile) {
+  assertCan(ctx, "document.write");
+  const data = parse(sourceUploadSchema, input);
+  // Check every permission before the file is stored, so a refusal leaves nothing behind.
+  assertCan(ctx, writePermissionFor(data.recordType));
+  const target = await sourceTarget(data.recordType, data.recordId);
+  if (target.classification === "RESTRICTED") assertCan(ctx, "commission.read");
+  const title = (data.title ?? file.name.replace(/\.[^.]+$/, "")).slice(0, 200).trim() || file.name;
+  const stored = await storeFile(ctx, file);
+  return prisma.$transaction(async (tx) => {
+    const doc = await tx.document.create({ data: { title, documentType: target.documentType, classification: target.classification, ownerUserId: ctx.userId } });
+    const version = await tx.documentVersion.create({
+      data: { documentId: doc.id, versionNumber: 1, objectKey: stored.key, sha256: stored.sha256, mimeType: stored.mimeType, sizeBytes: BigInt(stored.sizeBytes), uploadedById: ctx.userId },
+    });
+    await tx.recordSource.create({ data: { recordType: "ORGANIZATION", recordId: target.organizationId, sourceKind: "DOCUMENT", documentVersionId: version.id, createdById: ctx.userId, sourceNote: "Filed under carrier" } });
+    await recordAudit(tx, ctx, { action: "document.upload", entityType: "document", entityId: doc.id, after: { ...doc, version: { ...version, originalName: file.name, scanner: stored.scanner } } });
+    const source = await addSource(ctx, { recordType: data.recordType, recordId: data.recordId, sourceKind: "DOCUMENT", documentVersionId: version.id, pageOrSection: data.pageOrSection }, tx);
+    return { document: doc, version, source };
   });
 }
 

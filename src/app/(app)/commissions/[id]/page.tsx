@@ -100,7 +100,7 @@ export default async function AgreementPage({ params }: PageProps<"/commissions/
         )}
         <h3 className="text-sm font-medium">Other sources</h3>
         <SourcesList sources={sources} />
-        {write && <AddSourceForm returnTo={path} recordType="COMMISSION_AGREEMENT" recordId={id} versions={versions} />}
+        {write && <AddSourceForm returnTo={path} recordType="COMMISSION_AGREEMENT" recordId={id} versions={versions} uploadLabel={can(ctx, "document.write") ? "Upload a document" : undefined} />}
       </Section>
 
       <Section title="Schedules" actions={<a href={`/api/v1/commission-schedules?agreementId=${id}&format=csv`} className="text-sm text-blue-800 hover:underline dark:text-blue-300">Download CSV</a>}>

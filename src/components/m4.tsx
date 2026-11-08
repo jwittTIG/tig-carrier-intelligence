@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { AuthContext } from "@/server/auth/context";
 import { can } from "@/server/auth/context";
-import { decideAction, addSourceAction } from "@/app/(app)/m4-actions";
+import { decideAction, addSourceAction, uploadSourceAction } from "@/app/(app)/m4-actions";
 import { ActionForm } from "./action-form";
 import { Badge, Field, fmtDateTime, inputClass, label } from "./ui";
 
@@ -83,8 +83,22 @@ export function SourcesList({ sources }: { sources: Source[] }) {
   );
 }
 
-export function AddSourceForm({ returnTo, recordType, recordId, versions }: { returnTo: string; recordType: string; recordId: string; versions: { id: string; versionNumber: number; document: { title: string } }[] }) {
+export function AddSourceForm({ returnTo, recordType, recordId, versions, uploadLabel }: { returnTo: string; recordType: string; recordId: string; versions: { id: string; versionNumber: number; document: { title: string } }[]; uploadLabel?: string }) {
   return (
+    <div className="flex flex-col gap-4">
+      {uploadLabel && (
+        <ActionForm action={uploadSourceAction.bind(null, returnTo, recordType, recordId)} submitLabel="Upload and add as source" className="flex flex-col gap-2 rounded-xl border border-dashed border-blue-300 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950">
+          <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-200">{uploadLabel}</h3>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <Field label="File" htmlFor={`uf-${recordId}`} hint="PDF, Word, Excel or image. It's also filed under the carrier's Documents.">
+              <input id={`uf-${recordId}`} name="file" type="file" required accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.eml,.txt" className="text-sm" />
+            </Field>
+            <Field label="Title (optional)" htmlFor={`ut-${recordId}`} hint="Defaults to the file name"><input id={`ut-${recordId}`} name="title" maxLength={200} className={inputClass} /></Field>
+            <Field label="Page or section (optional)" htmlFor={`up-${recordId}`}><input id={`up-${recordId}`} name="pageOrSection" maxLength={120} className={inputClass} /></Field>
+          </div>
+        </ActionForm>
+      )}
+      {uploadLabel && <h3 className="text-sm font-medium">Or cite a document already uploaded, or a staff note</h3>}
     <ActionForm action={addSourceAction.bind(null, returnTo, recordType, recordId)} submitLabel="Add source" className="grid grid-cols-1 gap-2 sm:grid-cols-4">
       <Field label="Kind" htmlFor={`sk-${recordId}`}>
         <select id={`sk-${recordId}`} name="sourceKind" className={inputClass}>
@@ -92,7 +106,7 @@ export function AddSourceForm({ returnTo, recordType, recordId, versions }: { re
           <option value="USER_ENTERED">Staff note</option>
         </select>
       </Field>
-      <Field label="Document" htmlFor={`sd-${recordId}`} hint="Upload it on Documents first">
+      <Field label="Document" htmlFor={`sd-${recordId}`}>
         <select id={`sd-${recordId}`} name="documentVersionId" className={inputClass}>
           <option value="">—</option>
           {versions.map((v) => <option key={v.id} value={v.id}>{v.document.title} v{v.versionNumber}</option>)}
@@ -101,5 +115,6 @@ export function AddSourceForm({ returnTo, recordType, recordId, versions }: { re
       <Field label="Page or section" htmlFor={`sp-${recordId}`}><input id={`sp-${recordId}`} name="pageOrSection" maxLength={120} className={inputClass} /></Field>
       <Field label="Note" htmlFor={`sn-${recordId}`} hint="Required for a staff note, e.g. call with UW on 2026-10-01"><input id={`sn-${recordId}`} name="sourceNote" maxLength={1000} className={inputClass} /></Field>
     </ActionForm>
+    </div>
   );
 }

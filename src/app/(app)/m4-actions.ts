@@ -58,6 +58,14 @@ export async function archiveDocumentAction(documentId: string, archived: boolea
   });
 }
 
+export async function uploadSourceAction(returnTo: string, recordType: string, recordId: string, _s: ActionState, form: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    const r = await docs.uploadAsSource(await requireAuth(), { ...formObject(form), recordType, recordId }, await fileFrom(form));
+    revalidatePath(returnTo);
+    return `Uploaded "${r.document.title}" and added it as a source.`;
+  });
+}
+
 export async function addSourceAction(returnTo: string, recordType: string, recordId: string, _s: ActionState, form: FormData): Promise<ActionState> {
   return runAction(async () => {
     await addSource(await requireAuth(), { ...formObject(form), recordType, recordId });
