@@ -27,8 +27,16 @@ Prompt: `prompts/08-ask-the-guides.md`. D12 confirmed (Claude API); N21 for the 
   - integration: `guides.test.ts` (cited answer and log, not addressed, guide selection, latest version, restricted/other types skipped, missing carrier/guide/key messages, failure logged, permissions, DB checks, inline PDF);
   - browser: `ask.spec.ts` (upload, ask, verdict, quote, page link, accessibility);
   - `/ask` was added to the accessibility sweep.
+- **First real run (2026-11-08, Josh's key):**
+  - "Will Travelers write a home with a wood shake roof?" against *Travelers Quantum Home 2.0* (1.8 MB PDF) gave **No**, with four quotes. The key one: wood shakes and wood shingles are on the ineligible-risks list (all forms), p. 8; the list heading and the exceptions/bind-authority wording are on p. 7.
+  - The guide was uploaded to the Files API once (`ai_document_files`).
+  - Usage: 350,836 input tokens written to the 5-minute cache, 527 output (150 of them thinking). **Cost about $1.76**, more than the $1 I had estimated, because the guide is large.
+  - A follow-up within 5 minutes should read the cache for about $0.08: estimated from list prices, not measured yet.
+  - The view link serves the PDF inline (checked headers: 200, application/pdf, inline). Claude's browser pane can't display PDFs, so the jump to page 8 wasn't seen on screen; Josh to confirm in his browser.
+  - Found and fixed an older bug: download file names lost every letter "r" (`/["\r
+]/` in `/api/v1/files`). Test added.
 - **Not tested:**
-  - **the real Claude call** (file upload, citations and page numbers, caching, cost). The first real question with Josh's key needs checking by hand.
+  - Cache reads on a follow-up question (cost and speed).
   - Whether `end_page_number` in page citations is exclusive: the code assumes it is.
   - Very large guides (over 600 pages or 32 MB per request) would be refused by the API; not tried.
 - **For Josh:**

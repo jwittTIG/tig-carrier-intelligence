@@ -128,3 +128,13 @@ describe("opening a cited PDF page", () => {
     expect(await open(false)).toMatch(/^attachment;/);
   });
 });
+
+describe("download file names", () => {
+  it("keep their letters; only quotes, backslashes and line breaks are replaced", async () => {
+    const { guide } = await carrierWithGuide(["x"]);
+    await db.document.update({ where: { id: guide.document.id }, data: { title: "Travelers Quantum Home 2.0" } });
+    const url = await docs.downloadUrl(staff, guide.version.id);
+    const res = await filesRoute.GET(new Request(`http://localhost${url}`));
+    expect(res.headers.get("content-disposition")).toBe('attachment; filename="Travelers_Quantum_Home_2.0-v1.pdf"');
+  });
+});
