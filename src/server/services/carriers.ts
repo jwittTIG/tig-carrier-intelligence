@@ -382,6 +382,51 @@ export async function addCarrierProduct(ctx: AuthContext, carrierId: string, inp
   });
 }
 
+const linesSchema = z
+  .object({
+    lineIds: z.preprocess((v) => (Array.isArray(v) ? v : typeof v === "string" && v ? [v] : []), z.array(z.uuid()).min(1, "Tick at least one line").max(40)),
+    productName: optionalText(120),
+    programName: optionalText(120),
+  })
+  .refine((d) => !d.productName || new Set(d.lineIds).size === 1, { message: "A product name can only be used with one line. Tick one line, or leave the name blank.", path: ["productName"] });
+
+/**
+ * Adds the lines a carrier writes in one step (one product per ticked line). Without a name,
+ * each line's general product is used (e.g. "General Liability"), created the first time.
+ * With a name and one line, that named product (e.g. "Contractors GL"). Lines the carrier
+ * already writes with the same product and program are skipped.
+ */
+export async function addCarrierLines(ctx: AuthContext, carrierId: string, input: unknown) {
+  assertCan(ctx, "carrier.write");
+  const data = parse(linesSchema, input);
+  return prisma.$transaction(async (tx) => {
+    const carrier = await findCarrier(tx, carrierId);
+    if (!["INSURER", "OTHER"].includes(carrier.type)) throw new ValidationError("Only an insurer (writing company) can write a product. Add intermediaries as channels.");
+    const lines = await tx.lineOfBusiness.findMany({ where: { id: { in: [...new Set(data.lineIds)] }, active: true } });
+    if (lines.length !== new Set(data.lineIds).size) throw new ValidationError("Unknown line of business.");
+    const added: string[] = [];
+    const skipped: string[] = [];
+    for (const line of lines) {
+      const name = data.productName ?? line.name;
+      const code = data.productName ? productCode(data.productName) : line.code;
+      const existing = await tx.insuranceProduct.findUnique({ where: { lineId_code: { lineId: line.id, code } } });
+      const product = existing ?? (await tx.insuranceProduct.create({ data: { lineId: line.id, code, name } }));
+      if (!existing) await recordAudit(tx, ctx, { action: "product.create", entityType: "insurance_product", entityId: product.id, after: product });
+      const dup = await tx.carrierProduct.findFirst({ where: { writingCompanyId: carrierId, productId: product.id, programName: data.programName ?? null, archivedAt: null } });
+      if (dup) {
+        skipped.push(product.name);
+        continue;
+      }
+      const row = await tx.carrierProduct.create({ data: { writingCompanyId: carrierId, productId: product.id, programName: data.programName ?? null } });
+      await recordAudit(tx, ctx, { action: "carrier.product.add", entityType: "carrier_product", entityId: row.id, after: row });
+      added.push(product.name);
+    }
+    return { added, skipped };
+  });
+}
+
+const productCode = (name: string) => name.toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 60);
+
 const channelSchema = z.object({
   distributionType: z.enum(DistributionType),
   intermediaryOrgId: optionalId,

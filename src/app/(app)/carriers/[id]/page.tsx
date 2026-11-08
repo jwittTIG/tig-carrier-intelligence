@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { can } from "@/server/auth/context";
 import { requireAuth } from "@/server/auth/session";
 import { NotFoundError } from "@/server/errors";
-import { CARRIER_TYPES, getCarrier, listActivity, listCarrierHistory, listCarrierOptions, listLines, listProducts } from "@/server/services/carriers";
+import { CARRIER_TYPES, getCarrier, listActivity, listCarrierHistory, listCarrierOptions, listLines } from "@/server/services/carriers";
 import { listActiveUsers } from "@/server/services/users";
 import { isFollowing } from "@/server/services/notifications";
 import { followAction } from "../../notifications/actions";
@@ -251,8 +251,7 @@ async function Overview({ carrier, write }: { carrier: Carrier; write: boolean }
 
 async function Channels({ carrier, write }: { carrier: Carrier; write: boolean }) {
   const ctx = await requireAuth();
-  const [products, lines, intermediaries] = await Promise.all([
-    listProducts(ctx),
+  const [lines, intermediaries] = await Promise.all([
     listLines(ctx),
     listCarrierOptions(ctx, { types: ["MGA", "MGU", "WHOLESALER", "PROGRAM_ADMIN", "GENERAL_AGENCY", "OTHER"] }),
   ]);
@@ -342,21 +341,27 @@ async function Channels({ carrier, write }: { carrier: Carrier; write: boolean }
             ))}
           </ul>
           {write && writes && (
-            <ActionForm action={addProductAction.bind(null, id)} submitLabel="Add product" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Field label="Existing product" htmlFor="productId" hint="Or leave blank and name a new product below.">
-                <select id="productId" name="productId" className={inputClass}>
-                  <option value="">—</option>
-                  {products.map((p) => <option key={p.id} value={p.id}>{p.line.name}: {p.name}</option>)}
-                </select>
-              </Field>
-              <Field label="Program name (optional)" htmlFor="programName"><input id="programName" name="programName" maxLength={120} className={inputClass} /></Field>
-              <Field label="New product: line" htmlFor="newProductLineId">
-                <select id="newProductLineId" name="newProductLineId" className={inputClass}>
-                  <option value="">—</option>
-                  {lines.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
-                </select>
-              </Field>
-              <Field label="New product: name" htmlFor="newProductName"><input id="newProductName" name="newProductName" maxLength={120} className={inputClass} /></Field>
+            <ActionForm action={addProductAction.bind(null, id)} submitLabel="Add lines" className="flex flex-col gap-3">
+              <fieldset className="flex flex-col gap-2">
+                <legend className="text-sm font-medium">Lines this carrier writes</legend>
+                <div className="grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
+                  {lines.map((l) => {
+                    const has = carrier.carrierProducts.some((cp) => !cp.archivedAt && !cp.programName && cp.product.line.name === l.name && cp.product.code === l.code);
+                    return (
+                      <label key={l.id} className={`flex items-center gap-2 text-sm ${has ? "text-zinc-600 dark:text-zinc-400" : ""}`}>
+                        <input type="checkbox" name="lineIds" value={l.id} defaultChecked={has} disabled={has} className="h-4 w-4 accent-blue-700" />
+                        {l.name}{has && <span className="text-xs"> (added)</span>}
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Field label="Product name (optional)" htmlFor="productName" hint="Only for a specific product, e.g. Contractors GL, with one line ticked. Leave blank to add each line as is.">
+                  <input id="productName" name="productName" maxLength={120} className={inputClass} />
+                </Field>
+                <Field label="Program name (optional)" htmlFor="programName"><input id="programName" name="programName" maxLength={120} className={inputClass} /></Field>
+              </div>
             </ActionForm>
           )}
         </Section>

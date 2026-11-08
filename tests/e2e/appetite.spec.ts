@@ -19,10 +19,12 @@ test("upload a guide, draft appetite, submit, and have someone else approve it",
   await page.getByRole("button", { name: "Create carrier" }).click();
   await expect(page.getByRole("heading", { name })).toBeVisible();
   await page.getByRole("link", { name: "Writing companies & channels" }).click();
-  const productLabel = (await page.getByLabel("Existing product").locator("option").nth(1).textContent())!.trim();
-  await page.getByLabel("Existing product").selectOption({ index: 1 });
-  await page.getByRole("button", { name: "Add product" }).click();
-  await expect(page.getByText("Product added.")).toBeVisible();
+  // Tick the line it writes; the product is named after the line.
+  const productLabel = "General Liability: General Liability";
+  await page.getByRole("checkbox", { name: "General Liability", exact: true }).check();
+  await page.getByRole("button", { name: "Add lines" }).click();
+  await expect(page.getByText("Added General Liability.")).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: "General Liability (added)" })).toBeDisabled();
 
   // File the appetite guide under the carrier.
   await page.getByRole("link", { name: "Documents", exact: true }).nth(1).click();

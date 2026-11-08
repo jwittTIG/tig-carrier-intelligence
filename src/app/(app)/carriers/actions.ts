@@ -72,9 +72,10 @@ export async function endRelationshipAction(id: string, relationshipId: string, 
 
 export async function addProductAction(id: string, _s: ActionState, form: FormData): Promise<ActionState> {
   return runAction(async () => {
-    await carriers.addCarrierProduct(await requireAuth(), id, formObject(form));
+    const r = await carriers.addCarrierLines(await requireAuth(), id, { ...formObject(form), lineIds: form.getAll("lineIds").filter((v) => typeof v === "string") });
     revalidatePath(page(id));
-    return "Product added.";
+    const parts = [r.added.length ? `Added ${r.added.join(", ")}.` : "", r.skipped.length ? `Already written: ${r.skipped.join(", ")}.` : ""];
+    return parts.filter(Boolean).join(" ") || "Nothing to add.";
   });
 }
 

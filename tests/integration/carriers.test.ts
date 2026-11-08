@@ -201,3 +201,35 @@ describe("carrier portal site", () => {
     await expect(db.organization.update({ where: { id: c.id }, data: { portalUrl: "javascript:alert(1)" } })).rejects.toThrow();
   });
 });
+
+describe("adding lines with checkboxes", () => {
+  it("adds one product per ticked line, reuses line products, and skips lines already written", async () => {
+    const c = await newCarrier();
+    const [gl, prop] = await Promise.all([db.lineOfBusiness.findUniqueOrThrow({ where: { code: "GENERAL_LIABILITY" } }), db.lineOfBusiness.findUniqueOrThrow({ where: { code: "COMMERCIAL_PROPERTY" } })]);
+    const r = await svc.addCarrierLines(staff, c.id, { lineIds: [gl.id, prop.id] });
+    expect([...r.added].sort()).toEqual(["Commercial Property", "General Liability"]);
+    expect(r.skipped).toEqual([]);
+    const cps = await db.carrierProduct.findMany({ where: { writingCompanyId: c.id }, include: { product: true } });
+    expect(cps.map((x) => x.product.code).sort()).toEqual(["COMMERCIAL_PROPERTY", "GENERAL_LIABILITY"]);
+    // Another carrier ticking GL reuses the same line product.
+    const other = await newCarrier();
+    await svc.addCarrierLines(staff, other.id, { lineIds: gl.id });
+    expect(await db.insuranceProduct.count({ where: { lineId: gl.id, code: "GENERAL_LIABILITY" } })).toBe(1);
+    // Ticking GL again is skipped, not duplicated.
+    expect(await svc.addCarrierLines(staff, c.id, { lineIds: [gl.id] })).toEqual({ added: [], skipped: ["General Liability"] });
+    expect(await db.carrierProduct.count({ where: { writingCompanyId: c.id } })).toBe(2);
+    expect(await db.auditEvent.count({ where: { action: "carrier.product.add", afterState: { path: ["writingCompanyId"], equals: c.id } } })).toBe(2);
+  });
+
+  it("a product name needs exactly one line; at least one line; insurers only", async () => {
+    const c = await newCarrier();
+    const [gl, prop] = await Promise.all([db.lineOfBusiness.findUniqueOrThrow({ where: { code: "GENERAL_LIABILITY" } }), db.lineOfBusiness.findUniqueOrThrow({ where: { code: "COMMERCIAL_PROPERTY" } })]);
+    const named = await svc.addCarrierLines(staff, c.id, { lineIds: [gl.id], productName: "TEST Contractors GL", programName: "TEST Program" });
+    expect(named.added).toEqual(["TEST Contractors GL"]);
+    await expect(svc.addCarrierLines(staff, c.id, { lineIds: [gl.id, prop.id], productName: "TEST Two lines" })).rejects.toThrow(/only be used with one line/);
+    await expect(svc.addCarrierLines(staff, c.id, { lineIds: [] })).rejects.toBeInstanceOf(ValidationError);
+    await expect(svc.addCarrierLines(staff, c.id, { lineIds: [randomUUID()] })).rejects.toThrow(/Unknown line/);
+    const wholesaler = await newCarrier({ type: "WHOLESALER" });
+    await expect(svc.addCarrierLines(staff, wholesaler.id, { lineIds: [gl.id] })).rejects.toThrow(/Only an insurer/);
+  });
+});

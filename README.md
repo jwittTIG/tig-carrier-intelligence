@@ -45,7 +45,7 @@ See `.env.example`:
 ## Signing in
 - **Now:** `AUTH_DRIVER=dev`. `/sign-in` lists the active users in the database (the browser tests use the DEMO users in the test database). A yellow banner shows on every page while this is on.
 - **Fresh dev database with real data** (no DEMO records): `npx tsx scripts/reset-dev-db.ts --yes-delete-everything` wipes it (stop `npm run dev` first; local only), then `npx tsx scripts/bootstrap.ts --admin-email <you> --admin-name "<name>" --agency "<agency>"` creates the first Admin and the agency entity. Add other staff on Setup → Users.
-- **Browser tests** (`npm run test:e2e`) run their own server on port 3100 against the TEST database, so they never touch the dev data.
+- **Browser tests** (`npm run test:e2e`) run their own server on port 3100 against the TEST database, so they never touch the dev data. Avoid using the app on port 3000 while they run: on 2026-11-08 a run during active use timed out on sign-in throughout, and passed when left alone (cause not confirmed).
 - **Later:** `AUTH_DRIVER=clerk`. Staff sign in with Microsoft 365. Access is invite-only: an admin invites them on **Users** first (DECISIONS D18).
 
 ## Migrations and seed
