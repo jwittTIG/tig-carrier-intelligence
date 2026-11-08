@@ -112,7 +112,11 @@ export async function listExtractions(ctx: AuthContext, opts: { carrierId?: stri
 const indexes = z.preprocess((v) => (Array.isArray(v) ? v : typeof v === "string" && v !== "" ? [v] : []), z.array(z.coerce.number().int().min(0).max(10000)));
 const applySchema = z.object({ attributes: indexes, rules: indexes, limits: indexes, requirements: indexes });
 
-type Skipped = { kind: string; summary: string; reason: string };
+type Section = "attributes" | "rules" | "limits" | "requirements";
+type Selection = Record<Section, number[]>;
+/** A proposal that couldn't be added, with where it sits in the proposals (for a retry). */
+type Skipped = { kind: string; section?: Section; index?: number; summary: string; reason: string };
+type ApplyResult = { profileId: string; added: { riskDetails: number; rules: number; limits: number; requirements: number }; skipped: Skipped[] };
 
 async function aiSource(ctx: AuthContext, recordType: RecordType, recordId: string, versionId: string, item: { page: number; quote: string; confidence: number }) {
   await prisma.$transaction(async (tx) => {
@@ -133,58 +137,67 @@ async function aiSource(ctx: AuthContext, recordType: RecordType, recordId: stri
 }
 
 const errText = (e: unknown) => (e instanceof Error ? e.message : String(e)).slice(0, 300);
+/** Fits AI text into a field, marking that it was shortened. */
+const fit = (text: string, max: number) => (text.length <= max ? text : `${text.slice(0, max - 1).trimEnd()}…`);
 
 /**
- * Applies the selected proposals. Items that don't fit (an unknown state, a value that isn't
- * allowed, a rule whose risk detail wasn't selected) are skipped and reported, not guessed.
+ * Adds the selected proposals to a draft. Items that don't fit (an unknown state, a value that
+ * isn't allowed, a rule whose risk detail is missing) are skipped and reported, not guessed.
  */
-export async function applyExtraction(ctx: AuthContext, id: string, input: unknown) {
-  assertCan(ctx, "appetite.write");
-  const sel = parse(applySchema, input);
-  const ex = await getExtraction(ctx, id);
-  if (ex.status !== "READY" || !ex.proposals) throw new ConflictError(ex.status === "APPLIED" ? "This draft was already applied." : "Nothing to apply.");
-  const p: Proposals = ex.proposals;
-  const pick = <T,>(list: T[], idx: number[]) => [...new Set(idx)].filter((i) => i < list.length).map((i) => list[i]);
+async function applyItems(ctx: AuthContext, ex: Awaited<ReturnType<typeof getExtraction>>, sel: Selection, draftId: string | null): Promise<ApplyResult> {
+  const p = ex.proposals!;
+  const picked = <T,>(list: T[], idx: number[]) => [...new Set(idx)].filter((i) => i < list.length).map((i) => ({ i, item: list[i] }));
   const skipped: Skipped[] = [];
   const productId = ex.carrierProduct.productId;
   const versionId = ex.documentVersionId;
 
-  // 1. Risk details: reuse by key, else create the selected ones.
-  const defs = new Map(ex.carrierProduct.product.attributeDefinitions.map((a) => [a.key, a.id]));
+  // 1. Risk details: reuse by key (also ones added since), else create the selected ones.
+  const current = await prisma.riskAttributeDefinition.findMany({ where: { productId }, select: { key: true, id: true } });
+  const defs = new Map(current.map((a) => [a.key, a.id]));
+  const failedKeys = new Set<string>();
   let newDetails = 0;
-  for (const a of pick(p.attributes, sel.attributes)) {
+  for (const { i, item: a } of picked(p.attributes, sel.attributes)) {
     const key = a.key.trim().toLowerCase();
     if (defs.has(key)) continue;
     try {
-      const row = await addAttributeDefinition(ctx, productId, { key, label: a.label, dataType: a.dataType, unit: a.unit ?? "", allowedValues: a.dataType === "ENUM" ? (a.allowedValues ?? []) : [] });
+      const row = await addAttributeDefinition(ctx, productId, { key, label: fit(a.label, 80), dataType: a.dataType, unit: fit(a.unit ?? "", 20), allowedValues: a.dataType === "ENUM" ? (a.allowedValues ?? []).map((v) => fit(v, 80)) : [] });
       defs.set(key, row.id);
       newDetails++;
     } catch (e) {
-      skipped.push({ kind: "Risk detail", summary: a.label, reason: errText(e) });
+      failedKeys.add(key);
+      skipped.push({ kind: "Risk detail", section: "attributes", index: i, summary: a.label, reason: errText(e) });
     }
   }
 
-  // 2. The draft: reuse an open one for this product, or start one. The guide is its source.
-  const open = await prisma.appetiteProfile.findFirst({ where: { carrierProductId: ex.carrierProductId, marketChannelId: null, status: "DRAFT" } });
-  if (!open && (await prisma.appetiteProfile.findFirst({ where: { carrierProductId: ex.carrierProductId, marketChannelId: null, status: "PENDING" } }))) {
-    throw new ConflictError("A version of this product's appetite is waiting for approval. Decide it first, then apply this draft.");
+  // 2. The draft: the given one (retry), an open one for this product, or a new one. The guide is its source.
+  let profile;
+  if (draftId) {
+    profile = await prisma.appetiteProfile.findUnique({ where: { id: draftId } });
+    if (!profile || profile.status !== "DRAFT") throw new ConflictError("That appetite draft has been submitted or approved since. Start a new version, then draft from the guide again.");
+  } else {
+    const open = await prisma.appetiteProfile.findFirst({ where: { carrierProductId: ex.carrierProductId, marketChannelId: null, status: "DRAFT" } });
+    if (!open && (await prisma.appetiteProfile.findFirst({ where: { carrierProductId: ex.carrierProductId, marketChannelId: null, status: "PENDING" } }))) {
+      throw new ConflictError("A version of this product's appetite is waiting for approval. Decide it first, then apply this draft.");
+    }
+    const effective = p.effectiveDate && /^\d{4}-\d{2}-\d{2}$/.test(p.effectiveDate) ? p.effectiveDate : "";
+    profile = open ?? (await createProfile(ctx, { carrierProductId: ex.carrierProductId, effectiveFrom: effective }));
+    // An open draft without a date takes the guide's.
+    if (open && !open.effectiveFrom && effective) await updateProfile(ctx, open.id, { effectiveFrom: effective });
   }
-  const effective = p.effectiveDate && /^\d{4}-\d{2}-\d{2}$/.test(p.effectiveDate) ? p.effectiveDate : "";
-  const profile = open ?? (await createProfile(ctx, { carrierProductId: ex.carrierProductId, effectiveFrom: effective }));
-  // An open draft without a date takes the guide's.
-  if (open && !open.effectiveFrom && effective) await updateProfile(ctx, open.id, { effectiveFrom: effective });
   const cited = await prisma.recordSource.findFirst({ where: { recordType: "APPETITE_PROFILE", recordId: profile.id, documentVersionId: versionId } });
   if (!cited) await addSource(ctx, { recordType: "APPETITE_PROFILE", recordId: profile.id, sourceKind: "DOCUMENT", documentVersionId: versionId, sourceNote: "Drafted by AI from this guide; reviewed before use" });
 
   // 3. Rules.
   const states = await prisma.territory.findMany({ where: { territoryType: "STATE", countryCode: "US" }, select: { id: true, stateCode: true } });
-  const stateId = new Map(states.map((s) => [s.stateCode!, s.id]));
+  const stateId = new Map(states.map((st) => [st.stateCode!, st.id]));
   let rules = 0;
-  for (const r of pick(p.rules, sel.rules)) {
+  for (const { i, item: r } of picked(p.rules, sel.rules)) {
+    const skip = (reason: string) => skipped.push({ kind: "Rule", section: "rules", index: i, summary: r.summary, reason });
     const unknownStates = r.states.filter((c) => !stateId.has(c.toUpperCase()));
-    if (unknownStates.length) { skipped.push({ kind: "Rule", summary: r.summary, reason: `Unknown state code ${unknownStates.join(", ")}` }); continue; }
-    const attrId = r.attributeKey ? defs.get(r.attributeKey.trim().toLowerCase()) : undefined;
-    if (r.attributeKey && !attrId) { skipped.push({ kind: "Rule", summary: r.summary, reason: `Needs the risk detail "${r.attributeKey}", which wasn't selected` }); continue; }
+    if (unknownStates.length) { skip(`Unknown state code ${unknownStates.join(", ")}`); continue; }
+    const key = r.attributeKey?.trim().toLowerCase();
+    const attrId = key ? defs.get(key) : undefined;
+    if (key && !attrId) { skip(failedKeys.has(key) ? `Its risk detail "${key}" couldn't be added (see above)` : `Needs the risk detail "${key}", which wasn't selected`); continue; }
     try {
       const rule = await addRule(ctx, profile.id, {
         outcome: r.outcome,
@@ -193,41 +206,104 @@ export async function applyExtraction(ctx: AuthContext, id: string, input: unkno
         attributeDefinitionId: attrId ?? "",
         operator: attrId ? (r.operator ?? "") : "",
         value: attrId ? (r.value ?? "") : "",
-        rationale: `${r.summary} (p. ${r.page})`.slice(0, 2000),
+        rationale: fit(`${r.summary} (p. ${r.page})`, 2000),
       });
       await aiSource(ctx, "APPETITE_RULE", rule.id, versionId, r);
       rules++;
     } catch (e) {
-      skipped.push({ kind: "Rule", summary: r.summary, reason: errText(e) });
+      skip(errText(e));
     }
   }
 
   // 4. Limits and requirements, on the carrier product.
   let limits = 0;
-  for (const l of pick(p.limits, sel.limits)) {
+  for (const { i, item: l } of picked(p.limits, sel.limits)) {
     try {
-      const row = await addCoverage(ctx, ex.carrierProductId, { coverageCode: l.coverage.slice(0, 60), minLimit: l.minLimit != null ? String(l.minLimit) : "", maxLimit: l.maxLimit != null ? String(l.maxLimit) : "" });
+      const row = await addCoverage(ctx, ex.carrierProductId, { coverageCode: fit(l.coverage, 60), minLimit: l.minLimit != null ? String(l.minLimit) : "", maxLimit: l.maxLimit != null ? String(l.maxLimit) : "" });
       await aiSource(ctx, "COVERAGE_CAPABILITY", row.id, versionId, l);
       limits++;
     } catch (e) {
-      skipped.push({ kind: "Limit", summary: l.coverage, reason: errText(e) });
+      skipped.push({ kind: "Limit", section: "limits", index: i, summary: l.coverage, reason: errText(e) });
     }
   }
   let requirements = 0;
-  for (const q of pick(p.requirements, sel.requirements)) {
+  for (const { i, item: q } of picked(p.requirements, sel.requirements)) {
     try {
-      const row = await addRequirement(ctx, ex.carrierProductId, { requirementType: q.type.slice(0, 80), description: q.description.slice(0, 2000), sourceDocumentVersionId: versionId });
+      const row = await addRequirement(ctx, ex.carrierProductId, { requirementType: fit(q.type, 80), description: fit(q.description, 2000), sourceDocumentVersionId: versionId });
       await aiSource(ctx, "UNDERWRITING_REQUIREMENT", row.id, versionId, q);
       requirements++;
     } catch (e) {
-      skipped.push({ kind: "Requirement", summary: q.type, reason: errText(e) });
+      skipped.push({ kind: "Requirement", section: "requirements", index: i, summary: q.type, reason: errText(e) });
     }
   }
+  return { profileId: profile.id, added: { riskDetails: newDetails, rules, limits, requirements }, skipped };
+}
 
-  const result = { profileId: profile.id, added: { riskDetails: newDetails, rules, limits, requirements }, skipped };
+/** Applies the selected proposals to a draft (once per AI read). */
+export async function applyExtraction(ctx: AuthContext, id: string, input: unknown) {
+  assertCan(ctx, "appetite.write");
+  const sel = parse(applySchema, input);
+  const ex = await getExtraction(ctx, id);
+  if (ex.status !== "READY" || !ex.proposals) throw new ConflictError(ex.status === "APPLIED" ? "This draft was already applied." : "Nothing to apply.");
+  const result = await applyItems(ctx, ex, sel, null);
   await prisma.$transaction(async (tx) => {
-    await tx.guideExtraction.update({ where: { id }, data: { status: "APPLIED", profileId: profile.id, appliedAt: new Date(), result: result as unknown as Prisma.InputJsonValue } });
+    await tx.guideExtraction.update({ where: { id }, data: { status: "APPLIED", profileId: result.profileId, appliedAt: new Date(), result: result as unknown as Prisma.InputJsonValue } });
     await recordAudit(tx, ctx, { action: "appetite.extraction.apply", entityType: "guide_extraction", entityId: id, after: result });
   });
   return result;
+}
+
+/** Where a skipped item sits in the proposals (older results only have its kind and summary). */
+function locate(p: Proposals, s: Skipped): { section: Section; index: number } | null {
+  if (s.section && s.index !== undefined) return { section: s.section, index: s.index };
+  const find = (section: Section, list: { summary?: string; label?: string; coverage?: string; type?: string }[], name: (x: (typeof list)[number]) => string | undefined) => {
+    const index = list.findIndex((x) => name(x) === s.summary);
+    return index >= 0 ? { section, index } : null;
+  };
+  if (s.kind === "Risk detail") return find("attributes", p.attributes, (x) => x.label);
+  if (s.kind === "Rule") return find("rules", p.rules, (x) => x.summary);
+  if (s.kind === "Limit") return find("limits", p.limits, (x) => x.coverage);
+  if (s.kind === "Requirement") return find("requirements", p.requirements, (x) => x.type);
+  return null;
+}
+
+/**
+ * Tries the skipped items of an applied AI draft again, into the same appetite draft (for
+ * example after a fix). Anything still skipped stays listed with its reason.
+ */
+export async function retrySkipped(ctx: AuthContext, id: string) {
+  assertCan(ctx, "appetite.write");
+  const ex = await getExtraction(ctx, id);
+  const prev = ex.result as ApplyResult | null;
+  if (ex.status !== "APPLIED" || !prev || !ex.proposals) throw new ConflictError("Only an applied AI draft can be retried.");
+  if (!prev.skipped.length) throw new ConflictError("Nothing was skipped.");
+  const sel: Selection = { attributes: [], rules: [], limits: [], requirements: [] };
+  const unknown: Skipped[] = [];
+  for (const s of prev.skipped) {
+    const at = locate(ex.proposals, s);
+    if (at) sel[at.section].push(at.index);
+    else unknown.push(s);
+  }
+  // A skipped rule needs its risk detail again too (it's reused if it exists by now).
+  for (const i of sel.rules) {
+    const key = ex.proposals.rules[i]?.attributeKey?.trim().toLowerCase();
+    const a = key ? ex.proposals.attributes.findIndex((x) => x.key.trim().toLowerCase() === key) : -1;
+    if (a >= 0 && !sel.attributes.includes(a)) sel.attributes.push(a);
+  }
+  const again = await applyItems(ctx, ex, sel, prev.profileId);
+  const result: ApplyResult = {
+    profileId: prev.profileId,
+    added: {
+      riskDetails: prev.added.riskDetails + again.added.riskDetails,
+      rules: prev.added.rules + again.added.rules,
+      limits: prev.added.limits + again.added.limits,
+      requirements: prev.added.requirements + again.added.requirements,
+    },
+    skipped: [...again.skipped, ...unknown],
+  };
+  await prisma.$transaction(async (tx) => {
+    await tx.guideExtraction.update({ where: { id }, data: { result: result as unknown as Prisma.InputJsonValue } });
+    await recordAudit(tx, ctx, { action: "appetite.extraction.retry", entityType: "guide_extraction", entityId: id, before: prev, after: { ...result, retried: again.added } });
+  });
+  return { ...result, retried: again.added };
 }

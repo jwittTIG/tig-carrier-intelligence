@@ -153,6 +153,42 @@ describe("drafting appetite from a guide", () => {
     }
   });
 
+  it("shortens over-long AI names instead of skipping, and retries skipped items into the same draft", async () => {
+    const long = "Liability hazard (skateboard ramp, bike jumps, debris, unprotected ground solar, unfenced pool, trampoline)";
+    const s = await setup([
+      "EFFECTIVE: 2026-01-01",
+      `ATTR: liability_hazard | ${long} | BOOLEAN |  | p7 | liability exposures`,
+      "ATTR: roof_covering | Roof covering | ENUM | Metal,Wood shake | p8 | roofs",
+      "RULE: ACCEPTED |  | p3 | Eligible.",
+      "RULE: PROHIBITED | liability_hazard EQ yes | p7 | Liability hazards are ineligible.",
+      "RULE: PROHIBITED | roof_covering IN Wood shake | p8 | Wood shake roofs are ineligible.",
+    ]);
+    const run = await ex.startExtraction(staff, { documentVersionId: s.guide.version.id, carrierProductId: s.cp.id });
+    // Roof covering left unticked: its rule is skipped.
+    const r = await ex.applyExtraction(staff, run.id, { attributes: ["0"], rules: ["0", "1", "2"], limits: [], requirements: [] });
+    expect(r.added).toMatchObject({ riskDetails: 1, rules: 2 });
+    const def = await db.riskAttributeDefinition.findUniqueOrThrow({ where: { productId_key: { productId: s.product.id, key: "liability_hazard" } } });
+    expect(def.label.length).toBeLessThanOrEqual(80);
+    expect(def.label.endsWith("…")).toBe(true);
+    expect(r.skipped).toEqual([expect.objectContaining({ kind: "Rule", section: "rules", index: 2, reason: expect.stringMatching(/wasn't selected/) })]);
+
+    const again = await ex.retrySkipped(staff, run.id);
+    expect(again.retried).toMatchObject({ riskDetails: 1, rules: 1 });
+    expect(again.skipped).toEqual([]);
+    expect(await db.appetiteRule.count({ where: { profileId: r.profileId } })).toBe(3);
+    await expect(ex.retrySkipped(staff, run.id)).rejects.toThrow(/Nothing was skipped/);
+    expect(await db.auditEvent.count({ where: { entityId: run.id, action: "appetite.extraction.retry" } })).toBe(1);
+  });
+
+  it("won't retry into a draft that has been submitted since", async () => {
+    const s = await setup();
+    const run = await ex.startExtraction(staff, { documentVersionId: s.guide.version.id, carrierProductId: s.cp.id });
+    const r = await ex.applyExtraction(staff, run.id, { attributes: ["0"], rules: ["0", "1", "2"], limits: [], requirements: [] });
+    expect(r.skipped.length).toBeGreaterThan(0);
+    await submitProfile(staff, r.profileId, {});
+    await expect(ex.retrySkipped(staff, run.id)).rejects.toThrow(/submitted or approved since/);
+  });
+
   it("the database requires an applied draft to point at its profile", async () => {
     const s = await setup();
     await expect(db.guideExtraction.create({ data: { documentVersionId: s.guide.version.id, carrierProductId: s.cp.id, status: "APPLIED", model: "x", promptVersion: "x", createdById: staff.userId } })).rejects.toThrow();

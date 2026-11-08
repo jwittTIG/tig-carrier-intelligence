@@ -51,7 +51,8 @@ Prompt: `prompts/09-draft-appetite-from-guides.md`; DECISIONS N22. Josh wanted a
   - Rules looked right where checked (for example wood/T-lock/asbestos roofs, more than 2 roof layers, knob-and-tube wiring, >7 road miles to the fire department).
   - **But** about 15 rules drop a second condition the guide attaches. For example, Coverage A ≥ $1.5M is only ineligible *without* a central station alarm; the 15-year roof rule only applies to High 3 wind/hail areas; some rules apply only to landlord forms. Applied as-is, these would mark too many risks Prohibited or Refer.
   - The AI scored those 0.6–0.8, so the review now flags anything below 80% as "Check this" (17 items on this run).
-  - Not applied yet: Josh reviews.
+  - **Applied by Josh** (everything ticked): 56 rules at first. 3 risk details failed because their AI names were longer than 80 characters (a bug), and their 3 rules were skipped with a misleading reason. Fixed: long AI text is shortened with an ellipsis; the skip reason now says the detail couldn't be added; and an applied AI draft has **Retry skipped items** (no new AI read). The retry added the 3 details and 3 rules to Josh's draft: 59 rules, 48 risk details, 9 limits, 20 requirements.
+  - The draft (Personal Homeowners v1, effective 2026-08-23) still contains the 13 rules under 80% confidence, 9 of them too broad, plus 2 landlord-only rules. Not yet submitted.
 - **Not tested**:
   - applying and approving a real AI draft;
   - **the real AI read** (quality of the rules on a real guide, cost, whether a long guide fits in one answer: up to 64,000 output tokens);

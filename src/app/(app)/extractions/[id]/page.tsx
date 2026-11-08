@@ -7,7 +7,7 @@ import { getExtraction } from "@/server/services/extractions";
 import { ActionForm } from "@/components/action-form";
 import { OutcomeBadge } from "@/components/m4";
 import { Badge, Section, fmtDateTime, label } from "@/components/ui";
-import { applyExtractionAction } from "../actions";
+import { applyExtractionAction, retrySkippedAction } from "../actions";
 
 export const metadata = { title: "Review AI draft" };
 
@@ -75,6 +75,11 @@ export default async function ExtractionPage({ params }: PageProps<"/extractions
             <>
               <h3 className="text-sm font-medium">Skipped ({result.skipped.length})</h3>
               <ul className="flex flex-col gap-1 text-sm">{result.skipped.map((s, i) => <li key={i}><Badge tone="warn">{s.kind}</Badge> {s.summary}: <span className="text-zinc-600 dark:text-zinc-400">{s.reason}</span></li>)}</ul>
+              {can(ctx, "appetite.write") && (
+                <ActionForm action={retrySkippedAction.bind(null, ex.id)} submitLabel="Retry skipped items" pendingLabel="Retrying…" variant="secondary" className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-zinc-600 dark:text-zinc-400">Tries them again into the same draft (useful after a fix). No new AI read, no cost.</span>
+                </ActionForm>
+              )}
             </>
           )}
         </Section>
