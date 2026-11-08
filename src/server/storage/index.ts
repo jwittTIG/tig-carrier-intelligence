@@ -16,7 +16,7 @@ export interface ObjectStorage {
   put(key: string, bytes: Uint8Array, contentType: string): Promise<void>;
   get(key: string): Promise<Uint8Array>;
   /** A URL that serves the object until `expiresAt`. */
-  signedUrl(key: string, opts: { expiresAt: Date; filename: string; contentType: string }): Promise<string>;
+  signedUrl(key: string, opts: { expiresAt: Date; filename: string; contentType: string; inline?: boolean }): Promise<string>;
 }
 
 const KEY_RE = /^[a-z0-9][a-z0-9/_.-]{0,250}$/;
@@ -31,7 +31,8 @@ function signingSecret(): string {
   return s;
 }
 
-type Signed = { key: string; exp: number; name: string; type: string };
+/** `inline`: open in the browser instead of downloading (PDFs only; see /api/v1/files). */
+type Signed = { key: string; exp: number; name: string; type: string; inline?: boolean };
 
 export function signToken(p: Signed): string {
   const body = Buffer.from(JSON.stringify(p)).toString("base64url");
@@ -72,9 +73,9 @@ class DevLocalStorage implements ObjectStorage {
   async get(key: string) {
     return new Uint8Array(await fs.readFile(this.file(key)));
   }
-  async signedUrl(key: string, opts: { expiresAt: Date; filename: string; contentType: string }) {
+  async signedUrl(key: string, opts: { expiresAt: Date; filename: string; contentType: string; inline?: boolean }) {
     assertValidKey(key);
-    return `/api/v1/files?t=${signToken({ key, exp: opts.expiresAt.getTime(), name: opts.filename, type: opts.contentType })}`;
+    return `/api/v1/files?t=${signToken({ key, exp: opts.expiresAt.getTime(), name: opts.filename, type: opts.contentType, ...(opts.inline && { inline: true }) })}`;
   }
 }
 

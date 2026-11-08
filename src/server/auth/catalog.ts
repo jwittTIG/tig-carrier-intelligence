@@ -23,6 +23,7 @@ export const PERMISSIONS = [
   { code: "audit.read", description: "View the audit log" },
   { code: "inbox.read", description: "View emails taken in from the carrier-updates mailbox" },
   { code: "inbox.triage", description: "File, cite, draft from, or dismiss inbox emails" },
+  { code: "guides.ask", description: "Ask questions of carrier guides, answered by AI with page citations" },
   { code: "inbox.manage", description: "Check the mailbox now, and accept or discard emails from unknown senders" },
   { code: "admin.users", description: "Manage users and roles" },
   { code: "admin.settings", description: "Manage taxonomy and settings" },

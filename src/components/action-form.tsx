@@ -12,6 +12,8 @@ type Props = {
   showOk?: boolean;
   variant?: "primary" | "secondary" | "danger";
   confirm?: string;
+  /** Button text while the action runs (default "Saving…"). */
+  pendingLabel?: string;
 };
 
 const variants = {
@@ -21,7 +23,7 @@ const variants = {
 };
 
 /** A form bound to a server action, with pending state and inline error/success messages. */
-export function ActionForm({ action, children, submitLabel, className, showOk = true, variant = "primary", confirm }: Props) {
+export function ActionForm({ action, children, submitLabel, className, showOk = true, variant = "primary", confirm, pendingLabel = "Saving…" }: Props) {
   const [state, formAction, pending] = useActionState(action, null);
   return (
     <form
@@ -34,7 +36,7 @@ export function ActionForm({ action, children, submitLabel, className, showOk = 
       {children}
       <div className="flex flex-wrap items-center gap-3">
         <button type="submit" disabled={pending} className={`rounded-lg px-3 py-1.5 text-sm font-medium disabled:opacity-60 ${variants[variant]}`}>
-          {pending ? "Saving…" : submitLabel}
+          {pending ? pendingLabel : submitLabel}
         </button>
         {state?.error && <p role="alert" className="text-sm text-red-700 dark:text-red-400">{state.error}</p>}
         {showOk && state?.ok && !pending && <p role="status" className="text-sm text-green-700 dark:text-green-400">{state.ok}</p>}

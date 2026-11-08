@@ -273,6 +273,7 @@ model User {
   notificationsCaused   Notification[]         @relation("NotificationActor")
   follows               CarrierFollow[]
   industryKeywords      IndustryKeyword[]
+  guideQuestions        GuideQuestion[]
 
   @@map("users")
 }
@@ -392,6 +393,7 @@ model Organization {
   activities       RelationshipActivity[]
   inboundMessages  InboundMessage[]
   followers        CarrierFollow[]
+  guideQuestions   GuideQuestion[]
   notifications    Notification[]
 
   @@index([parentId])
@@ -974,6 +976,7 @@ model DocumentVersion {
   agreements    CommissionAgreement[]
   recordSources RecordSource[]
   inboundRaw    InboundMessage[]
+  aiFiles       AiDocumentFile[]
   inboundFiles  InboundAttachment[]
 
   @@unique([documentId, versionNumber])
@@ -1244,4 +1247,51 @@ model Notification {
   @@index([organizationId])
   @@index([actorUserId])
   @@map("notifications")
+}
+
+// ───────────────────── Ask the guides (M8, DECISIONS D12, N21) ─────────────────────
+
+enum GuideAnswerStatus {
+  ANSWERED
+  REFUSED
+  FAILED
+}
+
+/// Every question asked of a carrier's guides, with what the AI answered and what it relied on.
+model GuideQuestion {
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  askedById          String            @map("asked_by") @db.Uuid
+  organizationId     String            @map("organization_id") @db.Uuid
+  question           String
+  status             GuideAnswerStatus
+  /// YES, NO, REFER, NOT_ADDRESSED or UNCLEAR, as stated by the AI. Never an approved appetite outcome.
+  verdict            String?
+  answerText         String?           @map("answer_text")
+  /// [{ documentVersionId, title, versionNumber, startPage, endPage, quote }]
+  citations          Json              @default("[]")
+  documentVersionIds String[]          @map("document_version_ids") @db.Uuid
+  model              String
+  promptVersion      String            @map("prompt_version")
+  usage              Json?
+  costUsd            Decimal?          @map("cost_usd") @db.Decimal(10, 4)
+  error              String?
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  askedBy            User              @relation(fields: [askedById], references: [id], onDelete: Restrict)
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, createdAt])
+  @@index([askedById])
+  @@index([createdAt])
+  @@map("guide_questions")
+}
+
+/// A document version uploaded to the AI provider's file store, so it's sent once.
+model AiDocumentFile {
+  documentVersionId String          @id @map("document_version_id") @db.Uuid
+  provider          String
+  fileId            String          @map("file_id")
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  documentVersion   DocumentVersion @relation(fields: [documentVersionId], references: [id], onDelete: Restrict)
+
+  @@map("ai_document_files")
 }

@@ -41,3 +41,11 @@ Status: written 2026-11-05 at the end of Milestone 5. **This is not a security r
 4. Rate limiting on sign-in and the API (Clerk covers sign-in; API rate limits are not built).
 5. A Content-Security-Policy beyond `frame-ancestors` (needs Clerk's script domains once known).
 6. Backups, plus a tested restore (`docs/OPERATIONS.md`).
+
+## AI (Milestone 8, Ask the guides)
+- **What leaves the app:** the carrier guide PDFs (types Appetite guide and Underwriting guidelines only, never Restricted documents) and the staff member's question go to Anthropic's API (D12). No client data is needed for a question; staff are told not to type client names.
+- **Files:** guides are uploaded to Anthropic's Files API once and kept there (ids in `ai_document_files`). Deleting them there is not built yet.
+- **Retention and training terms:** to be checked by Josh before real use (D12).
+- **Key:** `ANTHROPIC_API_KEY` is read on the server only and never sent to the browser.
+- **Prompt injection:** the system prompt treats guide text as reference data, not instructions; answers are shown as text only (no links or HTML from the model).
+- **Audit:** every question, the guide versions used, the model, the answer and its quotes are stored (`guide_questions`) with an audit event.

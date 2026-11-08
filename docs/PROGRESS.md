@@ -1,9 +1,39 @@
 # Progress
 
 ## Current state (2026-11-08)
+**Milestone 8 (Ask the guides) is built and waiting for Josh's review; it is not tested against the real Claude API yet** (no key in `.env.local`). See the Milestone 8 section.
+
 **The dev database now holds real data, entered by Josh; DEMO data is gone** (wiped 2026-11-08 with his OK). It is still the local PGlite database: not backed up, and unstable under heavy load (D7a), so anything entered may need re-entering. Move it to real Postgres before entering a lot.
 
 **Milestone 7 (P1: risk matching, market comparison, notifications) is built and waiting for Josh's review.** Josh picked these three P1 items and said "Go ahead and the next milestone" (2026-11-06); he excluded the submission workflow, AMS connection, production dashboard and commission reconciliation. D21–D23 record the defaults used (still PROPOSED). M0–M6 are accepted (M6: "Proceed", 2026-11-06). M6 detail: built on the dev mailbox. The real Microsoft 365 mailbox isn't set up yet (docs/EMAIL_SETUP.md), so the Graph reader is untested. Josh moved from M5 to M6 ("Yes, start M6", 2026-11-05). Earlier status: Josh accepted M4 ("Proceed with the next step", 2026-11-05). Appointments are managed by corporate (N19), so codes save directly without approval. Josh asked for email intake of carrier bulletins and guideline updates: proposed as Milestone 6 (DECISIONS D20, `prompts/06-email-intake.md`). D7a (real Postgres) is still open. The MVP is **not production-ready**: see `docs/SECURITY.md` "Known gaps" and `docs/OPERATIONS.md`.
+
+## Milestone 8: Ask the guides (built; real AI not tested yet)
+Prompt: `prompts/08-ask-the-guides.md`. D12 confirmed (Claude API); N21 for the schema. Josh chose one carrier at a time, with AI-drafted appetite rules later.
+- **Ask the guides** (`/ask`, in the menu):
+  - Ask a question and pick the carrier, or name it in the question.
+  - The app sends the carrier's current PDF guides (type Appetite guide or Underwriting guidelines, filed under the carrier, not restricted, at most 5) to Claude Opus 5.5 with page citations on.
+- **The answer page** shows:
+  - a verdict (Yes / No / Refer to the underwriter / Not addressed / Unclear) and the explanation;
+  - each quote with its guide, version and page, opening the PDF at that page;
+  - the guides read, the model, the prompt version and the estimated cost;
+  - the disclaimer.
+- **Every question is logged** (`guide_questions`) with an audit entry, including refusals and failures. Recent questions are listed on the page.
+- **Each guide version is uploaded to Anthropic once** (Files API; `ai_document_files`). The guides are cached for 5 minutes, so follow-up questions cost cents.
+- Server-side fallback is on (`fallbacks: "default"`): if Claude declines on safety grounds, the API retries on its fallback model, and the answer page shows the model that answered.
+- **New "view" link for PDFs:** `/api/v1/document-versions/:id/download?view=1` opens a PDF in the browser (for `#page=N`); everything else still downloads.
+- **Without `ANTHROPIC_API_KEY`** the page says AI isn't set up. `AI_DRIVER=dev` is a labeled text-matching fake for tests only, refused in production.
+- **Tested** (ran and passed, all with the dev reader, no real AI calls):
+  - unit: `guide-reader.test.ts` (verdict parsing, cost estimate, carrier detection);
+  - integration: `guides.test.ts` (cited answer and log, not addressed, guide selection, latest version, restricted/other types skipped, missing carrier/guide/key messages, failure logged, permissions, DB checks, inline PDF);
+  - browser: `ask.spec.ts` (upload, ask, verdict, quote, page link, accessibility);
+  - `/ask` was added to the accessibility sweep.
+- **Not tested:**
+  - **the real Claude call** (file upload, citations and page numbers, caching, cost). The first real question with Josh's key needs checking by hand.
+  - Whether `end_page_number` in page citations is exclusive: the code assumes it is.
+  - Very large guides (over 600 pages or 32 MB per request) would be refused by the API; not tried.
+- **For Josh:**
+  - paste the API key into `.env.local` (the line is there, empty) and restart;
+  - check Anthropic's data-retention terms for carrier guides (D12).
 
 ## Milestone 7: risk matching, market comparison, notifications (done; waiting for Josh's review)
 - **Upload the appetite guide right in Sources (2026-11-08, Josh):**
@@ -419,3 +449,4 @@ Milestone 7 is waiting for Josh's review. Later phases (do not start without Jos
 - 2026-11-08: Added the carrier portal site field (N20).
 - 2026-11-08: Product lines are now checkboxes when adding products to a carrier.
 - 2026-11-08: Upload an appetite guide (or agreement) directly from the Sources section.
+- 2026-11-08: Josh: adding appetite is too complicated; wants to upload guides and ask questions. Confirmed D12 (Claude), one carrier at a time, rule drafting later. Built Milestone 8 (Ask the guides); real AI untested until the key is set.

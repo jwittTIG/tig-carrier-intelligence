@@ -25,6 +25,8 @@ const port = 3100;
 
 export default defineConfig({
   testDir: "tests/e2e",
+  // Runs after the web server is up: compiles the main pages before the first test.
+  globalSetup: "./tests/support/e2e-warmup.ts",
   workers: 1,
   timeout: 120_000,
   expect: { timeout: 20_000 },
@@ -42,6 +44,9 @@ export default defineConfig({
       DEV_STORAGE_DIR: path.join(scratch, "storage"),
       MAIL_INTAKE_DRIVER: "dev",
       MAIL_INTAKE_DEV_DIR: process.env.E2E_INBOX_DIR,
+      // The labeled fake guide reader: browser tests never call the real AI.
+      AI_DRIVER: "dev",
+      ANTHROPIC_API_KEY: "",
     },
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],

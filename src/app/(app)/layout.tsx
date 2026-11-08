@@ -25,6 +25,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   const items: NavItem[] = [
     { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
     ...(can(ctx, "appetite.read") ? [{ href: "/markets", label: "Market Finder", icon: "markets" }] : []),
+    ...(can(ctx, "guides.ask") ? [{ href: "/ask", label: "Ask the guides", icon: "ask" }] : []),
     { href: "/carriers", label: "Carriers", icon: "carriers" },
     ...(can(ctx, "contact.read") ? [{ href: "/contacts", label: "Contacts", icon: "contacts" }] : []),
     ...(can(ctx, "document.read") ? [{ href: "/documents", label: "Documents", icon: "documents" }] : []),

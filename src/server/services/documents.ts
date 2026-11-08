@@ -198,7 +198,7 @@ export async function listCitableVersions(ctx: AuthContext) {
 }
 
 /** Permission check, then a 5-minute signed URL. */
-export async function downloadUrl(ctx: AuthContext, versionId: string): Promise<string> {
+export async function downloadUrl(ctx: AuthContext, versionId: string, opts: { view?: boolean } = {}): Promise<string> {
   if (!z.uuid().safeParse(versionId).success) throw new NotFoundError("Document not found.");
   const v = await prisma.documentVersion.findUnique({ where: { id: versionId }, include: { document: true } });
   if (!v) throw new NotFoundError("Document not found.");
@@ -211,7 +211,7 @@ export async function downloadUrl(ctx: AuthContext, versionId: string): Promise<
   }
   const ext = ALLOWED_TYPES[v.mimeType]?.ext ?? "bin";
   const safe = v.document.title.replace(/[^\w.-]+/g, "_").slice(0, 80) || "document";
-  return storage().signedUrl(v.objectKey, { expiresAt: new Date(Date.now() + SIGNED_URL_TTL_MS), filename: `${safe}-v${v.versionNumber}.${ext}`, contentType: v.mimeType });
+  return storage().signedUrl(v.objectKey, { expiresAt: new Date(Date.now() + SIGNED_URL_TTL_MS), filename: `${safe}-v${v.versionNumber}.${ext}`, contentType: v.mimeType, inline: !!opts.view && v.mimeType === "application/pdf" });
 }
 
 export async function setDocumentArchived(ctx: AuthContext, id: string, archived: boolean) {

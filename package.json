@@ -20,6 +20,7 @@
     "test:perf": "node scripts/test-perf.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.6.0",
     "@clerk/nextjs": "^7.9.24",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",

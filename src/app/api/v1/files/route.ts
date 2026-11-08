@@ -14,7 +14,8 @@ export async function GET(req: Request) {
     return new Response(Buffer.from(bytes), {
       headers: {
         "content-type": p.type,
-        "content-disposition": `attachment; filename="${p.name.replace(/["\\r\n]/g, "_")}"`,
+        // Only PDFs may open in the browser (to jump to a cited page); everything else downloads.
+        "content-disposition": `${p.inline && p.type === "application/pdf" ? "inline" : "attachment"}; filename="${p.name.replace(/["\\r\n]/g, "_")}"`,
         "cache-control": "private, no-store",
         "x-content-type-options": "nosniff",
       },

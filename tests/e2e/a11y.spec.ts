@@ -5,7 +5,7 @@ import { expect, test } from "@playwright/test";
  * Accessibility check (PRD target WCAG 2.2 AA): no serious or critical axe violations on the
  * primary screens. axe catches roughly a third of WCAG issues; this is not a full audit.
  */
-const PAGES = ["/dashboard", "/markets", "/carriers", "/contacts", "/documents", "/approvals", "/imports", "/admin/users", "/admin/audit", "/search?q=DEMO", "/inbox", "/notifications", "/setup/industries?q=roofing", "/setup/industries/NAICS/238160", "/setup"];
+const PAGES = ["/dashboard", "/markets", "/carriers", "/contacts", "/documents", "/approvals", "/imports", "/admin/users", "/admin/audit", "/search?q=DEMO", "/inbox", "/notifications", "/setup/industries?q=roofing", "/setup/industries/NAICS/238160", "/setup", "/ask"];
 
 // Light and dark mode, and a light and a dark custom accent color (shades are derived from the pick).
 for (const { scheme, accent } of [
