@@ -4,6 +4,9 @@ import { can } from "@/server/auth/context";
 import { requireAuth } from "@/server/auth/session";
 import { ForbiddenError, NotFoundError } from "@/server/errors";
 import { getDocument } from "@/server/services/documents";
+import { draftTargets, listExtractions } from "@/server/services/extractions";
+import { aiStatus } from "@/server/services/guides";
+import { DraftFromGuide } from "../../extractions/draft-from-guide";
 import { ActionForm } from "@/components/action-form";
 import { Badge, Field, Section, fmtDateTime, inputClass, label } from "@/components/ui";
 import { archiveDocumentAction, updateDocumentAction, uploadVersionAction } from "../../m4-actions";
@@ -25,6 +28,13 @@ export default async function DocumentPage({ params }: PageProps<"/documents/[id
     throw e;
   }
   const write = can(ctx, "document.write");
+  const latest = [...doc.versions].sort((a, b) => b.versionNumber - a.versionNumber)[0];
+  const isGuide = ["APPETITE_GUIDE", "UNDERWRITING_GUIDELINES"].includes(doc.documentType) && doc.status === "ACTIVE" && doc.classification !== "RESTRICTED" && latest?.mimeType === "application/pdf";
+  const canDraft = isGuide && aiStatus().mode !== "off" && can(ctx, "appetite.write");
+  const [targets, drafts] = await Promise.all([
+    canDraft ? draftTargets(ctx, doc.id) : Promise.resolve([]),
+    isGuide && can(ctx, "appetite.read") ? listExtractions(ctx, { documentId: doc.id }) : Promise.resolve([]),
+  ]);
   return (
     <>
       <Link href="/documents" className="text-sm hover:underline">← Documents</Link>
@@ -40,6 +50,19 @@ export default async function DocumentPage({ params }: PageProps<"/documents/[id
           The same file is also stored as:{" "}
           {doc.duplicates.map((d, i) => <span key={d.document.id}>{i > 0 && ", "}<Link href={`/documents/${d.document.id}`} className="underline">{d.document.title}</Link></span>)}
         </p>
+      )}
+
+      {(canDraft || drafts.length > 0) && (
+        <Section title="Draft appetite from this guide (AI)">
+          {canDraft && <DraftFromGuide documentVersionId={latest.id} targets={targets.map((t) => ({ id: t.id, label: `${t.writingCompany.displayName}: ${t.product.name}` }))} />}
+          {drafts.length > 0 && (
+            <ul className="flex flex-col gap-1 text-sm">
+              {drafts.map((d) => (
+                <li key={d.id}><Link href={`/extractions/${d.id}`} className="text-blue-800 hover:underline dark:text-blue-300">{d.carrierProduct.product.name}, {fmtDateTime(d.createdAt)}</Link> <Badge tone={d.status === "APPLIED" ? "good" : d.status === "FAILED" ? "bad" : "warn"}>{d.status === "READY" ? "Waiting for review" : label(d.status)}</Badge></li>
+              ))}
+            </ul>
+          )}
+        </Section>
       )}
 
       <Section title="Versions">

@@ -274,6 +274,7 @@ model User {
   follows               CarrierFollow[]
   industryKeywords      IndustryKeyword[]
   guideQuestions        GuideQuestion[]
+  guideExtractions      GuideExtraction[]
 
   @@map("users")
 }
@@ -488,6 +489,7 @@ model CarrierProduct {
   appetiteProfiles AppetiteProfile[]
   requirements     UnderwritingRequirement[]
   coverages        CoverageCapability[]
+  guideExtractions GuideExtraction[]
 
   @@index([writingCompanyId])
   @@index([productId])
@@ -977,6 +979,7 @@ model DocumentVersion {
   recordSources RecordSource[]
   inboundRaw    InboundMessage[]
   aiFiles       AiDocumentFile[]
+  extractions   GuideExtraction[]
   inboundFiles  InboundAttachment[]
 
   @@unique([documentId, versionNumber])
@@ -1294,4 +1297,41 @@ model AiDocumentFile {
   documentVersion   DocumentVersion @relation(fields: [documentVersionId], references: [id], onDelete: Restrict)
 
   @@map("ai_document_files")
+}
+
+// ───────────────────── AI-drafted appetite (M9, DECISIONS N22) ─────────────────────
+
+enum ExtractionStatus {
+  READY
+  APPLIED
+  FAILED
+}
+
+/// One AI read of a guide for one carrier product. Proposals wait here until a person applies them.
+model GuideExtraction {
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  documentVersionId String           @map("document_version_id") @db.Uuid
+  carrierProductId  String           @map("carrier_product_id") @db.Uuid
+  status            ExtractionStatus
+  /// { summary, attributes[], rules[], limits[], requirements[] }, each item with page, quote, confidence.
+  proposals         Json             @default("{}")
+  /// Filled when applied: { profileId, added: {...}, skipped: [{ item, reason }] }.
+  result            Json?
+  profileId         String?          @map("profile_id") @db.Uuid
+  model             String
+  promptVersion     String           @map("prompt_version")
+  usage             Json?
+  costUsd           Decimal?         @map("cost_usd") @db.Decimal(10, 4)
+  error             String?
+  createdById       String           @map("created_by") @db.Uuid
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  appliedAt         DateTime?        @map("applied_at") @db.Timestamptz(6)
+  documentVersion   DocumentVersion  @relation(fields: [documentVersionId], references: [id], onDelete: Restrict)
+  carrierProduct    CarrierProduct   @relation(fields: [carrierProductId], references: [id], onDelete: Restrict)
+  createdBy         User             @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([documentVersionId])
+  @@index([carrierProductId, createdAt])
+  @@index([createdById])
+  @@map("guide_extractions")
 }

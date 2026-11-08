@@ -301,6 +301,13 @@ export async function addRule(ctx: AuthContext, profileId: string, input: unknow
       const def = await tx.riskAttributeDefinition.findUnique({ where: { id: data.attributeDefinitionId }, include: { product: { include: { carrierProducts: { where: { id: profile.carrierProductId } } } } } });
       if (!def || def.product.carrierProducts.length === 0) throw new ValidationError("That attribute isn't defined for this product.");
       typedValue = typedValueFor(def.dataType, data.operator!, data.value);
+      // A list's rule values must be among its allowed values.
+      const allowed = allowedValuesOf(def.validationSchema);
+      if (allowed && typedValue) {
+        const t = typedValue as { value?: string; values?: string[] };
+        const bad = [...(t.values ?? []), ...(t.value !== undefined ? [t.value] : [])].filter((x) => !allowed.some((a) => a.toLowerCase() === x.toLowerCase()));
+        if (bad.length) throw new ValidationError(`"${bad.join(", ")}" isn't one of the allowed values for ${def.label} (${allowed.join(", ")}).`);
+      }
     }
     if (data.territoryIds.length) {
       const n = await tx.territory.count({ where: { id: { in: data.territoryIds } } });
@@ -338,12 +345,26 @@ export async function removeRule(ctx: AuthContext, profileId: string, ruleId: st
   });
 }
 
-const attributeSchema = z.object({
-  key: z.string().trim().toLowerCase().pipe(z.string().regex(/^[a-z][a-z0-9_]{1,40}$/, "Use lowercase letters, digits and _")),
-  label: requiredText(80),
-  dataType: z.enum(AttributeDataType),
-  unit: optionalText(20),
-});
+const attributeSchema = z
+  .object({
+    key: z.string().trim().toLowerCase().pipe(z.string().regex(/^[a-z][a-z0-9_]{1,40}$/, "Use lowercase letters, digits and _")),
+    label: requiredText(80),
+    dataType: z.enum(AttributeDataType),
+    unit: optionalText(20),
+    /** For ENUM: the allowed values, as a list or comma-separated text. */
+    allowedValues: z
+      .preprocess((v) => (typeof v === "string" ? v.split(",") : (v ?? [])), z.array(z.string().trim().max(80)))
+      .transform((vs) => [...new Set(vs.filter(Boolean))])
+      .optional(),
+  })
+  .refine((a) => !a.allowedValues?.length || a.dataType === "ENUM", { message: "Only a list (ENUM) can have allowed values", path: ["allowedValues"] })
+  .refine((a) => (a.allowedValues?.length ?? 0) <= 100, { message: "At most 100 allowed values", path: ["allowedValues"] });
+
+/** Allowed values of an ENUM risk detail ({ values: [...] } in validation_schema), or null. */
+export function allowedValuesOf(validationSchema: unknown): string[] | null {
+  const v = (validationSchema as { values?: unknown } | null)?.values;
+  return Array.isArray(v) && v.length && v.every((x) => typeof x === "string") ? (v as string[]) : null;
+}
 
 export async function addAttributeDefinition(ctx: AuthContext, productId: string, input: unknown) {
   assertCan(ctx, "appetite.write");
@@ -351,7 +372,9 @@ export async function addAttributeDefinition(ctx: AuthContext, productId: string
   try {
     return await prisma.$transaction(async (tx) => {
       if (!(await tx.insuranceProduct.findUnique({ where: { id: productId } }))) throw new NotFoundError("Product not found.");
-      const row = await tx.riskAttributeDefinition.create({ data: { productId, key: data.key, label: data.label, dataType: data.dataType, unit: data.unit ?? null } });
+      const row = await tx.riskAttributeDefinition.create({
+        data: { productId, key: data.key, label: data.label, dataType: data.dataType, unit: data.unit ?? null, ...(data.allowedValues?.length && { validationSchema: { values: data.allowedValues } }) },
+      });
       await recordAudit(tx, ctx, { action: "appetite.attribute.add", entityType: "risk_attribute_definition", entityId: row.id, after: row });
       return row;
     });

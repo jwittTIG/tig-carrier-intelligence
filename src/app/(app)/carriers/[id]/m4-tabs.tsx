@@ -6,6 +6,9 @@ import { channelLabel, listAgencyEntities, listChannelsForOrg } from "@/server/s
 import { fractionToPercent, listAgreementsForCarrier } from "@/server/services/commissions";
 import { listCitableVersions, listDocuments } from "@/server/services/documents";
 import { listCarrierUpdates } from "@/server/services/inbox-options";
+import { listExtractions } from "@/server/services/extractions";
+import { aiStatus, listGuides } from "@/server/services/guides";
+import { DraftFromGuide } from "../../extractions/draft-from-guide";
 import { ActionForm } from "@/components/action-form";
 import { StatusBadge } from "@/components/m4";
 import { Badge, Field, Section, fmtDate, fmtDateTime, inputClass, label } from "@/components/ui";
@@ -18,7 +21,40 @@ export async function AppetiteTab({ carrier }: { carrier: Carrier }) {
   const ctx = await requireAuth();
   const profiles = await listProfilesForCarrier(ctx, carrier.id);
   const products = carrier.carrierProducts.filter((p) => !p.archivedAt);
+  const aiOn = aiStatus().mode !== "off" && can(ctx, "appetite.write") && can(ctx, "document.read");
+  const [guides, drafts] = await Promise.all([aiOn ? listGuides(ctx, carrier.id) : Promise.resolve([]), listExtractions(ctx, { carrierId: carrier.id })]);
+  const targets = products.map((p) => ({ id: p.id, label: p.product.name }));
   return (
+    <>
+    {(aiOn || drafts.length > 0) && (
+      <Section title="Draft appetite from a guide (AI)">
+        {aiOn && guides.filter((g) => g.readable).length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">Upload a PDF appetite guide or underwriting guidelines on the Documents tab first.</p>}
+        {aiOn && (
+          <ul className="flex flex-col gap-3">
+            {guides.filter((g) => g.readable).map((g) => (
+              <li key={g.documentVersionId} className="flex flex-col gap-1">
+                <Link href={`/documents/${g.documentId}`} className="text-sm font-medium text-blue-800 hover:underline dark:text-blue-300">{g.title} v{g.versionNumber}</Link>
+                <DraftFromGuide documentVersionId={g.documentVersionId} targets={targets} compact />
+              </li>
+            ))}
+          </ul>
+        )}
+        {drafts.length > 0 && (
+          <>
+            <h3 className="text-sm font-medium">AI drafts</h3>
+            <ul className="flex flex-col gap-1 text-sm">
+              {drafts.map((d) => (
+                <li key={d.id}>
+                  <Link href={`/extractions/${d.id}`} className="text-blue-800 hover:underline dark:text-blue-300">{d.carrierProduct.product.name} from {d.documentVersion.document.title} v{d.documentVersion.versionNumber}</Link>{" "}
+                  <Badge tone={d.status === "APPLIED" ? "good" : d.status === "FAILED" ? "bad" : "warn"}>{d.status === "READY" ? "Waiting for review" : label(d.status)}</Badge>
+                  <span className="text-xs text-zinc-600 dark:text-zinc-400"> · {d.createdBy.name} · {fmtDateTime(d.createdAt)}</span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </Section>
+    )}
     <Section title="Appetite profiles">
       <p className="text-xs text-zinc-600 dark:text-zinc-400">Appetite is a guide, not a commitment to quote or bind. Each product (or product + channel) has numbered versions; only one draft at a time.</p>
       {profiles.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">No appetite recorded for this carrier.</p>}
@@ -61,6 +97,7 @@ export async function AppetiteTab({ carrier }: { carrier: Carrier }) {
       )}
       {products.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">Appetite is recorded on products this carrier writes. Add a product on the Writing companies &amp; channels tab.</p>}
     </Section>
+    </>
   );
 }
 

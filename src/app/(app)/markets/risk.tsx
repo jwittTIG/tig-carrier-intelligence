@@ -6,7 +6,7 @@ export function firstValues(sp: Record<string, string | string[] | undefined>): 
   return Object.fromEntries(Object.entries(sp).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v]));
 }
 
-type Attribute = { key: string; label: string; dataType: string; unit: string | null };
+type Attribute = { key: string; label: string; dataType: string; unit: string | null; allowedValues?: string[] | null };
 
 const PLACEHOLDER: Record<string, string> = { MONEY: "5,000,000", NUMBER: "12.5", INTEGER: "25", DATE: "YYYY-MM-DD", BOOLEAN: "yes or no" };
 
@@ -22,7 +22,12 @@ export function RiskAttributeInputs({ attributes, values, asked }: { attributes:
         {attributes.map((a) => (
           <label key={a.key} className="flex flex-col gap-1 text-sm">
             {a.label}{a.unit ? ` (${a.unit})` : ""}
-            {a.dataType === "BOOLEAN" ? (
+            {a.allowedValues?.length ? (
+              <select name={`a_${a.key}`} defaultValue={values[`a_${a.key}`] ?? ""} className={inputClass}>
+                <option value="">Not known</option>
+                {a.allowedValues.map((v) => <option key={v} value={v}>{v}</option>)}
+              </select>
+            ) : a.dataType === "BOOLEAN" ? (
               <select name={`a_${a.key}`} defaultValue={values[`a_${a.key}`] ?? ""} className={inputClass}>
                 <option value="">Not known</option>
                 <option value="yes">Yes</option>

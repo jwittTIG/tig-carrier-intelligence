@@ -7,6 +7,7 @@ import { assertCan, can, type AuthContext } from "@/server/auth/context";
 import { prisma } from "@/server/db/client";
 import { ValidationError } from "@/server/errors";
 import { optionalId, optionalText, parse } from "@/server/validation";
+import { allowedValuesOf } from "./appetite";
 import { resolveIndustry, type IndustryChoice } from "./industries";
 import { SETTING, textSetting } from "./settings";
 
@@ -81,9 +82,9 @@ export async function riskAttributesFor(ctx: AuthContext, f: { lineId?: string |
   const defs = await prisma.riskAttributeDefinition.findMany({
     where: { searchable: true, product: f.productId ? { id: f.productId } : { lineId: f.lineId! } },
     orderBy: [{ label: "asc" }, { key: "asc" }],
-    select: { key: true, label: true, dataType: true, unit: true },
+    select: { key: true, label: true, dataType: true, unit: true, validationSchema: true },
   });
-  return [...new Map(defs.map((d) => [d.key, d])).values()];
+  return [...new Map(defs.map((d) => [d.key, { key: d.key, label: d.label, dataType: d.dataType, unit: d.unit, allowedValues: allowedValuesOf(d.validationSchema) }])).values()];
 }
 
 /** Picks `a_<key>` values out of the request. */

@@ -1,13 +1,56 @@
 # Progress
 
 ## Current state (2026-11-08)
+**Milestone 9 (AI drafts appetite from a guide) is built and waiting for Josh's review; its real AI read hasn't been run yet.** Milestone 8 (Ask the guides) works with Josh's key.
+
 **Milestone 8 (Ask the guides) is built and waiting for Josh's review; it is not tested against the real Claude API yet** (no key in `.env.local`). See the Milestone 8 section.
 
 **The dev database now holds real data, entered by Josh; DEMO data is gone** (wiped 2026-11-08 with his OK). It is still the local PGlite database: not backed up, and unstable under heavy load (D7a), so anything entered may need re-entering. Move it to real Postgres before entering a lot.
 
 **Milestone 7 (P1: risk matching, market comparison, notifications) is built and waiting for Josh's review.** Josh picked these three P1 items and said "Go ahead and the next milestone" (2026-11-06); he excluded the submission workflow, AMS connection, production dashboard and commission reconciliation. D21–D23 record the defaults used (still PROPOSED). M0–M6 are accepted (M6: "Proceed", 2026-11-06). M6 detail: built on the dev mailbox. The real Microsoft 365 mailbox isn't set up yet (docs/EMAIL_SETUP.md), so the Graph reader is untested. Josh moved from M5 to M6 ("Yes, start M6", 2026-11-05). Earlier status: Josh accepted M4 ("Proceed with the next step", 2026-11-05). Appointments are managed by corporate (N19), so codes save directly without approval. Josh asked for email intake of carrier bulletins and guideline updates: proposed as Milestone 6 (DECISIONS D20, `prompts/06-email-intake.md`). D7a (real Postgres) is still open. The MVP is **not production-ready**: see `docs/SECURITY.md` "Known gaps" and `docs/OPERATIONS.md`.
 
-## Milestone 8: Ask the guides (built; real AI not tested yet)
+## Milestone 9: AI drafts appetite from a guide (built; real AI read not run yet)
+Prompt: `prompts/09-draft-appetite-from-guides.md`; DECISIONS N22. Josh wanted a guide read once and saved, not an AI call per question. He chose "everything it can", with new risk details proposed inside the draft.
+- **Draft appetite from this guide**: on a guide's document page, and in a new section on the carrier's Appetite tab. Pick the product the guide covers.
+- **One AI read** (Claude Opus 5.5, structured output; the guide comes from the Files API cache) proposes:
+  - the effective date and states;
+  - risk details (reusing the product's existing ones; lists come with allowed values);
+  - rules;
+  - limits;
+  - requirements (deductibles, required forms, binding rules, inspections, documentation, coverage options).
+  - Every item has a page, a quote and a confidence level.
+  - The run is stored in `guide_extractions`.
+- **Review screen** (`/extractions/:id`):
+  - every item has a checkbox, the quote, a page link and a confidence badge; below 60% shows "Low confidence: check it".
+  - **Create draft from selected**:
+    - adds the ticked risk details;
+    - fills an appetite DRAFT (reusing an open one and giving it the guide's date if it had none), with the guide cited on the profile;
+    - adds the ticked limits and requirements to the carrier product;
+    - every rule, limit and requirement gets an `AI_EXTRACTED` source (page, quote, confidence);
+    - items that don't fit are skipped with the reason: a risk detail that wasn't ticked, a value not in the allowed list, an unknown state.
+  - The draft then goes through the normal submit and approve flow. Nothing is approved by the AI.
+- **Market Finder**: risk details with allowed values are drop-downs.
+- **Appetite draft page**: "Define an attribute" now takes allowed values.
+- **Rule checks**: a rule's value must be one of the risk detail's allowed values.
+- **Tested** (dev reader, no AI calls):
+  - `extractions.test.ts`:
+    - proposals are stored without changing appetite;
+    - selective apply;
+    - skipped items have reasons;
+    - AI sources;
+    - the draft stays a draft;
+    - effective date;
+    - allowed values;
+    - limits and requirements;
+    - after approval, the Market Finder gives Prohibited for wood shake, Accepted for metal, Refer for a 25-year roof, and Needs information when details are missing;
+    - restricted documents, permissions, failure log, no key, DB checks.
+  - browser: `draft-appetite.spec.ts` (lines, guide, draft, review, untick, apply, submit, approve, Market Finder).
+- **Not tested**:
+  - **the real AI read** (quality of the rules on a real guide, cost, whether a long guide fits in one answer: up to 64,000 output tokens);
+  - quotes come from the AI's structured output and aren't machine-checked against the PDF. The review says to check the page.
+- **Cost estimate** (not measured): a ~350,000-token guide is about $1.40–1.80 to read, plus the output (a long list of rules is maybe $0.30–1.00), if the guide isn't already in the 5-minute cache.
+
+## Milestone 8: Ask the guides (built; tested with Josh's key on Travelers)
 Prompt: `prompts/08-ask-the-guides.md`. D12 confirmed (Claude API); N21 for the schema. Josh chose one carrier at a time, with AI-drafted appetite rules later.
 - **Ask the guides** (`/ask`, in the menu):
   - Ask a question and pick the carrier, or name it in the question.
@@ -458,3 +501,4 @@ Milestone 7 is waiting for Josh's review. Later phases (do not start without Jos
 - 2026-11-08: Product lines are now checkboxes when adding products to a carrier.
 - 2026-11-08: Upload an appetite guide (or agreement) directly from the Sources section.
 - 2026-11-08: Josh: adding appetite is too complicated; wants to upload guides and ask questions. Confirmed D12 (Claude), one carrier at a time, rule drafting later. Built Milestone 8 (Ask the guides); real AI untested until the key is set.
+- 2026-11-08: Josh: read a guide once instead of an AI call per question; chose option 1 (AI drafts appetite, everything it can, new risk details inside the draft). Built Milestone 9; real AI read not run yet.

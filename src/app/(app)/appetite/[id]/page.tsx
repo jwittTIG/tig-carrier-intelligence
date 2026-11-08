@@ -200,11 +200,12 @@ export default async function AppetiteProfilePage({ params }: PageProps<"/appeti
         {write && (
           <details>
             <summary className="cursor-pointer text-sm text-blue-800 dark:text-blue-300">Define an attribute for {cp.product.name}</summary>
-            <ActionForm action={addAttributeAction.bind(null, id, cp.productId)} submitLabel="Define attribute" className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-4">
+            <ActionForm action={addAttributeAction.bind(null, id, cp.productId)} submitLabel="Define attribute" className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-5">
               <Field label="Key" htmlFor="aKey" hint="e.g. annual_revenue"><input id="aKey" name="key" required className={inputClass} /></Field>
               <Field label="Label" htmlFor="aLabel"><input id="aLabel" name="label" required className={inputClass} /></Field>
               <Field label="Type" htmlFor="aType"><select id="aType" name="dataType" className={inputClass}>{DATA_TYPES.map((d) => <option key={d} value={d}>{label(d)}</option>)}</select></Field>
               <Field label="Unit (optional)" htmlFor="aUnit"><input id="aUnit" name="unit" placeholder="USD" className={inputClass} /></Field>
+              <Field label="Allowed values (for a list)" htmlFor="aValues" hint="Comma-separated, e.g. Asphalt shingle, Metal, Wood shake"><input id="aValues" name="allowedValues" className={inputClass} /></Field>
             </ActionForm>
           </details>
         )}
