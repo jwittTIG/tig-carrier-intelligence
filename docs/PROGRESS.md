@@ -1,7 +1,7 @@
 # Progress
 
 ## Current state (2026-11-09)
-**Ask the guides is now the cheap way by default (N23): saved page text to Claude Haiku 5.5.** First real question (DUI, Travelers): answered NO for **$0.089** (vs about $1.77). It cost more than planned: the token estimate was off by about 2× (168k real tokens, over Haiku's 100k price tier), and it also sent Home guide pages. Both are fixed: the estimate is calibrated on that call, and an over-budget question that names a guide's line ("auto", "home") reads only that guide. A dry run on the saved Travelers pages now sends about 85k estimated tokens, **about 1¢ expected; not measured yet**. Josh approved the Travelers Home draft from Milestone 9 (48 rules after cleanup).
+**Ask the guides is now the cheap way by default (N23): saved page text to Claude Haiku 5.5.** First real question (DUI, Travelers): answered NO for **$0.089** (vs about $1.77). It cost more than planned: the token estimate was off by about 2× (168k real tokens, over Haiku's 100k price tier), and it also sent Home guide pages. Both are fixed: the estimate is calibrated on that call, and an over-budget question that names a guide's line ("auto", "home") reads only that guide. Measured after the fix (2026-11-09, same DUI question): **$0.0086**, NO with 5 citations, 76k input tokens, Auto guide only (59 of 120 pages). Josh approved the Travelers Home draft from Milestone 9 (48 rules after cleanup).
 
 Milestone 8 (Ask the guides) works with Josh's key (two real questions at $1.76 and $1.77 with the whole-PDF read).
 
@@ -15,7 +15,7 @@ Josh: "We've got to get that cost down from $1.77." He chose "B: relevant pages,
 - Each question records its mode (`PAGES` or `FULL_PDF`) and the pages sent.
 - Tested (ran and saw pass): unit tests for page selection and Haiku pricing; integration tests with real PDFs (built with `pdf-lib`) for the default mode, page citations, saved text reuse, scanned-PDF refusal, the full-guide mode and failure logging; e2e test of ask → page-text answer → Check the full guide.
 - Real call 1 (DUI, Travelers Home + Auto): $0.0891, 168,346 input tokens for 297k characters (1.77 characters per token, not the 3.5 assumed). Fixed: tokensOf uses 1.6 characters per token; a question naming a guide line reads only that guide.
-- Not measured: the cost after that fix (dry run: about 85k tokens, about 1 cent).
+- Real call 2 after the fix (same DUI question): $0.0086, 75,988 input + 2,029 output tokens, 59 of 120 Auto pages, 0 Home pages, verdict NO with 5 citations.
 
 **The dev database now holds real data, entered by Josh; DEMO data is gone** (wiped 2026-11-08 with his OK). It is still the local PGlite database: not backed up, and unstable under heavy load (D7a), so anything entered may need re-entering. Move it to real Postgres before entering a lot.
 
