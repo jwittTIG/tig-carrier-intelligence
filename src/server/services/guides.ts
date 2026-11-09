@@ -111,7 +111,7 @@ export async function askGuides(ctx: AuthContext, input: unknown) {
       if (texts.every((t) => t.every((pg) => !pg.text.trim()))) {
         throw new ValidationError(`${carrier.displayName}'s guides have no readable text (scanned pages?). Use "Check the full guide" instead.`);
       }
-      const picks = selectPages(texts.map((pages) => ({ pages })), question, PAGES_BUDGET_TOKENS);
+      const picks = selectPages(texts.map((pages, i) => ({ pages, title: guides[i].title })), question, PAGES_BUDGET_TOKENS);
       pagesSent = picks.map((pk) => ({ documentVersionId: guides[pk.guide].documentVersionId, pages: pk.pages, totalPages: texts[pk.guide].length }));
       const used = picks.filter((pk) => pk.pages.length);
       if (!used.length) {

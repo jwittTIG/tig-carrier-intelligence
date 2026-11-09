@@ -8,10 +8,27 @@ import { queryStems, stem } from "./industry-words";
  */
 
 export type Page = { number: number; text: string };
-export type Guide = { pages: Page[] };
+export type Guide = { pages: Page[]; title?: string };
 
-/** Rough token count for English text (errs high: ~3.5 characters per token). */
-export const tokensOf = (text: string) => Math.ceil(text.length / 3.5);
+const TITLE_STOP = new Set(["guid", "underwrit", "appetit", "manual", "program", "the", "and", "for"]);
+
+/**
+ * Over budget, a question that names a guide's line ("auto", "home", "umbrella"...) by a word in
+ * its title reads only the guides it names. Words in every title (e.g. the carrier name) don't count.
+ */
+function guidesNamed(guides: Guide[], question: string): number[] | null {
+  const q = new Set(queryStems(question));
+  const titleTerms = guides.map((g) => new Set(termsOf(g.title ?? "").filter((t) => t.length >= 3 && !/^\d/.test(t) && !TITLE_STOP.has(t))));
+  const named = titleTerms.map((terms, i) => ({ i, hit: [...terms].some((t) => q.has(t) && !titleTerms.every((o) => o.has(t))) })).filter((x) => x.hit).map((x) => x.i);
+  return named.length && named.length < guides.length ? named : null;
+}
+
+/**
+ * Rough token count as the reader is billed. Measured on Travelers' guides with citations on
+ * (2026-11-09): 297k characters of page text came to 168k input tokens, ~1.77 characters per
+ * token (tables, numbers and citation chunking cost more than prose). 1.6 errs high.
+ */
+export const tokensOf = (text: string) => Math.ceil(text.length / 1.6);
 
 // Words too common in guides to tell pages apart.
 const GUIDE_STOP = new Set(["travel", "will", "write", "risk", "polic", "insur", "coverag", "guid", "eligib", "home", "dwell", "auto", "vehicl"]);
@@ -25,7 +42,8 @@ export function selectPages(guides: Guide[], question: string, budgetTokens: num
   if (total <= budgetTokens) return guides.map((g, i) => ({ guide: i, pages: g.pages.filter((p) => p.text.trim()).map((p) => p.number) }));
 
   const q = queryStems(question).filter((s) => s.length >= 3 && !GUIDE_STOP.has(s));
-  const all = guides.flatMap((g, gi) => g.pages.map((p) => ({ gi, p, terms: termsOf(p.text) })));
+  const only = guidesNamed(guides, question);
+  const all = guides.flatMap((g, gi) => (only && !only.includes(gi) ? [] : g.pages.map((p) => ({ gi, p, terms: termsOf(p.text) }))));
   const df = new Map(q.map((s) => [s, all.filter((x) => x.terms.some((t) => t.startsWith(s))).length]));
   const n = all.length || 1;
   const scored = all

@@ -36,6 +36,24 @@ describe("selectPages", () => {
     const picks = selectPages([{ pages: a }, { pages: b }], "2 at-fault accidents?", tokensOf(a[0].text) * 3);
     expect(picks[1].pages).toContain(5);
   });
+
+  it("over budget, a question naming a guide's line reads only that guide", () => {
+    const mk = () => Array.from({ length: 20 }, (_, i) => ({ number: i + 1, text: filler(60) + " driver accidents" }));
+    const guides = [{ title: "Acme Home Guide 2.0", pages: mk() }, { title: "Acme Auto Guide 2.0", pages: mk() }];
+    const budget = tokensOf(guides[0].pages[0].text) * 6;
+    const named = selectPages(guides, "Will Acme write an auto policy for a driver with 2 accidents?", budget);
+    expect(named[0].pages).toEqual([]);
+    expect(named[1].pages.length).toBeGreaterThan(0);
+    // Without a line word, both guides compete.
+    const both = selectPages(guides, "driver with 2 accidents?", budget);
+    expect(both[0].pages.length + both[1].pages.length).toBeGreaterThan(0);
+    // The carrier name is in every title, so it picks no guide.
+    expect(selectPages(guides, "Acme driver with 2 accidents?", budget)).toEqual(both);
+  });
+
+  it("estimates tokens as billed (about 1.77 characters per token measured), erring high", () => {
+    expect(tokensOf("x".repeat(297_000))).toBeGreaterThan(168_000);
+  });
 });
 
 describe("pagesDocument and pageAt", () => {
