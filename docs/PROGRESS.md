@@ -1,9 +1,20 @@
 # Progress
 
-## Current state (2026-11-08)
-**Milestone 9 (AI drafts appetite from a guide) is built; the first real read (Travelers, $2.23) is waiting for Josh's review on /extractions.** Milestone 8 (Ask the guides) works with Josh's key.
+## Current state (2026-11-09)
+**Ask the guides is now the cheap way by default (N23): saved page text to Claude Haiku 5.5, about a cent a question instead of about $1.77.** Tested with the development reader only; no real Haiku call has been made yet, so the real cost and answer quality are not measured. Josh approved the Travelers Home draft from Milestone 9 (48 rules after cleanup).
 
-**Milestone 8 (Ask the guides) is built and waiting for Josh's review; it is not tested against the real Claude API yet** (no key in `.env.local`). See the Milestone 8 section.
+Milestone 8 (Ask the guides) works with Josh's key (two real questions at $1.76 and $1.77 with the whole-PDF read).
+
+## N23: cheaper Ask the guides (built 2026-11-09; real AI call not run yet)
+Josh: "We've got to get that cost down from $1.77." He chose "B: relevant pages, Haiku".
+- Each guide version's page text is read once from the PDF (`unpdf`) and saved in `document_pages`; later questions don't reread the file.
+- If the carrier's guides fit in 85,000 tokens of text (the Travelers Home guide is about 49,000), every page is sent. Otherwise only the best-matching pages are sent (word scoring, rarer words count more, plus the page after the top hits). The answer page says which: "every page" or "the best-matching pages: x of y".
+- Claude Haiku 5.5 reads the text with citations; quotes are mapped back to PDF page numbers. Expected cost: about $0.005–$0.01 per question under 100k tokens (not measured).
+- **Check the full guide** button on every page-text answer: reruns it the old way (whole PDF, Claude Opus, about $1.80). Emphasized when the answer is "not addressed", "unclear" or failed. Use it for tables and scanned pages, which page text can lose.
+- A PDF with no text layer (scanned) is refused in the cheap mode with a pointer to "Check the full guide". If no page uses the question's words, the answer says so without an AI call.
+- Each question records its mode (`PAGES` or `FULL_PDF`) and the pages sent.
+- Tested (ran and saw pass): unit tests for page selection and Haiku pricing; integration tests with real PDFs (built with `pdf-lib`) for the default mode, page citations, saved text reuse, scanned-PDF refusal, the full-guide mode and failure logging; e2e test of ask → page-text answer → Check the full guide.
+- Not tested: a real Haiku call (costs about a cent; Josh can ask one question on Travelers to measure).
 
 **The dev database now holds real data, entered by Josh; DEMO data is gone** (wiped 2026-11-08 with his OK). It is still the local PGlite database: not backed up, and unstable under heavy load (D7a), so anything entered may need re-entering. Move it to real Postgres before entering a lot.
 

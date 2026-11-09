@@ -2,17 +2,24 @@ import "server-only";
 import Anthropic, { toFile } from "@anthropic-ai/sdk";
 import { prisma } from "@/server/db/client";
 import { storage } from "@/server/storage";
+import { pageAt, pagesDocument } from "@/lib/page-search";
 
 /**
- * Reads a carrier's guides to answer one question (M8, DECISIONS D12).
- * - `anthropic`: Claude Opus 5.5 over the guide PDFs (Files API, page citations, prompt caching).
+ * Reads a carrier's guides to answer one question (M8, DECISIONS D12, N23).
+ * - `anthropic`:
+ *   - `readPages` (the default, about 1¢): the guides' saved page text, as plain text with page
+ *     markers, to Claude Haiku 5.5. Citations are exact quotes mapped back to pages.
+ *   - `read` ("Check the full guide", about $1.80): the whole PDFs to Claude Opus 5.5 (Files API,
+ *     page citations, prompt caching).
  * - `dev`: DEVELOPMENT ONLY. A labeled fake reader for tests: finds a line in the PDF text
  *   that shares a word with the question. Refuses to run in production.
  * - `off`: no API key and no driver set; asking explains that AI isn't set up.
  */
 
 export const GUIDE_MODEL = "claude-opus-5-5";
+export const PAGES_MODEL = "claude-haiku-5-5";
 export const PROMPT_VERSION = "ask-guides-v1";
+export const PAGES_PROMPT_VERSION = "ask-guides-pages-v1";
 export const VERDICTS = ["YES", "NO", "REFER", "NOT_ADDRESSED", "UNCLEAR"] as const;
 export type Verdict = (typeof VERDICTS)[number];
 
@@ -22,9 +29,15 @@ export type ReaderResult =
   | { status: "ANSWERED"; verdict: Verdict; answerText: string; citations: ReaderCitation[]; model: string; usage: Record<string, unknown> | null; costUsd: number | null }
   | { status: "REFUSED"; model: string; usage: Record<string, unknown> | null; costUsd: number | null; reason: string };
 
+/** Selected pages of each guide, in page order. */
+export type PagesInput = { question: string; carrierName: string; guides: { doc: GuideDoc; pages: { number: number; text: string }[]; totalPages: number }[] };
+
 export interface GuideReader {
   mode: "anthropic" | "dev";
+  /** Whole PDFs (Opus). */
   read(input: { question: string; carrierName: string; docs: GuideDoc[] }): Promise<ReaderResult>;
+  /** Saved page text (Haiku). */
+  readPages(input: PagesInput): Promise<ReaderResult>;
 }
 
 export function readerMode(): "anthropic" | "dev" | "off" {
@@ -61,13 +74,27 @@ NOT_ADDRESSED (the documents don't cover it)
 UNCLEAR (the documents are ambiguous or conflict)
 Then explain in 2 to 6 short sentences for an insurance professional.`;
 
-// Claude Opus 5.5 list prices (USD per million tokens), for an estimate shown next to each answer.
-const PRICE = { input: 4, cacheWrite5m: 5, cacheRead: 0.2, output: 20 };
+// List prices (USD per million tokens), for an estimate shown next to each answer.
+// Claude Haiku 5.5 costs more on prompts over 100,000 tokens.
+const PRICES = {
+  opus: { input: 4, cacheWrite5m: 5, cacheRead: 0.2, output: 20 },
+  haiku: { input: 0.1, cacheWrite5m: 0.125, cacheRead: 0.01, output: 0.5 },
+  haikuLong: { input: 0.5, cacheWrite5m: 0.625, cacheRead: 0.05, output: 2.5 },
+};
 
-export function estimateCost(u: { input_tokens?: number | null; output_tokens?: number | null; cache_creation_input_tokens?: number | null; cache_read_input_tokens?: number | null }): number {
+type Usage = { input_tokens?: number | null; output_tokens?: number | null; cache_creation_input_tokens?: number | null; cache_read_input_tokens?: number | null };
+
+export function estimateCost(u: Usage, model: "opus" | "haiku" = "opus"): number {
+  const prompt = (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0);
+  const price = model === "opus" ? PRICES.opus : prompt > 100_000 ? PRICES.haikuLong : PRICES.haiku;
   const m = 1_000_000;
-  return ((u.input_tokens ?? 0) * PRICE.input + (u.cache_creation_input_tokens ?? 0) * PRICE.cacheWrite5m + (u.cache_read_input_tokens ?? 0) * PRICE.cacheRead + (u.output_tokens ?? 0) * PRICE.output) / m;
+  return ((u.input_tokens ?? 0) * price.input + (u.cache_creation_input_tokens ?? 0) * price.cacheWrite5m + (u.cache_read_input_tokens ?? 0) * price.cacheRead + (u.output_tokens ?? 0) * price.output) / m;
 }
+
+const PAGES_NOTE = `
+
+The documents are the text of the guide pages, extracted from the PDF. Each page starts with a line "=== Page N ===". Tables may have lost their layout. If the guides are large, only the pages that best match the question are included: if they don't cover it, answer NOT_ADDRESSED and say the pages provided don't cover it.`;
+
 
 /** "Verdict: YES\nbecause…" → ["YES", "because…"]. Anything else is UNCLEAR, never yes. */
 export function parseVerdict(text: string): { verdict: Verdict; rest: string } {
@@ -139,6 +166,46 @@ function anthropicReader(): GuideReader {
       const { verdict, rest } = parseVerdict(text);
       return { status: "ANSWERED", verdict, answerText: rest || "(No explanation given.)", citations, model: message.model, usage, costUsd };
     },
+
+    async readPages({ question, carrierName, guides }) {
+      const built = guides.map((g) => pagesDocument(g.pages));
+      const documents: Anthropic.ContentBlockParam[] = guides.map((g, i) => ({
+        type: "document",
+        source: { type: "text", media_type: "text/plain", data: built[i].text },
+        title: `${g.doc.title} (v${g.doc.versionNumber}), ${g.pages.length === g.totalPages ? `all ${g.totalPages} pages` : `${g.pages.length} of ${g.totalPages} pages`}`,
+        citations: { enabled: true },
+      }));
+      const message = await client.messages
+        .stream({
+          model: PAGES_MODEL,
+          max_tokens: 8000,
+          output_config: { effort: "medium" },
+          system: SYSTEM + PAGES_NOTE,
+          messages: [{ role: "user", content: [...documents, { type: "text", text: `Carrier: ${carrierName}\nQuestion: ${question}` }] }],
+        })
+        .finalMessage();
+      const usage = message.usage as unknown as Record<string, unknown>;
+      const costUsd = estimateCost(message.usage, "haiku");
+      if (message.stop_reason === "refusal") {
+        return { status: "REFUSED", model: message.model, usage, costUsd, reason: message.stop_details?.explanation ?? "The AI declined to answer." };
+      }
+      let text = "";
+      const citations: ReaderCitation[] = [];
+      for (const block of message.content) {
+        if (block.type !== "text") continue;
+        text += block.text;
+        for (const c of block.citations ?? []) {
+          if (c.type !== "char_location" || !built[c.document_index]) continue;
+          const spans = built[c.document_index].spans;
+          const start = pageAt(spans, c.start_char_index);
+          const end = pageAt(spans, Math.max(c.start_char_index, c.end_char_index - 1));
+          const quote = c.cited_text.replace(/\n*=== Page \d+ ===\n*/g, " ").replace(/\s+/g, " ").trim();
+          if (quote) citations.push({ docIndex: c.document_index, startPage: start, endPage: end, quote });
+        }
+      }
+      const { verdict, rest } = parseVerdict(text);
+      return { status: "ANSWERED", verdict, answerText: rest || "(No explanation given.)", citations, model: message.model, usage, costUsd };
+    },
   };
 }
 
@@ -146,24 +213,55 @@ function anthropicReader(): GuideReader {
 
 const STOP = new Set(["will", "would", "does", "write", "with", "home", "house", "risk", "they", "them", "this", "that", "what", "about", "accept", "carrier"]);
 
+/** Dev reader only: page texts of a real PDF, or the raw bytes as one page when it isn't one. */
+async function devPageTexts(bytes: Uint8Array): Promise<{ number: number; text: string }[]> {
+  try {
+    const { extractText, getDocumentProxy } = await import("unpdf");
+    const { text } = await extractText(await getDocumentProxy(new Uint8Array(bytes), { verbosity: 0 }), { mergePages: false });
+    return text.map((t, i) => ({ number: i + 1, text: t }));
+  } catch {
+    return [{ number: 1, text: Buffer.from(bytes).toString("latin1") }];
+  }
+}
+
 const devReader: GuideReader = {
   mode: "dev",
   async read({ question, carrierName, docs }) {
     const words = question.toLowerCase().match(/[a-z]{4,}/g)?.filter((w) => !STOP.has(w) && !carrierName.toLowerCase().includes(w)) ?? [];
     // The line sharing the most words with the question, across all guides.
-    let best: { i: number; line: string; score: number; title: string } | null = null;
+    let best: { i: number; page: number; line: string; score: number; title: string } | null = null;
     for (const [i, d] of docs.entries()) {
-      const text = Buffer.from(await storage().get(d.objectKey)).toString("latin1");
-      for (const raw of text.split(/\r?\n/)) {
-        const line = raw.replace(/^%\s*/, "").trim();
-        const score = words.filter((w) => line.toLowerCase().includes(w)).length;
-        if (score > (best?.score ?? 0)) best = { i, line, score, title: d.title };
+      for (const pg of await devPageTexts(await storage().get(d.objectKey))) {
+        for (const raw of pg.text.split(/\r?\n|(?<=\.)\s+/)) {
+          const line = raw.replace(/^%\s*/, "").trim();
+          const score = words.filter((w) => line.toLowerCase().includes(w)).length;
+          if (score > (best?.score ?? 0)) best = { i, page: pg.number, line, score, title: d.title };
+        }
       }
     }
     if (best) {
       const verdict: Verdict = /\b(prohibit|ineligible|not acceptable|decline)/i.test(best.line) ? "NO" : /\brefer\b/i.test(best.line) ? "REFER" : "YES";
-      return { status: "ANSWERED", verdict, answerText: `Development reader (no AI): found a matching line in ${best.title}.`, citations: [{ docIndex: best.i, startPage: 1, endPage: 1, quote: best.line.slice(0, 300) }], model: "dev-reader", usage: null, costUsd: 0 };
+      return { status: "ANSWERED", verdict, answerText: `Development reader (no AI): found a matching line in ${best.title}.`, citations: [{ docIndex: best.i, startPage: best.page, endPage: best.page, quote: best.line.slice(0, 300) }], model: "dev-reader", usage: null, costUsd: 0 };
     }
     return { status: "ANSWERED", verdict: "NOT_ADDRESSED", answerText: "Development reader (no AI): no line in the guides matches the question.", citations: [], model: "dev-reader", usage: null, costUsd: 0 };
+  },
+
+  async readPages({ question, carrierName, guides }) {
+    const words = question.toLowerCase().match(/[a-z]{4,}/g)?.filter((w) => !STOP.has(w) && !carrierName.toLowerCase().includes(w)) ?? [];
+    let best: { i: number; page: number; line: string; score: number; title: string } | null = null;
+    for (const [i, g] of guides.entries()) {
+      for (const pg of g.pages) {
+        for (const raw of pg.text.split(/\r?\n|(?<=\.)\s+/)) {
+          const line = raw.trim();
+          const score = words.filter((w) => line.toLowerCase().includes(w)).length;
+          if (score > (best?.score ?? 0)) best = { i, page: pg.number, line, score, title: g.doc.title };
+        }
+      }
+    }
+    if (best) {
+      const verdict: Verdict = /\b(prohibit|ineligible|not acceptable|decline)/i.test(best.line) ? "NO" : /\brefer\b/i.test(best.line) ? "REFER" : "YES";
+      return { status: "ANSWERED", verdict, answerText: `Development reader (no AI): found a matching line in ${best.title}.`, citations: [{ docIndex: best.i, startPage: best.page, endPage: best.page, quote: best.line.slice(0, 300) }], model: "dev-reader", usage: null, costUsd: 0 };
+    }
+    return { status: "ANSWERED", verdict: "NOT_ADDRESSED", answerText: "Development reader (no AI): no line in the pages matches the question.", citations: [], model: "dev-reader", usage: null, costUsd: 0 };
   },
 };

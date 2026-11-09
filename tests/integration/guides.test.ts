@@ -7,6 +7,7 @@ import { createCarrier } from "@/server/services/carriers";
 import * as docs from "@/server/services/documents";
 import * as guides from "@/server/services/guides";
 import { demoContext, limitedUser } from "../support/auth";
+import { makePdf } from "../support/pdf";
 import { testPrisma } from "../support/db";
 
 /** Ask the guides (M8) with the development reader: no real AI calls, no cost. */
@@ -27,25 +28,30 @@ afterAll(() => {
 });
 
 const t = () => randomUUID().slice(0, 6);
-const pdf = (lines: string[]) => new TextEncoder().encode(`%PDF-1.4\n${lines.map((l) => `% ${l}`).join("\n")}\n% ${Math.random()}\n1 0 obj << >> endobj\ntrailer << >>\n%%EOF\n`);
+/** A real PDF; a string[][] gives several pages. */
+const pdf = (lines: string[] | string[][]) => makePdf(Array.isArray(lines[0]) ? (lines as string[][]) : [lines as string[]]);
 
-async function carrierWithGuide(lines: string[], o: { documentType?: string; classification?: string } = {}) {
+async function carrierWithGuide(lines: string[] | string[][], o: { documentType?: string; classification?: string } = {}) {
   const name = `TEST Guides ${t()}`;
   const carrier = await createCarrier(staff, { legalName: `${name} Insurance Co`, displayName: name, type: "INSURER" });
-  const guide = await docs.uploadDocument(staff, { title: `${name} homeowners guide`, documentType: o.documentType ?? "UNDERWRITING_GUIDELINES", classification: o.classification ?? "INTERNAL", organizationId: carrier.id }, { name: "guide.pdf", bytes: pdf(lines) });
+  const guide = await docs.uploadDocument(staff, { title: `${name} homeowners guide`, documentType: o.documentType ?? "UNDERWRITING_GUIDELINES", classification: o.classification ?? "INTERNAL", organizationId: carrier.id }, { name: "guide.pdf", bytes: await pdf(lines) });
   return { carrier, guide };
 }
 
 describe("asking a carrier's guides", () => {
   it("answers from the carrier named in the question, cites the guide and page, and logs it", async () => {
-    const { carrier, guide } = await carrierWithGuide(["Roof requirements", "Wood shake roofs are prohibited on all dwellings."]);
+    const { carrier, guide } = await carrierWithGuide([["Eligibility overview", "Dogs of any breed are acceptable."], ["Roof requirements", "Wood shake roofs are prohibited on all dwellings."]]);
     const r = await guides.askGuides(staff, { question: `Will ${carrier.displayName} write a home with a wood shake roof?` });
     expect(r.carrier.id).toBe(carrier.id);
     expect(r.status).toBe("ANSWERED");
     expect(r.verdict).toBe("NO");
-    expect(r.citations).toEqual([{ documentVersionId: guide.version.id, documentId: guide.document.id, title: guide.document.title, versionNumber: 1, startPage: 1, endPage: 1, quote: "Wood shake roofs are prohibited on all dwellings." }]);
+    expect(r.citations).toEqual([{ documentVersionId: guide.version.id, documentId: guide.document.id, title: guide.document.title, versionNumber: 1, startPage: 2, endPage: 2, quote: "Wood shake roofs are prohibited on all dwellings." }]);
     expect(r.documentVersionIds).toEqual([guide.version.id]);
-    expect(r.promptVersion).toBe("ask-guides-v1");
+    // The cheap way by default: saved page text (every page fits) to the small model.
+    expect(r.mode).toBe("PAGES");
+    expect(r.promptVersion).toBe("ask-guides-pages-v1");
+    expect(r.pagesSent).toEqual([{ documentVersionId: guide.version.id, pages: [1, 2], totalPages: 2 }]);
+    expect(await db.documentPage.count({ where: { documentVersionId: guide.version.id } })).toBe(2);
     expect(await db.auditEvent.count({ where: { entityId: r.id, action: "guides.ask" } })).toBe(1);
     const back = await guides.getQuestion(staff, r.id);
     expect(back.citations[0].quote).toMatch(/Wood shake/);
@@ -61,9 +67,9 @@ describe("asking a carrier's guides", () => {
 
   it("reads only active, non-restricted guides filed under the carrier, latest version", async () => {
     const { carrier, guide } = await carrierWithGuide(["Old: wood shake roofs acceptable."]);
-    await docs.uploadVersion(staff, guide.document.id, { name: "guide-v2.pdf", bytes: pdf(["New: wood shake roofs refer to underwriting."]) });
-    await docs.uploadDocument(staff, { title: "TEST Restricted agreement", documentType: "UNDERWRITING_GUIDELINES", classification: "RESTRICTED", organizationId: carrier.id }, { name: "r.pdf", bytes: pdf(["secret"]) });
-    await docs.uploadDocument(staff, { title: "TEST Bulletin", documentType: "BULLETIN", organizationId: carrier.id }, { name: "b.pdf", bytes: pdf(["bulletin"]) });
+    await docs.uploadVersion(staff, guide.document.id, { name: "guide-v2.pdf", bytes: await pdf(["New: wood shake roofs refer to underwriting."]) });
+    await docs.uploadDocument(staff, { title: "TEST Restricted agreement", documentType: "UNDERWRITING_GUIDELINES", classification: "RESTRICTED", organizationId: carrier.id }, { name: "r.pdf", bytes: await pdf(["secret"]) });
+    await docs.uploadDocument(staff, { title: "TEST Bulletin", documentType: "BULLETIN", organizationId: carrier.id }, { name: "b.pdf", bytes: await pdf(["bulletin"]) });
     const list = await guides.listGuides(staff, carrier.id);
     expect(list.map((g) => [g.title, g.versionNumber])).toEqual([[guide.document.title, 2]]);
     const r = await guides.askGuides(staff, { question: "wood shake?", organizationId: carrier.id });
@@ -89,11 +95,40 @@ describe("asking a carrier's guides", () => {
     }
   });
 
+  it("\"Check the full guide\" reads the whole PDF the costly way and records it", async () => {
+    const { carrier, guide } = await carrierWithGuide([["Intro"], ["Wood shake roofs are prohibited."]]);
+    const r = await guides.askGuides(staff, { question: "wood shake roofs?", organizationId: carrier.id, mode: "FULL_PDF" });
+    expect(r.mode).toBe("FULL_PDF");
+    expect(r.promptVersion).toBe("ask-guides-v1");
+    expect(r.pagesSent).toBeNull();
+    expect(r.verdict).toBe("NO");
+    expect(r.citations[0]).toMatchObject({ documentVersionId: guide.version.id, startPage: 2 });
+    await expect(guides.askGuides(staff, { question: "wood shake roofs?", organizationId: carrier.id, mode: "CHEAPEST" })).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it("reuses saved page text, so a later question needs no file read", async () => {
+    const { carrier, guide } = await carrierWithGuide(["Wood shake roofs are prohibited."]);
+    await guides.askGuides(staff, { question: "wood shake roofs?", organizationId: carrier.id });
+    // Saved text wins over the file: the stored file can go missing and the cheap way still answers.
+    await db.documentVersion.update({ where: { id: guide.version.id }, data: { objectKey: `documents/missing/${randomUUID()}` } });
+    const again = await guides.askGuides(staff, { question: "wood shake roofs?", organizationId: carrier.id });
+    expect(again.verdict).toBe("NO");
+    const none = await guides.askGuides(staff, { question: "trampolines?", organizationId: carrier.id });
+    expect(none.verdict).toBe("NOT_ADDRESSED");
+  });
+
+  it("a PDF with no text layer points to the full-guide check instead of guessing", async () => {
+    const { carrier } = await carrierWithGuide([[]]);
+    await expect(guides.askGuides(staff, { question: "wood shake roofs?", organizationId: carrier.id })).rejects.toThrow(/no readable text.*Check the full guide/);
+  });
+
   it("logs a failed read instead of losing the question", async () => {
     const { carrier, guide } = await carrierWithGuide(["Wood shake roofs are prohibited."]);
     // Break the stored file so the reader fails.
     await db.documentVersion.update({ where: { id: guide.version.id }, data: { objectKey: `documents/missing/${randomUUID()}` } });
-    const r = await guides.askGuides(staff, { question: "wood shake roofs?", organizationId: carrier.id });
+    // The cheap way can't read the page text, so it says so; the full read logs the failure.
+    await expect(guides.askGuides(staff, { question: "wood shake roofs?", organizationId: carrier.id })).rejects.toThrow(/Check the full guide/);
+    const r = await guides.askGuides(staff, { question: "wood shake roofs?", organizationId: carrier.id, mode: "FULL_PDF" });
     expect(r.status).toBe("FAILED");
     expect(r.error).toBeTruthy();
     expect(r.verdict).toBeNull();

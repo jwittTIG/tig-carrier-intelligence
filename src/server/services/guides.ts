@@ -5,7 +5,9 @@ import { assertCan, type AuthContext } from "@/server/auth/context";
 import { prisma } from "@/server/db/client";
 import { NotFoundError, ValidationError } from "@/server/errors";
 import { optionalId, parse, requiredText } from "@/server/validation";
-import { guideReader, PROMPT_VERSION, readerMode, type GuideDoc, type ReaderResult } from "@/server/ai/guide-reader";
+import { guideReader, PAGES_MODEL, PAGES_PROMPT_VERSION, PROMPT_VERSION, readerMode, type GuideDoc, type ReaderResult } from "@/server/ai/guide-reader";
+import { pagesFor, UnreadablePdfError } from "@/server/ai/page-text";
+import { selectPages } from "@/lib/page-search";
 
 /**
  * Ask the guides (M8, DECISIONS D12, N21): a question about one carrier, answered by AI from
@@ -60,7 +62,15 @@ export async function listAskableCarriers(ctx: AuthContext) {
   return prisma.organization.findMany({ where: { type: { not: "AGENCY" }, archivedAt: null }, orderBy: { displayName: "asc" }, select: { id: true, displayName: true, legalName: true } });
 }
 
-const askSchema = z.object({ question: requiredText(1000), organizationId: optionalId });
+const askSchema = z.object({
+  question: requiredText(1000),
+  organizationId: optionalId,
+  /** PAGES (default, about 1¢): saved page text to Claude Haiku. FULL_PDF ("Check the full guide"): whole PDFs to Claude Opus. */
+  mode: z.preprocess((v) => (v === "" || v == null ? "PAGES" : v), z.enum(["PAGES", "FULL_PDF"])),
+});
+
+/** Page text sent per question stays under this, so Claude Haiku's lower price tier applies (under 100,000 tokens). */
+export const PAGES_BUDGET_TOKENS = 85_000;
 
 export type Citation = { documentVersionId: string; documentId: string; title: string; versionNumber: number; startPage: number; endPage: number; quote: string };
 
@@ -68,7 +78,7 @@ export type Citation = { documentVersionId: string; documentId: string; title: s
 export async function askGuides(ctx: AuthContext, input: unknown) {
   assertCan(ctx, "guides.ask");
   assertCan(ctx, "document.read");
-  const { question, organizationId } = parse(askSchema, input);
+  const { question, organizationId, mode } = parse(askSchema, input);
   if (question.length < 3) throw new ValidationError("Type a question.");
   const carriers = await listAskableCarriers(ctx);
   const carrier = organizationId ? carriers.find((c) => c.id === organizationId) : detectCarrier(question, carriers);
@@ -83,9 +93,42 @@ export async function askGuides(ctx: AuthContext, input: unknown) {
   const docs: GuideDoc[] = guides.map((g) => ({ documentVersionId: g.documentVersionId, title: g.title, versionNumber: g.versionNumber, objectKey: g.objectKey, mimeType: g.mimeType }));
   let result: ReaderResult | null = null;
   let error: string | null = null;
+  let pagesSent: { documentVersionId: string; pages: number[]; totalPages: number }[] | null = null;
   try {
-    result = await reader.read({ question, carrierName: carrier.displayName, docs });
+    if (mode === "FULL_PDF") {
+      result = await reader.read({ question, carrierName: carrier.displayName, docs });
+    } else {
+      // Page text is read once per guide version and saved; then only text goes to the AI.
+      const texts: Awaited<ReturnType<typeof pagesFor>>[] = [];
+      for (const g of guides) {
+        try {
+          texts.push(await pagesFor({ id: g.documentVersionId, objectKey: g.objectKey, mimeType: g.mimeType }));
+        } catch (e) {
+          if (e instanceof UnreadablePdfError) throw new ValidationError(`${g.title}: ${e.message} Use "Check the full guide" instead.`);
+          throw e;
+        }
+      }
+      if (texts.every((t) => t.every((pg) => !pg.text.trim()))) {
+        throw new ValidationError(`${carrier.displayName}'s guides have no readable text (scanned pages?). Use "Check the full guide" instead.`);
+      }
+      const picks = selectPages(texts.map((pages) => ({ pages })), question, PAGES_BUDGET_TOKENS);
+      pagesSent = picks.map((pk) => ({ documentVersionId: guides[pk.guide].documentVersionId, pages: pk.pages, totalPages: texts[pk.guide].length }));
+      const used = picks.filter((pk) => pk.pages.length);
+      if (!used.length) {
+        // Nothing in the guides uses these words: say so plainly instead of guessing (no AI call, no cost).
+        result = { status: "ANSWERED", verdict: "UNCLEAR", answerText: "No page in the guides uses the words in this question. Try other words, or use \"Check the full guide\".", citations: [], model: "page-search", usage: null, costUsd: 0 };
+      } else {
+        const r = await reader.readPages({
+          question,
+          carrierName: carrier.displayName,
+          guides: used.map((pk) => ({ doc: docs[pk.guide], pages: texts[pk.guide].filter((pg) => pk.pages.includes(pg.number)), totalPages: texts[pk.guide].length })),
+        });
+        // Citation docIndex refers to the guides actually sent; map back to the full list.
+        result = r.status === "ANSWERED" ? { ...r, citations: r.citations.map((c) => ({ ...c, docIndex: used[c.docIndex]?.guide ?? -1 })) } : r;
+      }
+    }
   } catch (e) {
+    if (e instanceof ValidationError) throw e;
     error = e instanceof Error ? `${e.name}: ${e.message}`.slice(0, 1000) : "Unknown error";
   }
   const citations: Citation[] =
@@ -106,8 +149,10 @@ export async function askGuides(ctx: AuthContext, input: unknown) {
         answerText: result?.status === "ANSWERED" ? result.answerText : result?.status === "REFUSED" ? result.reason : null,
         citations: citations as unknown as Prisma.InputJsonValue,
         documentVersionIds: guides.map((g) => g.documentVersionId),
-        model: result?.model ?? (reader.mode === "dev" ? "dev-reader" : "claude-opus-5-5"),
-        promptVersion: PROMPT_VERSION,
+        model: result?.model ?? (reader.mode === "dev" ? "dev-reader" : mode === "PAGES" ? PAGES_MODEL : "claude-opus-5-5"),
+        promptVersion: mode === "PAGES" ? PAGES_PROMPT_VERSION : PROMPT_VERSION,
+        mode,
+        pagesSent: (pagesSent ?? undefined) as Prisma.InputJsonValue | undefined,
         usage: (result?.usage ?? undefined) as Prisma.InputJsonValue | undefined,
         costUsd: result?.costUsd !== null && result?.costUsd !== undefined ? new Prisma.Decimal(result.costUsd.toFixed(4)) : null,
         error,

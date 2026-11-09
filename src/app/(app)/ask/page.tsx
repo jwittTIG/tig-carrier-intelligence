@@ -15,7 +15,7 @@ export default async function AskPage() {
     <>
       <h1 className="text-xl font-semibold">Ask the guides</h1>
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        Ask about one carrier in plain English. AI reads that carrier&apos;s appetite guides and underwriting guidelines (PDFs on its Documents tab) and answers with the pages it relied on.
+        Ask about one carrier in plain English. AI reads that carrier&apos;s appetite guides and underwriting guidelines (PDFs on its Documents tab) and answers with the pages it relied on, for about a cent a question. Questions about roofs, losses, wiring and other risk details are free in the Market Finder once a carrier&apos;s appetite is approved.
       </p>
       {mode === "off" && (
         <p role="note" className="rounded-xl border border-amber-400 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100">

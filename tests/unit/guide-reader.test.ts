@@ -29,6 +29,13 @@ describe("estimateCost", () => {
     // A follow-up question on a cached 250k-token guide: about 7 cents.
     expect(estimateCost({ input_tokens: 50, cache_read_input_tokens: 250_000, output_tokens: 800 })).toBeCloseTo(0.0662, 3);
   });
+
+  it("prices the page-text reader at Haiku 5.5 rates, with the higher tier over 100k prompt tokens", () => {
+    // A 50k-token guide read whole: about half a cent.
+    expect(estimateCost({ input_tokens: 50_000, output_tokens: 800 }, "haiku")).toBeCloseTo(0.0054, 4);
+    expect(estimateCost({ input_tokens: 100_000 }, "haiku")).toBeCloseTo(0.01);
+    expect(estimateCost({ input_tokens: 1_000_000 }, "haiku")).toBe(0.5); // over 100k: long-prompt price
+  });
 });
 
 describe("detectCarrier", () => {

@@ -17,6 +17,18 @@ export function VerdictBadge({ verdict, status }: { verdict: string | null; stat
   return <Badge tone={tone}>{VERDICT_TEXT[verdict ?? "UNCLEAR"] ?? verdict}</Badge>;
 }
 
+/** Reruns one question over the whole PDFs with the strongest model (the costly way). */
+export function CheckFullGuide({ question, organizationId, emphasize }: { question: string; organizationId: string; emphasize: boolean }) {
+  return (
+    <ActionForm action={askAction} submitLabel="Check the full guide" pendingLabel="Reading the whole guide… (up to a minute)" variant={emphasize ? "primary" : "secondary"} showOk={false} className="flex flex-wrap items-center gap-2">
+      <input type="hidden" name="question" value={question} />
+      <input type="hidden" name="organizationId" value={organizationId} />
+      <input type="hidden" name="mode" value="FULL_PDF" />
+      <span className="text-xs text-zinc-600 dark:text-zinc-400">Reads the whole PDF with Claude Opus, including tables and scanned pages. About $1.80 for a long guide.</span>
+    </ActionForm>
+  );
+}
+
 export function AskForm({ carriers, defaultCarrierId, aiReady }: { carriers: { id: string; displayName: string }[]; defaultCarrierId?: string; aiReady: boolean }) {
   // No form until AI is set up: the page shows why instead (no buttons that do nothing).
   if (!aiReady) return null;

@@ -979,6 +979,7 @@ model DocumentVersion {
   recordSources RecordSource[]
   inboundRaw    InboundMessage[]
   aiFiles       AiDocumentFile[]
+  pages         DocumentPage[]
   extractions   GuideExtraction[]
   inboundFiles  InboundAttachment[]
 
@@ -1275,6 +1276,10 @@ model GuideQuestion {
   documentVersionIds String[]          @map("document_version_ids") @db.Uuid
   model              String
   promptVersion      String            @map("prompt_version")
+  /// PAGES: the guides' saved page text (cheap model). FULL_PDF: the whole PDF (Opus).
+  mode               String            @default("FULL_PDF")
+  /// For PAGES: [{ documentVersionId, pages: [n, ...] }] sent to the AI.
+  pagesSent          Json?             @map("pages_sent")
   usage              Json?
   costUsd            Decimal?          @map("cost_usd") @db.Decimal(10, 4)
   error              String?
@@ -1334,4 +1339,15 @@ model GuideExtraction {
   @@index([carrierProductId, createdAt])
   @@index([createdById])
   @@map("guide_extractions")
+}
+
+/// Text of one PDF page, read once from the stored file (no AI), for cheap guide questions (DECISIONS N23).
+model DocumentPage {
+  documentVersionId String          @map("document_version_id") @db.Uuid
+  pageNumber        Int             @map("page_number")
+  text              String
+  documentVersion   DocumentVersion @relation(fields: [documentVersionId], references: [id], onDelete: Cascade)
+
+  @@id([documentVersionId, pageNumber])
+  @@map("document_pages")
 }
