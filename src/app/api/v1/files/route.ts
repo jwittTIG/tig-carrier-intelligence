@@ -5,6 +5,8 @@ import { storage, verifyToken } from "@/server/storage";
  * The signed, expiring token is the authorization; it is only issued after a permission
  * check in /api/v1/document-versions/:id/download.
  */
+const INLINE_TYPES = ["application/pdf", "image/png", "image/jpeg"];
+
 export async function GET(req: Request) {
   const token = new URL(req.url).searchParams.get("t") ?? "";
   const p = verifyToken(token);
@@ -14,8 +16,8 @@ export async function GET(req: Request) {
     return new Response(Buffer.from(bytes), {
       headers: {
         "content-type": p.type,
-        // Only PDFs may open in the browser (to jump to a cited page); everything else downloads.
-        "content-disposition": `${p.inline && p.type === "application/pdf" ? "inline" : "attachment"}; filename="${p.name.replace(/["\\\r\n]/g, "_")}"`,
+        // Only PDFs (to jump to a cited page) and logo images may show in the browser; everything else downloads.
+        "content-disposition": `${p.inline && INLINE_TYPES.includes(p.type) ? "inline" : "attachment"}; filename="${p.name.replace(/["\\\r\n]/g, "_")}"`,
         "cache-control": "private, no-store",
         "x-content-type-options": "nosniff",
       },

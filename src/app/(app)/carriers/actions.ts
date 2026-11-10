@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAuth } from "@/server/auth/session";
 import { runAction, type ActionState } from "@/server/actions/run";
+import { ValidationError } from "@/server/errors";
 import { formObject } from "@/server/validation";
 import * as carriers from "@/server/services/carriers";
 
@@ -20,13 +21,15 @@ export async function createCarrierAction(_s: ActionState, form: FormData): Prom
 }
 
 export async function updateCarrierAction(id: string, _s: ActionState, form: FormData): Promise<ActionState> {
-  return runAction(async () => {
+  const result = await runAction(async () => {
     const ctx = await requireAuth();
     const f = formObject(form);
     // Empty selects clear the field.
     await carriers.updateCarrier(ctx, id, { ...f, parentId: f.parentId || null, ownerUserId: f.ownerUserId || null, website: f.website || null });
     revalidatePath(page(id));
   });
+  if (result?.error) return result;
+  redirect(page(id)); // back to the read-only view
 }
 
 export async function setArchivedAction(id: string, archived: boolean, _s: ActionState): Promise<ActionState> {
@@ -108,5 +111,23 @@ export async function addActivityAction(id: string, _s: ActionState, form: FormD
     await carriers.addActivity(await requireAuth(), id, formObject(form));
     revalidatePath(page(id));
     return "Note added.";
+  });
+}
+
+export async function setLogoAction(id: string, _s: ActionState, form: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    const f = form.get("logo");
+    if (!(f instanceof File) || f.size === 0) throw new ValidationError("Choose an image to upload.");
+    await carriers.setCarrierLogo(await requireAuth(), id, { name: f.name, bytes: new Uint8Array(await f.arrayBuffer()) });
+    revalidatePath(page(id));
+    return "Logo saved.";
+  });
+}
+
+export async function removeLogoAction(id: string, _s: ActionState): Promise<ActionState> {
+  return runAction(async () => {
+    await carriers.removeCarrierLogo(await requireAuth(), id);
+    revalidatePath(page(id));
+    return "Logo removed.";
   });
 }

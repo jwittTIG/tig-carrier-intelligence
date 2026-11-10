@@ -8,7 +8,7 @@ import { runAction, type ActionState } from "@/server/actions/run";
 import { ValidationError } from "@/server/errors";
 import { formObject } from "@/server/validation";
 import * as app from "@/server/services/appetite";
-import { decide } from "@/server/services/approvals";
+import { approveProfileNow, decide } from "@/server/services/approvals";
 import * as com from "@/server/services/commissions";
 import * as docs from "@/server/services/documents";
 import { queueAutoDraft, runQueuedExtraction } from "@/server/services/extractions";
@@ -286,5 +286,23 @@ export async function decideAction(changeRequestId: string, decision: "APPROVE" 
     revalidatePath(returnTo);
     revalidatePath("/approvals");
     return decision === "APPROVE" ? "Approved." : "Rejected.";
+  });
+}
+
+export async function approveProfileNowAction(id: string, _s: ActionState, form: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    await approveProfileNow(await requireAuth(), id, { rationale: form.get("rationale") ?? undefined });
+    revalidatePath(`/appetite/${id}`);
+    revalidatePath("/approvals");
+    return "Approved. The Market Finder now uses this version.";
+  });
+}
+
+export async function closeOutProfileAction(id: string, carrierId: string, _s: ActionState, form: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    await app.closeOutProfile(await requireAuth(), id, formObject(form));
+    revalidatePath(`/appetite/${id}`);
+    revalidatePath(`/carriers/${carrierId}`);
+    return "Closed out.";
   });
 }

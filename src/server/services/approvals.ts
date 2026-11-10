@@ -5,7 +5,7 @@ import { assertCan, can, type AuthContext } from "@/server/auth/context";
 import { prisma } from "@/server/db/client";
 import { ConflictError, NotFoundError } from "@/server/errors";
 import { optionalText, parse } from "@/server/validation";
-import { applyProfileDecision } from "./appetite";
+import { applyProfileDecision, submitProfile } from "./appetite";
 import { checkReviewer, closeChangeRequest } from "./approvals-core";
 import { applyAgreementDecision, applyScheduleDecision } from "./commissions";
 import { staleInboxCount } from "./inbox";
@@ -104,4 +104,27 @@ export async function dataQuality(ctx: AuthContext) {
   const staleInbox = await staleInboxCount(ctx);
   const inboxDays = await numberSetting("inbox.stale_days");
   return { staleAppetite, staleContacts, contactDays, duplicates, staleInbox, inboxDays };
+}
+
+/**
+ * Submit and approve an appetite draft in one step, for an ADMIN approving their own work (D14:
+ * allowed with a reason). Everyone else submits it for someone else to approve.
+ */
+export async function approveProfileNow(ctx: AuthContext, profileId: string, input: unknown) {
+  assertCan(ctx, "appetite.write");
+  assertCan(ctx, "change_request.review");
+  assertCan(ctx, "appetite.approve");
+  const { rationale } = parse(z.object({ rationale: optionalText(2000) }), input);
+  // Checked before anything changes, so a missing reason doesn't leave the draft half-submitted.
+  checkReviewer(ctx, { proposedById: ctx.userId }, "APPROVE", rationale);
+  await submitProfile(ctx, profileId, { note: rationale });
+  const cr = await prisma.changeRequest.findFirst({ where: { recordType: "APPETITE_PROFILE", recordId: profileId, status: "PENDING" }, orderBy: { createdAt: "desc" } });
+  if (!cr) throw new ConflictError("The submission wasn't found. Open Approvals to finish it.");
+  return decide(ctx, cr.id, { decision: "APPROVE", rationale });
+}
+
+/** The pending request for a record, if any (to approve it where it is shown). */
+export async function pendingRequest(ctx: AuthContext, recordType: RecordType, recordId: string) {
+  assertCan(ctx, "change_request.review");
+  return prisma.changeRequest.findFirst({ where: { recordType, recordId, status: "PENDING" }, orderBy: { createdAt: "desc" }, select: { id: true, proposedById: true, createdAt: true } });
 }

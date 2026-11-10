@@ -95,6 +95,7 @@ enum AgencyCodeType {
   OTHER
 }
 
+/// Labels and order: src/lib/contact-roles.ts. UNDERWRITER and CLAIMS are the older general types.
 enum ContactRole {
   UNDERWRITER
   MARKETING_REP
@@ -103,6 +104,21 @@ enum ContactRole {
   SERVICE
   CLAIMS
   OTHER
+  PL_UNDERWRITER
+  CL_UNDERWRITER
+  SMALL_COMMERCIAL_UNDERWRITER
+  MIDDLE_MARKET_UNDERWRITER
+  SPECIALTY_UNDERWRITER
+  MARINE_UNDERWRITER
+  WORKERS_COMP_UNDERWRITER
+  SURETY_UNDERWRITER
+  UNDERWRITING_MANAGER
+  CLAIMS_ADJUSTER
+  CLAIMS_MANAGER
+  LOSS_CONTROL
+  PREMIUM_AUDITOR
+  BILLING
+  BRANCH_MANAGER
 }
 
 enum ActivityType {
@@ -375,6 +391,9 @@ model Organization {
   website     String?
   /// Carrier portal site staff use to log in (link only; logins live in the password manager).
   portalUrl   String?            @map("portal_url")
+  /// Carrier logo (PNG or JPEG) in private storage, shown on the carrier page.
+  logoObjectKey String?          @map("logo_object_key")
+  logoMimeType  String?          @map("logo_mime_type")
   /// Soft archive: archived organizations stay referenced by history; never hard-deleted.
   archivedAt  DateTime?          @map("archived_at") @db.Timestamptz(6)
   createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)

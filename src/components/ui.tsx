@@ -25,9 +25,9 @@ export function Badge({ children, tone = "neutral" }: { children: React.ReactNod
   return <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${tones[tone]}`}>{children}</span>;
 }
 
-export function Section({ title, children, actions }: { title: string; children: React.ReactNode; actions?: React.ReactNode }) {
+export function Section({ title, children, actions, id }: { title: string; children: React.ReactNode; actions?: React.ReactNode; id?: string }) {
   return (
-    <section className="flex flex-col gap-3 rounded-2xl border border-transparent bg-white shadow-sm p-4 dark:border-zinc-700 dark:bg-zinc-900">
+    <section id={id} className="flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white shadow-sm p-4 dark:border-zinc-700 dark:bg-zinc-900">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-base font-semibold text-blue-800 dark:text-blue-200">{title}</h2>
         {actions}

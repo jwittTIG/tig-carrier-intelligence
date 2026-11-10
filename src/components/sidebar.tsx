@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useId, useState, useTransition } from "react";
-import { setAccentAction } from "@/app/theme-actions";
-import { ACCENT_PRESETS } from "@/lib/theme";
+import { setAccentAction, setModeAction } from "@/app/theme-actions";
+import { ACCENT_PRESETS, type Mode } from "@/lib/theme";
 import { Icon } from "./icons";
 
 export type NavItem = { href: string; label: string; icon: string; badge?: number; /** Other paths that highlight this item. */ match?: string[] };
@@ -40,7 +40,7 @@ export function SidebarNav({ items }: { items: NavItem[] }) {
 }
 
 /** Pick the app's main color: presets or any custom color. Saved in this browser. */
-export function AccentPicker({ current }: { current: string }) {
+export function AccentPicker({ current, mode }: { current: string; mode: Mode }) {
   const [pending, start] = useTransition();
   const [custom, setCustom] = useState(current);
   const id = useId();
@@ -53,6 +53,20 @@ export function AccentPicker({ current }: { current: string }) {
         <span className="h-4 w-4 rounded-full border-2 border-white" style={{ background: current }} aria-hidden="true" />
       </summary>
       <div className="mt-3 flex flex-col gap-3" aria-busy={pending}>
+        <div role="group" aria-label="Background" className="grid grid-cols-2 gap-1 rounded-lg bg-white/15 p-1">
+          {(["light", "dark"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => start(async () => { await setModeAction(m); })}
+              disabled={pending}
+              aria-pressed={mode === m}
+              className={`rounded-md px-2 py-1 text-xs font-semibold ${mode === m ? "bg-white text-blue-800" : "text-white hover:bg-white/10"}`}
+            >
+              {m === "light" ? "Light" : "Dark"}
+            </button>
+          ))}
+        </div>
         <div role="group" aria-label="Preset colors" className="grid grid-cols-4 gap-2">
           {ACCENT_PRESETS.map((p) => (
             <button

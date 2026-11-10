@@ -228,6 +228,22 @@ export async function createContact(ctx: AuthContext, input: unknown) {
   });
 }
 
+const carrierContactSchema = contactFields.omit({ status: true }).extend({ role: z.enum(ContactRole), title: optionalText(120), territoryId: optionalId });
+
+/** A new contact and their place at a carrier (type, title, territory), in one step from the carrier's Contacts tab. */
+export async function addContactToCarrier(ctx: AuthContext, organizationId: string, input: unknown) {
+  assertCan(ctx, "contact.write");
+  const d = parse(carrierContactSchema, input);
+  return prisma.$transaction(async (tx) => {
+    const c = await tx.contact.create({ data: { firstName: d.firstName, lastName: d.lastName, email: d.email ?? null, officePhone: d.officePhone ?? null, mobilePhone: d.mobilePhone ?? null } });
+    await checkAssignmentRefs(tx, c.id, { organizationId, territoryId: d.territoryId });
+    const a = await tx.contactAssignment.create({ data: { contactId: c.id, organizationId, role: d.role, title: d.title ?? null, territoryId: d.territoryId ?? null } });
+    await recordAudit(tx, ctx, { action: "contact.create", entityType: "contact", entityId: c.id, after: c });
+    await recordAudit(tx, ctx, { action: "contact.assignment.add", entityType: "contact_assignment", entityId: a.id, after: a });
+    return { contact: c, assignment: a };
+  });
+}
+
 export async function updateContact(ctx: AuthContext, id: string, input: unknown) {
   assertCan(ctx, "contact.write");
   const data = parse(contactFields.partial(), input);

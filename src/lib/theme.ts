@@ -7,6 +7,10 @@
 
 export const ACCENT_COOKIE = "tci-accent";
 export const DEFAULT_ACCENT = "#3a9e8a";
+/** Light (the default) or dark, chosen in the sidebar's Color menu. Saved in this browser. */
+export const MODE_COOKIE = "tci-mode";
+export type Mode = "light" | "dark";
+export const modeOf = (v: string | undefined | null): Mode => (v === "dark" ? "dark" : "light");
 
 export const ACCENT_PRESETS = [
   { name: "Teal", hex: "#3a9e8a" },

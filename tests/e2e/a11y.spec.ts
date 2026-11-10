@@ -7,7 +7,7 @@ import { expect, test } from "@playwright/test";
  */
 const PAGES = ["/dashboard", "/markets", "/carriers", "/contacts", "/documents", "/approvals", "/imports", "/admin/users", "/admin/audit", "/search?q=DEMO", "/inbox", "/notifications", "/setup/industries?q=roofing", "/setup/industries/NAICS/238160", "/setup", "/ask"];
 
-// Light and dark mode, and a light and a dark custom accent color (shades are derived from the pick).
+// Light and dark mode (chosen in the Color menu), and a light and a dark custom accent color (shades are derived from the pick).
 for (const { scheme, accent } of [
   { scheme: "light", accent: null },
   { scheme: "dark", accent: null },
@@ -15,7 +15,8 @@ for (const { scheme, accent } of [
   { scheme: "dark", accent: "#1e1b4b" },
 ] as const) {
   test(`primary screens have no serious or critical accessibility violations (${scheme}${accent ? `, accent ${accent}` : ""})`, async ({ page, context, baseURL }) => {
-    await page.emulateMedia({ colorScheme: scheme });
+    // Dark mode is a choice in the Color menu (a cookie), not the computer's setting.
+    if (scheme === "dark") await context.addCookies([{ name: "tci-mode", value: "dark", url: baseURL! }]);
     if (accent) await context.addCookies([{ name: "tci-accent", value: accent, url: baseURL! }]);
     await page.goto("/sign-in");
     await page.getByRole("button", { name: /Sign in as DEMO Admin/ }).click();

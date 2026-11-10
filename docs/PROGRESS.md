@@ -5,6 +5,18 @@
 
 Milestone 8 (Ask the guides) works with Josh's key (two real questions at $1.76 and $1.77 with the whole-PDF read).
 
+## N25: carrier page, contact types, closing out and approving appetite, white background (built 2026-11-10)
+Josh asked for: the carrier name prominent and fixed (edit only with a button), a carrier logo, an identifier type list (NAIC, FEIN, AM Best), contact types (his list and others), closing out "open" appetite profiles, easier appetite approval, and a white background.
+- Carrier page: large name with the logo (or initials) at the top of every tab. Overview details are read-only with an **Edit details** button; Save returns to the read-only view. **Logo** section: upload (PNG/JPEG, 2 MB), replace, remove.
+- Identifiers: Type is a dropdown (NAIC, FEIN, AM Best).
+- Contacts: 22 contact types (src/lib/contact-roles.ts). The carrier's Contacts tab has **Add a contact** (type, name, email, phones, title, territory) in one step. The Market Finder lists every underwriter type, underwriting managers and marketing reps as people to call. Imports accept the new type names.
+- Appetite tab table: an action per row: **Approve…** (drafts with rules), **Review…** (waiting for approval), **Close out…** (approved), **Delete** (empty drafts). On a version: **Close out this version** (end date today or earlier, reason) retires it.
+- Approving: a draft shows a checklist (owner, effective date, rules, source). An admin gets **Approve now** (reason required, with suggestions); others **Submit for approval**. Waiting versions already had Approve/Reject on the page.
+- White background by default; **Light / Dark** buttons in the sidebar's Color menu (saved in this browser).
+- Lint now ignores `.next-build`.
+- Tested (ran and saw pass): 8 new integration tests (logo store/refuse/permissions and the database check; add contact with type in one step, nothing half-made on error, permissions; approve now for an admin, reason checked first, refused for staff; close out with date and reason checks, drafts refused, permission); a new e2e test (edit details, logo upload and display, AM Best identifier, contact with a type from the carrier tab); the a11y sweep now picks dark mode by cookie. Checked in the browser on Travelers: header, read-only details, appetite actions, the approval checklist, Light/Dark switch.
+- Not done: Approve now and Close out were not clicked on Josh's real data.
+
 ## N24: one AI draft per guide; new versions replace it (built 2026-11-10)
 Josh didn't like the "Draft appetite from a guide" section still offering to draft a guide already drafted, and wants each new upload to replace the previous one for that line. He chose: start the read automatically; keep hand-added rules.
 - Carrier Appetite tab, renamed "Appetite from guides (AI)": one line per guide with its status (AI is reading / Ready for review / Drafted from vN, with the appetite version / Couldn't read, with "Read it again"). The draft form shows only for a guide never read. Earlier reads are folded under "Earlier AI reads". The guide's own page shows the same line.

@@ -87,3 +87,11 @@ export async function addContactActivityAction(id: string, _s: ActionState, form
     return "Note added.";
   });
 }
+
+export async function addContactToCarrierAction(carrierId: string, _s: ActionState, form: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    const r = await contacts.addContactToCarrier(await requireAuth(), carrierId, formObject(form));
+    revalidatePath(`/carriers/${carrierId}`);
+    return `Added ${r.contact.firstName} ${r.contact.lastName}.`;
+  });
+}

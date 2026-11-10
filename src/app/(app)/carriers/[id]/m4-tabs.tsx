@@ -12,7 +12,7 @@ import { GuideAppetiteRow } from "../../extractions/guide-appetite";
 import { ActionForm } from "@/components/action-form";
 import { StatusBadge } from "@/components/m4";
 import { Badge, Field, Section, fmtDate, fmtDateTime, inputClass, label } from "@/components/ui";
-import { createAgreementAction, createProfileAction } from "../../m4-actions";
+import { createAgreementAction, createProfileAction, deleteDraftAction } from "../../m4-actions";
 import { UploadForm } from "../../documents/upload-form";
 
 type Carrier = { id: string; carrierProducts: { id: string; archivedAt: Date | null; product: { name: string }; channels: { id: string; archivedAt: Date | null; distributionType: string; intermediary: { displayName: string } | null }[] }[] };
@@ -22,6 +22,8 @@ export async function AppetiteTab({ carrier }: { carrier: Carrier }) {
   const profiles = await listProfilesForCarrier(ctx, carrier.id);
   const products = carrier.carrierProducts.filter((p) => !p.archivedAt);
   const canRead = can(ctx, "document.read");
+  const canWriteAppetite = can(ctx, "appetite.write");
+  const canApprove = canWriteAppetite && can(ctx, "appetite.approve");
   const canWrite = aiStatus().mode !== "off" && can(ctx, "appetite.write") && canRead;
   const guides = canRead ? (await listGuides(ctx, carrier.id)).filter((g) => g.readable) : [];
   const states = guides.length ? await guideAppetite(ctx, guides) : new Map();
@@ -49,9 +51,9 @@ export async function AppetiteTab({ carrier }: { carrier: Carrier }) {
       <p className="text-xs text-zinc-600 dark:text-zinc-400">Appetite is a guide, not a commitment to quote or bind. Each product (or product + channel) has numbered versions; only one draft at a time.</p>
       {profiles.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">No appetite recorded for this carrier.</p>}
       {profiles.length > 0 && (
-        <table className="w-full text-left text-sm">
+        <div className="overflow-x-auto"><table className="w-full text-left text-sm">
           <thead className="text-xs uppercase text-zinc-600 dark:text-zinc-400">
-            <tr><th scope="col" className="py-1 pr-3">Product</th><th scope="col" className="py-1 pr-3">Version</th><th scope="col" className="py-1 pr-3">Status</th><th scope="col" className="py-1 pr-3">Effective</th><th scope="col" className="py-1 pr-3">Rules</th><th scope="col" className="py-1">Review</th></tr>
+            <tr><th scope="col" className="py-1 pr-3">Product</th><th scope="col" className="py-1 pr-3">Version</th><th scope="col" className="py-1 pr-3">Status</th><th scope="col" className="py-1 pr-3">Effective</th><th scope="col" className="py-1 pr-3">Rules</th><th scope="col" className="py-1 pr-3">Review</th><th scope="col" className="py-1"><span className="sr-only">Actions</span></th></tr>
           </thead>
           <tbody>
             {profiles.map((p) => (
@@ -65,11 +67,21 @@ export async function AppetiteTab({ carrier }: { carrier: Carrier }) {
                 <td className="py-1 pr-3"><StatusBadge status={p.status} /></td>
                 <td className="py-1 pr-3">{fmtDate(p.effectiveFrom)} → {p.effectiveTo ? fmtDate(p.effectiveTo) : "open"}</td>
                 <td className="py-1 pr-3">{p._count.rules}</td>
-                <td className="py-1">{p.stale ? <Badge tone="warn">Review overdue</Badge> : p.nextReviewAt ? fmtDate(p.nextReviewAt) : "—"}</td>
+                <td className="py-1 pr-3">{p.stale ? <Badge tone="warn">Review overdue</Badge> : p.nextReviewAt ? fmtDate(p.nextReviewAt) : "—"}</td>
+                <td className="py-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {p.status === "DRAFT" && p._count.rules > 0 && <Link href={`/appetite/${p.id}#approve`} className="font-medium text-blue-800 hover:underline dark:text-blue-300">Approve…</Link>}
+                    {p.status === "PENDING" && <Link href={`/appetite/${p.id}`} className="font-medium text-blue-800 hover:underline dark:text-blue-300">Review…</Link>}
+                    {p.status === "APPROVED" && canApprove && <Link href={`/appetite/${p.id}?closeout=1#close-out`} className="text-blue-800 hover:underline dark:text-blue-300">Close out…</Link>}
+                    {p.status === "DRAFT" && p._count.rules === 0 && canWriteAppetite && (
+                      <ActionForm action={deleteDraftAction.bind(null, p.id, carrier.id)} submitLabel="Delete" submitHint={`empty draft ${p.carrierProduct.product.name} v${p.version}`} variant="secondary" showOk={false} confirm={`Delete the empty ${p.carrierProduct.product.name} draft?`}>{null}</ActionForm>
+                    )}
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       )}
       {can(ctx, "appetite.write") && products.length > 0 && (
         <ActionForm action={createProfileAction.bind(null, carrier.id)} submitLabel="Start appetite profile" showOk={false} className="grid grid-cols-1 gap-3 sm:grid-cols-3">

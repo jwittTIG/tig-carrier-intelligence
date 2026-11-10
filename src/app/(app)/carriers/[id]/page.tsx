@@ -3,12 +3,13 @@ import { notFound } from "next/navigation";
 import { can } from "@/server/auth/context";
 import { requireAuth } from "@/server/auth/session";
 import { NotFoundError } from "@/server/errors";
-import { CARRIER_TYPES, getCarrier, listActivity, listCarrierHistory, listCarrierOptions, listLines } from "@/server/services/carriers";
+import { CARRIER_TYPES, carrierLogoUrl, getCarrier, listActivity, listCarrierHistory, listCarrierOptions, listLines } from "@/server/services/carriers";
 import { listActiveUsers } from "@/server/services/users";
 import { isFollowing } from "@/server/services/notifications";
 import { followAction } from "../../notifications/actions";
 import { ActionForm } from "@/components/action-form";
-import { Badge, Field, Section, fmtDate, fmtDateTime, inputClass, label } from "@/components/ui";
+import { Badge, ButtonLink, Field, Section, fmtDate, fmtDateTime, inputClass, label } from "@/components/ui";
+import { IDENTIFIER_TYPES, identifierLabel } from "@/lib/contact-roles";
 import {
   addActivityAction,
   addChannelAction,
@@ -17,6 +18,8 @@ import {
   addRelationshipAction,
   endRelationshipAction,
   removeIdentifierAction,
+  removeLogoAction,
+  setLogoAction,
   setArchivedAction,
   setChannelArchivedAction,
   setProductArchivedAction,
@@ -74,12 +77,15 @@ export default async function CarrierPage({ params, searchParams }: PageProps<"/
   }
   const write = can(ctx, "carrier.write");
   const following = carrier.type !== "AGENCY" && (await isFollowing(ctx, id));
+  const logo = await carrierLogoUrl(ctx, carrier);
+  const editing = tab === "overview" && sp.edit === "1" && write;
 
   return (
     <>
       <Link href="/carriers" className="text-sm hover:underline">← Carriers</Link>
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-xl font-semibold">{carrier.displayName}</h1>
+      <div className="flex flex-wrap items-center gap-4">
+        <CarrierLogo url={logo} name={carrier.displayName} />
+        <h1 className="text-3xl font-bold tracking-tight">{carrier.displayName}</h1>
         <Badge>{label(carrier.type)}</Badge>
         {carrier.archivedAt ? <Badge tone="bad">Archived {fmtDate(carrier.archivedAt)}</Badge> : <Badge tone={carrier.status === "ACTIVE" ? "good" : "neutral"}>{label(carrier.status)}</Badge>}
         {carrier.portalUrl && (
@@ -108,7 +114,7 @@ export default async function CarrierPage({ params, searchParams }: PageProps<"/
         ))}
       </nav>
 
-      {tab === "overview" && <Overview carrier={carrier} write={write} />}
+      {tab === "overview" && <Overview carrier={carrier} write={write} editing={editing} hasLogo={!!logo} />}
       {tab === "channels" && <Channels carrier={carrier} write={write} />}
       {tab === "contacts" && <ContactsTab carrierId={id} />}
       {tab === "codes" && <CodesTab carrierId={id} />}
@@ -124,7 +130,18 @@ export default async function CarrierPage({ params, searchParams }: PageProps<"/
 
 type Carrier = Awaited<ReturnType<typeof getCarrier>>;
 
-async function Overview({ carrier, write }: { carrier: Carrier; write: boolean }) {
+/** The carrier's logo, or its initials when there is none. */
+function CarrierLogo({ url, name }: { url: string | null; name: string }) {
+  const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("");
+  return url ? (
+    // eslint-disable-next-line @next/next/no-img-element -- a short-lived private link, not a static asset
+    <img src={url} alt={`${name} logo`} className="h-16 w-16 rounded-xl border border-zinc-200 bg-white object-contain p-1 dark:border-zinc-700" />
+  ) : (
+    <span aria-hidden="true" className="flex h-16 w-16 items-center justify-center rounded-xl bg-blue-100 text-xl font-bold text-blue-800 dark:bg-blue-900 dark:text-blue-100">{initials}</span>
+  );
+}
+
+async function Overview({ carrier, write, editing, hasLogo }: { carrier: Carrier; write: boolean; editing: boolean; hasLogo: boolean }) {
   const ctx = await requireAuth();
   const [options, owners] = await Promise.all([listCarrierOptions(ctx), listActiveUsers(ctx)]);
   const others = options.filter((o) => o.id !== carrier.id);
@@ -136,22 +153,29 @@ async function Overview({ carrier, write }: { carrier: Carrier; write: boolean }
 
   return (
     <div className="flex flex-col gap-4">
-      <Section title="Details">
-        {write ? (
-          <ActionForm action={updateCarrierAction.bind(null, id)} submitLabel="Save changes">
-            <CarrierFields
-              d={carrier}
-              types={CARRIER_TYPES}
-              parents={others.map((p) => ({ id: p.id, name: p.displayName }))}
-              owners={owners}
-            />
-          </ActionForm>
+      <Section title="Details" actions={write && !editing ? <ButtonLink href={`/carriers/${id}?edit=1`}>Edit details</ButtonLink> : undefined}>
+        {editing ? (
+          <>
+            <ActionForm action={updateCarrierAction.bind(null, id)} submitLabel="Save changes">
+              <CarrierFields
+                d={carrier}
+                types={CARRIER_TYPES}
+                parents={others.map((p) => ({ id: p.id, name: p.displayName }))}
+                owners={owners}
+              />
+            </ActionForm>
+            <Link href={`/carriers/${id}`} className="text-sm hover:underline">Cancel</Link>
+          </>
         ) : (
-          <dl className="grid grid-cols-2 gap-2 text-sm">
-            <dt>Owner</dt><dd>{carrier.owner?.name ?? "Unassigned"}</dd>
-            <dt>Parent</dt><dd>{carrier.parent?.displayName ?? "None"}</dd>
-            <dt>Carrier portal site</dt><dd>{carrier.portalUrl ? <a href={carrier.portalUrl} target="_blank" rel="noopener noreferrer" className="text-blue-800 hover:underline dark:text-blue-300">{carrier.portalUrl}</a> : "—"}</dd>
-            <dt>Website</dt><dd>{carrier.website ?? "—"}</dd>
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-[max-content_1fr]">
+            <dt className="text-zinc-600 dark:text-zinc-400">Name</dt><dd>{carrier.displayName}</dd>
+            <dt className="text-zinc-600 dark:text-zinc-400">Legal name</dt><dd>{carrier.legalName}</dd>
+            <dt className="text-zinc-600 dark:text-zinc-400">Type</dt><dd>{label(carrier.type)}</dd>
+            <dt className="text-zinc-600 dark:text-zinc-400">Status</dt><dd>{label(carrier.status)}</dd>
+            <dt className="text-zinc-600 dark:text-zinc-400">Owner</dt><dd>{carrier.owner?.name ?? "Unassigned"}</dd>
+            <dt className="text-zinc-600 dark:text-zinc-400">Parent</dt><dd>{carrier.parent?.displayName ?? "None"}</dd>
+            <dt className="text-zinc-600 dark:text-zinc-400">Carrier portal site</dt><dd>{carrier.portalUrl ? <a href={carrier.portalUrl} target="_blank" rel="noopener noreferrer" className="break-all text-blue-800 hover:underline dark:text-blue-300">{carrier.portalUrl}</a> : "—"}</dd>
+            <dt className="text-zinc-600 dark:text-zinc-400">Website</dt><dd>{carrier.website ? <a href={carrier.website} target="_blank" rel="noopener noreferrer" className="break-all text-blue-800 hover:underline dark:text-blue-300">{carrier.website}</a> : "—"}</dd>
           </dl>
         )}
         {carrier.children.length > 0 && (
@@ -164,14 +188,25 @@ async function Overview({ carrier, write }: { carrier: Carrier; write: boolean }
         )}
       </Section>
 
+      {write && (
+        <Section title="Logo">
+          <ActionForm action={setLogoAction.bind(null, id)} submitLabel={hasLogo ? "Replace logo" : "Upload logo"} className="flex flex-wrap items-end gap-3">
+            <Field label="Image" htmlFor="logoFile" hint="PNG or JPEG, up to 2 MB. Square works best.">
+              <input id="logoFile" name="logo" type="file" accept="image/png,image/jpeg" required className="text-sm" />
+            </Field>
+          </ActionForm>
+          {hasLogo && <ActionForm action={removeLogoAction.bind(null, id)} submitLabel="Remove logo" variant="secondary" confirm="Remove this carrier's logo?">{null}</ActionForm>}
+        </Section>
+      )}
+
       <Section title="Identifiers">
         {carrier.identifiers.length === 0 ? <p className="text-sm text-zinc-600 dark:text-zinc-400">None recorded.</p> : (
           <ul className="flex flex-col gap-2 text-sm">
             {carrier.identifiers.map((i) => (
               <li key={i.id} className="flex flex-wrap items-center gap-3">
-                <span><strong>{i.type}</strong> {i.value}{i.jurisdiction && ` (${i.jurisdiction})`}</span>
+                <span><strong>{identifierLabel(i.type)}</strong> {i.value}{i.jurisdiction && ` (${i.jurisdiction})`}</span>
                 {write && (
-                  <ActionForm action={removeIdentifierAction.bind(null, id, i.id)} submitLabel="Remove" variant="danger" showOk={false} confirm={`Remove ${i.type} ${i.value}?`}>
+                  <ActionForm action={removeIdentifierAction.bind(null, id, i.id)} submitLabel="Remove" variant="danger" showOk={false} confirm={`Remove ${identifierLabel(i.type)} ${i.value}?`}>
                     {null}
                   </ActionForm>
                 )}
@@ -181,8 +216,11 @@ async function Overview({ carrier, write }: { carrier: Carrier; write: boolean }
         )}
         {write && (
           <ActionForm action={addIdentifierAction.bind(null, id)} submitLabel="Add identifier" className="grid grid-cols-1 gap-3 sm:grid-cols-4">
-            <Field label="Type" htmlFor="idType" hint="e.g. NAIC, FEIN, AM_BEST_ID">
-              <input id="idType" name="type" required maxLength={40} className={inputClass} />
+            <Field label="Type" htmlFor="idType">
+              <select id="idType" name="type" required defaultValue="" className={inputClass}>
+                <option value="" disabled>Choose…</option>
+                {IDENTIFIER_TYPES.map((t) => <option key={t.code} value={t.code}>{t.label}</option>)}
+              </select>
             </Field>
             <Field label="Value" htmlFor="idValue"><input id="idValue" name="value" required maxLength={80} className={inputClass} /></Field>
             <Field label="Jurisdiction (optional)" htmlFor="idJur"><input id="idJur" name="jurisdiction" maxLength={40} className={inputClass} /></Field>

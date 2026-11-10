@@ -17,6 +17,8 @@ import {
   addCoverageAction,
   addRequirementAction,
   addRuleAction,
+  approveProfileNowAction,
+  closeOutProfileAction,
   deleteDraftAction,
   newVersionAction,
   removeCoverageAction,
@@ -51,7 +53,8 @@ export async function generateMetadata({ params }: PageProps<"/appetite/[id]">) 
   }
 }
 
-export default async function AppetiteProfilePage({ params }: PageProps<"/appetite/[id]">) {
+export default async function AppetiteProfilePage({ params, searchParams }: PageProps<"/appetite/[id]">) {
+  const closeOutOpen = (await searchParams).closeout === "1";
   const ctx = await requireAuth();
   const { id } = await params;
   let p;
@@ -68,6 +71,16 @@ export default async function AppetiteProfilePage({ params }: PageProps<"/appeti
     listSources(ctx, "APPETITE_PROFILE", id),
   ]);
   const write = can(ctx, "appetite.write");
+  const approver = write && can(ctx, "appetite.approve") && can(ctx, "change_request.review");
+  const canApproveOwn = approver && ctx.roles.includes("ADMIN");
+  // What a draft still needs before it can be approved (shown as a checklist).
+  const ready = [
+    { ok: !!p.ownerUserId, text: "An owner", fix: "set it in Draft settings" },
+    { ok: !!p.effectiveFrom, text: "An effective date", fix: "set it in Draft settings" },
+    { ok: p.rules.length > 0, text: `At least one rule (${p.rules.length} so far)`, fix: "add one under Rules" },
+    { ok: sources.length > 0, text: "A source", fix: "add one under Sources" },
+  ];
+  const allReady = ready.every((r) => r.ok);
   const draft = p.status === "DRAFT";
   const path = `/appetite/${id}`;
   const cp = p.carrierProduct;
@@ -111,6 +124,16 @@ export default async function AppetiteProfilePage({ params }: PageProps<"/appeti
         {write && (p.status === "APPROVED" || p.status === "RETIRED") && (
           <ActionForm action={newVersionAction.bind(null, id)} submitLabel="Start a new version" variant="secondary" showOk={false}>{null}</ActionForm>
         )}
+        {approver && p.status === "APPROVED" && (
+          <details id="close-out" open={closeOutOpen} className="rounded-xl border border-zinc-200 p-3 dark:border-zinc-700">
+            <summary className="cursor-pointer text-sm font-medium">Close out this version</summary>
+            <p className="mt-2 text-sm">It ends on the date below and is retired: the Market Finder stops using it. Use this when the carrier stops writing this product, or to end an appetite that&apos;s no longer right.</p>
+            <ActionForm action={closeOutProfileAction.bind(null, id, cp.writingCompany.id)} submitLabel="Close out" variant="danger" confirm="Close out this appetite version? The Market Finder will stop using it." className="mt-2 flex flex-wrap items-end gap-2">
+              <Field label="Ends on" htmlFor="coDate" hint="Today or earlier"><input id="coDate" name="effectiveTo" type="date" defaultValue={new Date().toISOString().slice(0, 10)} className={inputClass} /></Field>
+              <Field label="Reason" htmlFor="coReason"><input id="coReason" name="reason" required minLength={10} maxLength={2000} className={`${inputClass} min-w-72`} /></Field>
+            </ActionForm>
+          </details>
+        )}
       </Section>
 
       {draft && write && (
@@ -125,13 +148,39 @@ export default async function AppetiteProfilePage({ params }: PageProps<"/appeti
               </select>
             </Field>
           </ActionForm>
+        </Section>
+      )}
+
+      {draft && write && (
+        <Section title="Approve this version" id="approve">
+          <ul className="flex flex-col gap-1 text-sm">
+            {ready.map((r) => (
+              <li key={r.text} className="flex items-center gap-2">
+                <span aria-hidden="true" className={r.ok ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}>{r.ok ? "✓" : "✗"}</span>
+                <span>{r.text}{!r.ok && <span className="text-zinc-600 dark:text-zinc-400"> (missing: {r.fix})</span>}</span>
+                <span className="sr-only">{r.ok ? "done" : "missing"}</span>
+              </li>
+            ))}
+          </ul>
+          {canApproveOwn && (
+            <ActionForm action={approveProfileNowAction.bind(null, id)} submitLabel="Approve now" pendingLabel="Approving…" className="flex flex-wrap items-end gap-2">
+              <Field label="Reason (recorded with the approval)" htmlFor="apReason" hint="At least 10 characters. Pick a suggestion or type your own.">
+                <input id="apReason" name="rationale" required minLength={10} maxLength={2000} list="apReasons" className={`${inputClass} min-w-72`} />
+              </Field>
+              <datalist id="apReasons">
+                <option value="Reviewed the rules against the carrier's guide" />
+                <option value="Checked the AI draft page by page against the guide" />
+                <option value="Confirmed with the carrier's underwriter" />
+              </datalist>
+            </ActionForm>
+          )}
           <div className="flex flex-wrap gap-3">
-            <ActionForm action={submitProfileAction.bind(null, id)} submitLabel="Submit for approval" className="flex flex-wrap items-end gap-2">
+            <ActionForm action={submitProfileAction.bind(null, id)} submitLabel={canApproveOwn ? "Send to someone else to approve" : "Submit for approval"} variant={canApproveOwn ? "secondary" : "primary"} className="flex flex-wrap items-end gap-2">
               <Field label="Note for the reviewer (optional)" htmlFor="subNote"><input id="subNote" name="note" maxLength={1000} className={`${inputClass} min-w-64`} /></Field>
             </ActionForm>
             <ActionForm action={deleteDraftAction.bind(null, id, cp.writingCompany.id)} submitLabel="Delete draft" variant="danger" showOk={false} confirm="Delete this draft and its rules?">{null}</ActionForm>
           </div>
-          <p className="text-xs text-zinc-600 dark:text-zinc-400">To submit: an owner, an effective date, at least one rule, and at least one source.</p>
+          {!allReady && <p className="text-xs text-zinc-600 dark:text-zinc-400">Finish the items marked ✗ first.</p>}
         </Section>
       )}
       {p.status === "PENDING" && p.pending?.proposedById === ctx.userId && (

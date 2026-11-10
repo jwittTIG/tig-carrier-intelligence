@@ -6,7 +6,7 @@ import { can } from "@/server/auth/context";
 import { authDriver, requireAuth } from "@/server/auth/session";
 import { devSignOut } from "@/server/auth/dev";
 import { unreadCount } from "@/server/services/notifications";
-import { ACCENT_COOKIE, DEFAULT_ACCENT, normalizeHex } from "@/lib/theme";
+import { ACCENT_COOKIE, DEFAULT_ACCENT, MODE_COOKIE, modeOf, normalizeHex } from "@/lib/theme";
 import { Icon } from "@/components/icons";
 import { AccentPicker, SidebarNav, type NavItem } from "@/components/sidebar";
 import { SETUP_PATHS, setupItems } from "./setup/items";
@@ -15,7 +15,9 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   const ctx = await requireAuth();
   const dev = authDriver() === "dev";
   const unread = await unreadCount(ctx);
-  const accent = normalizeHex((await cookies()).get(ACCENT_COOKIE)?.value) ?? DEFAULT_ACCENT;
+  const jar = await cookies();
+  const accent = normalizeHex(jar.get(ACCENT_COOKIE)?.value) ?? DEFAULT_ACCENT;
+  const mode = modeOf(jar.get(MODE_COOKIE)?.value);
   async function signOut() {
     "use server";
     await devSignOut();
@@ -50,7 +52,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         <SidebarNav items={items} />
       </nav>
       <div className="mt-auto flex flex-col gap-2 pt-4">
-        <AccentPicker current={accent} />
+        <AccentPicker current={accent} mode={mode} />
         {dev ? <form action={signOut}>{signOutButton}</form> : <SignOutButton>{signOutButton}</SignOutButton>}
       </div>
     </>
@@ -63,7 +65,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           Development sign-in (AUTH_DRIVER=dev). Not for real data.
         </div>
       )}
-      <div className="flex flex-1 flex-col gap-4 bg-zinc-100 p-3 lg:flex-row lg:p-4 dark:bg-zinc-950">
+      <div className="flex flex-1 flex-col gap-4 bg-white p-3 lg:flex-row lg:p-4 dark:bg-zinc-950">
         <aside className="flex flex-col gap-4 rounded-3xl bg-blue-600 p-4 text-white shadow-md lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:w-64 lg:shrink-0 lg:overflow-y-auto dark:bg-blue-900">
           <Link href="/dashboard" className="text-base font-semibold tracking-tight text-white">TIG Carrier Intelligence</Link>
           <div className="flex items-center gap-3 lg:flex-col lg:gap-2 lg:py-2">

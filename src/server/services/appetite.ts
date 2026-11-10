@@ -530,3 +530,28 @@ export async function verifyProfile(ctx: AuthContext, id: string, input: unknown
 }
 
 export { typedValueFor };
+
+const closeOutSchema = z.object({ effectiveTo: optionalDate, reason: requiredText(2000) });
+
+/**
+ * Closes out an approved appetite version (Josh, 2026-11-10): it ends on the given date (today
+ * by default) and is retired, so the Market Finder stops using it. Needs appetite approval
+ * permission and a reason, like an approval (D14).
+ */
+export async function closeOutProfile(ctx: AuthContext, id: string, input: unknown) {
+  assertCan(ctx, "appetite.write");
+  assertCan(ctx, "appetite.approve");
+  const { effectiveTo, reason } = parse(closeOutSchema, input);
+  if (reason.trim().length < 10) throw new ValidationError("Say why it's being closed out (at least 10 characters).");
+  const today = new Date(new Date().toISOString().slice(0, 10));
+  const end = effectiveTo ?? today;
+  if (end > today) throw new ValidationError("Pick today or an earlier date. To end it in the future, start a new version with an end date.");
+  return prisma.$transaction(async (tx) => {
+    const p = await findProfile(tx, id);
+    if (p.status !== "APPROVED") throw new ConflictError(p.status === "DRAFT" ? "This is a draft: delete it instead." : "Only an approved version can be closed out.");
+    if (p.effectiveFrom && end < p.effectiveFrom) throw new ValidationError("The end date can't be before it took effect.");
+    const after = await tx.appetiteProfile.update({ where: { id }, data: { status: "RETIRED", effectiveTo: end } });
+    await recordAudit(tx, ctx, { action: "appetite.profile.close_out", entityType: "appetite_profile", entityId: id, before: p, after: { ...after, reason: reason.trim() } });
+    return after;
+  });
+}

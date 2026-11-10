@@ -22,8 +22,8 @@ import {
   verifyContactAction,
 } from "../actions";
 import { ContactFields } from "../contact-fields";
+import { CONTACT_ROLES, contactRoleLabel } from "@/lib/contact-roles";
 
-const ROLES = ["UNDERWRITER", "MARKETING_REP", "REGIONAL_MANAGER", "PRODUCT_MANAGER", "SERVICE", "CLAIMS", "OTHER"];
 const ACTIVITY_TYPES = ["NOTE", "CALL", "MEETING", "EMAIL", "VISIT", "OTHER"];
 
 export async function generateMetadata({ params }: PageProps<"/contacts/[id]">) {
@@ -103,7 +103,7 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
           {contact.assignments.map((a) => (
             <li key={a.id} className={`flex flex-col gap-2 rounded border p-3 text-sm dark:border-zinc-700 ${a.current ? "border-zinc-200" : "border-dashed border-zinc-300 text-zinc-600 dark:text-zinc-400"}`}>
               <div className="flex flex-wrap items-center gap-2">
-                <strong>{label(a.role)}</strong>
+                <strong>{contactRoleLabel(a.role)}</strong>
                 {a.title && <span>({a.title})</span>}
                 <span>at</span>
                 <Link href={`/carriers/${a.organization.id}`} className="text-blue-800 hover:underline dark:text-blue-300">{a.organization.displayName}</Link>
@@ -166,7 +166,7 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
             </Field>
             <Field label="Role" htmlFor="aRole">
               <select id="aRole" name="role" required className={inputClass}>
-                {ROLES.map((r) => <option key={r} value={r}>{label(r)}</option>)}
+                {CONTACT_ROLES.map((r) => <option key={r.code} value={r.code}>{r.label}</option>)}
               </select>
             </Field>
             <Field label="Territory" htmlFor="aTerr" hint="Choose United States for nationwide">

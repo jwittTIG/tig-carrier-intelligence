@@ -4,11 +4,11 @@ import { requireAuth } from "@/server/auth/session";
 import { listCarrierOptions, listLines } from "@/server/services/carriers";
 import { listContacts, listTerritories } from "@/server/services/contacts";
 import { FreshnessBadge } from "@/components/freshness";
-import { ButtonLink, inputClass, label } from "@/components/ui";
+import { ButtonLink, inputClass } from "@/components/ui";
+import { CONTACT_ROLES, contactRoleLabel } from "@/lib/contact-roles";
 
 export const metadata = { title: "Contacts" };
 
-const ROLES = ["UNDERWRITER", "MARKETING_REP", "REGIONAL_MANAGER", "PRODUCT_MANAGER", "SERVICE", "CLAIMS", "OTHER"];
 
 export default async function ContactsPage({ searchParams }: PageProps<"/contacts">) {
   const ctx = await requireAuth();
@@ -58,7 +58,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
           Role
           <select name="role" defaultValue={params.role ?? ""} className={inputClass}>
             <option value="">Any</option>
-            {ROLES.map((r) => <option key={r} value={r}>{label(r)}</option>)}
+            {CONTACT_ROLES.map((r) => <option key={r.code} value={r.code}>{r.label}</option>)}
           </select>
         </label>
         <label className="flex flex-col gap-1 text-sm">
@@ -111,7 +111,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
                   <ul className="flex flex-col gap-0.5">
                     {c.assignments.map((a) => (
                       <li key={a.id}>
-                        {label(a.role)} · {a.organization.displayName}
+                        {contactRoleLabel(a.role)} · {a.organization.displayName}
                         {a.territory && ` · ${a.territory.name}`}
                         {a.specialties.length > 0 && <span className="text-zinc-600 dark:text-zinc-400"> · {a.specialties.map((s) => s.product.name).join(", ")}</span>}
                       </li>

@@ -10,6 +10,7 @@ import { optionalId, optionalText, parse } from "@/server/validation";
 import { allowedValuesOf } from "./appetite";
 import { resolveIndustry, type IndustryChoice } from "./industries";
 import { SETTING, textSetting } from "./settings";
+import { MARKET_CONTACT_ROLES } from "@/lib/contact-roles";
 
 /**
  * Market Finder (PRD screen 4) with risk matching (M7, DECISIONS D21). Filters APPROVED
@@ -193,7 +194,7 @@ export async function findMarkets(ctx: AuthContext, input: MarketFilters) {
     ? await prisma.contactAssignment.findMany({
         where: {
           organizationId: { in: orgIds },
-          role: { in: ["UNDERWRITER", "MARKETING_REP"] },
+          role: { in: MARKET_CONTACT_ROLES },
           contact: { archivedAt: null, status: "ACTIVE" },
           AND: [
             { OR: [{ effectiveFrom: null }, { effectiveFrom: { lte: today } }] },

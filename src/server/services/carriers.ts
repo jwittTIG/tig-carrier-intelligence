@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { Prisma } from "@/generated/prisma/client";
 import {
@@ -12,6 +13,8 @@ import { recordAudit } from "@/server/audit";
 import { assertCan, type AuthContext } from "@/server/auth/context";
 import { prisma } from "@/server/db/client";
 import { ConflictError, NotFoundError, ValidationError } from "@/server/errors";
+import { SIGNED_URL_TTL_MS, storage } from "@/server/storage";
+import { inspectUpload, scanUpload } from "@/server/storage/inspect";
 import { optionalDate, optionalId, optionalText, optionalUrl, parse, requiredText } from "@/server/validation";
 
 /**
@@ -496,4 +499,43 @@ function isUniqueViolation(e: unknown) {
   if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") return true;
   const cause = (e as { cause?: { code?: string }; meta?: { driverAdapterError?: { cause?: { originalCode?: string } } } }) ?? {};
   return cause.cause?.code === "23505" || cause.meta?.driverAdapterError?.cause?.originalCode === "23505";
+}
+
+// ───────────────────────────── Logo ─────────────────────────────
+
+export const LOGO_MAX_BYTES = 2 * 1024 * 1024;
+const LOGO_TYPES = ["image/png", "image/jpeg"];
+
+/** Stores a carrier's logo (PNG or JPEG, checked by content, at most 2 MB) in private storage. */
+export async function setCarrierLogo(ctx: AuthContext, id: string, file: { name: string; bytes: Uint8Array }) {
+  assertCan(ctx, "carrier.write");
+  const before = await findCarrier(prisma, id);
+  const inspected = await inspectUpload(file.name, file.bytes, LOGO_MAX_BYTES);
+  if (!inspected.ok) throw new ValidationError(inspected.reason);
+  if (!LOGO_TYPES.includes(inspected.mimeType)) throw new ValidationError("A logo must be a PNG or JPEG image.");
+  if (!(await scanUpload(file.bytes)).clean) throw new ValidationError("The file didn't pass the malware check.");
+  const key = `logos/${id}/${randomUUID()}`;
+  await storage().put(key, file.bytes, inspected.mimeType);
+  return prisma.$transaction(async (tx) => {
+    const after = await tx.organization.update({ where: { id }, data: { logoObjectKey: key, logoMimeType: inspected.mimeType } });
+    await recordAudit(tx, ctx, { action: "carrier.logo.set", entityType: "organization", entityId: id, before: { logoObjectKey: before.logoObjectKey }, after: { logoObjectKey: key, logoMimeType: inspected.mimeType, sha256: inspected.sha256, sizeBytes: inspected.sizeBytes } });
+    return after;
+  });
+}
+
+export async function removeCarrierLogo(ctx: AuthContext, id: string) {
+  assertCan(ctx, "carrier.write");
+  const before = await findCarrier(prisma, id);
+  if (!before.logoObjectKey) return;
+  await prisma.$transaction(async (tx) => {
+    await tx.organization.update({ where: { id }, data: { logoObjectKey: null, logoMimeType: null } });
+    await recordAudit(tx, ctx, { action: "carrier.logo.remove", entityType: "organization", entityId: id, before: { logoObjectKey: before.logoObjectKey } });
+  });
+}
+
+/** A short-lived link to show the logo, after a read check. Null when there's none. */
+export async function carrierLogoUrl(ctx: AuthContext, carrier: { id: string; logoObjectKey: string | null; logoMimeType: string | null }) {
+  assertCan(ctx, "carrier.read");
+  if (!carrier.logoObjectKey || !carrier.logoMimeType) return null;
+  return storage().signedUrl(carrier.logoObjectKey, { expiresAt: new Date(Date.now() + SIGNED_URL_TTL_MS), filename: `logo.${carrier.logoMimeType === "image/png" ? "png" : "jpg"}`, contentType: carrier.logoMimeType, inline: true });
 }

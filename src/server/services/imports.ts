@@ -11,6 +11,7 @@ import { SIGNED_URL_TTL_MS, storage } from "@/server/storage";
 import { inspectUpload, scanUpload } from "@/server/storage/inspect";
 import { parse } from "@/server/validation";
 import { numberSetting } from "./settings";
+import { CONTACT_ROLES } from "@/lib/contact-roles";
 
 /**
  * CSV import (PRD workflow F, P0-10): upload → map columns → preview → commit in one
@@ -63,9 +64,15 @@ const ORG_TYPES: Record<string, OrganizationType> = {
   "program administrator": "PROGRAM_ADMIN", program: "PROGRAM_ADMIN", "program admin": "PROGRAM_ADMIN",
   "general agency": "GENERAL_AGENCY", ga: "GENERAL_AGENCY", mga_ga: "GENERAL_AGENCY", other: "OTHER",
 };
+// Every contact type by its label and code (lower case), plus common shorthand.
 const ROLES: Record<string, ContactRole> = {
+  ...Object.fromEntries(CONTACT_ROLES.flatMap((r) => [[r.label.toLowerCase(), r.code], [r.code.toLowerCase().replace(/_/g, " "), r.code]])),
   underwriter: "UNDERWRITER", uw: "UNDERWRITER", "marketing rep": "MARKETING_REP", marketing: "MARKETING_REP", "territory manager": "MARKETING_REP",
-  "regional manager": "REGIONAL_MANAGER", "product manager": "PRODUCT_MANAGER", service: "SERVICE", claims: "CLAIMS", other: "OTHER",
+  "pl underwriter": "PL_UNDERWRITER", "personal lines underwriter": "PL_UNDERWRITER", "cl underwriter": "CL_UNDERWRITER", "commercial lines underwriter": "CL_UNDERWRITER",
+  "middle market underwriter": "MIDDLE_MARKET_UNDERWRITER", "marine underwriter": "MARINE_UNDERWRITER", "inland marine underwriter": "MARINE_UNDERWRITER",
+  "underwriting manager": "UNDERWRITING_MANAGER", adjuster: "CLAIMS_ADJUSTER", "claims adjuster": "CLAIMS_ADJUSTER", "claims manager": "CLAIMS_MANAGER",
+  "loss control": "LOSS_CONTROL", "risk engineer": "LOSS_CONTROL", auditor: "PREMIUM_AUDITOR", "premium auditor": "PREMIUM_AUDITOR", billing: "BILLING",
+  "regional manager": "REGIONAL_MANAGER", "branch manager": "BRANCH_MANAGER", "product manager": "PRODUCT_MANAGER", service: "SERVICE", claims: "CLAIMS", other: "OTHER",
 };
 
 export function suggestMapping(target: ImportTarget, headers: string[]): Record<string, string> {
@@ -196,7 +203,7 @@ async function buildPreview(target: ImportTarget, map: Mapping, rows: string[][]
     const orgId = values.carrierName ? byName.get(normalizeName(values.carrierName)) : undefined;
     if (values.carrierName && !orgId) msgs.push(`Carrier "${values.carrierName}" isn't in the directory. Import or add it first.`);
     if ((values.role || values.state || values.title) && !values.carrierName) msgs.push("Role, title and territory need a carrier.");
-    if (values.role && !ROLES[values.role.toLowerCase()]) msgs.push(`Unknown role "${values.role}" (use Underwriter, Marketing rep, Regional manager, Product manager, Service, Claims or Other).`);
+    if (values.role && !ROLES[values.role.toLowerCase()]) msgs.push(`Unknown role "${values.role}" (use a contact type such as Marketing rep, PL underwriter, CL underwriter, Claims adjuster or Other).`);
     if (values.state && !stateOk(values.state)) msgs.push(`Unknown territory "${values.state}" (use a state code, a state name, or US).`);
     if (msgs.length) return out.push({ row: i + 2, action: "ERROR", messages: msgs, values });
     const key = values.email ? values.email.toLowerCase() : `${values.firstName} ${values.lastName}|${orgId ?? ""}`.toLowerCase();

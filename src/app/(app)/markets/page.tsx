@@ -8,6 +8,7 @@ import { findMarkets, riskAttributesFor } from "@/server/services/market";
 import { OutcomeBadge } from "@/components/m4";
 import { Badge, Section, fmtDate, inputClass, label } from "@/components/ui";
 import { ConditionList, RiskAttributeInputs, firstValues } from "./risk";
+import { contactRoleLabel } from "@/lib/contact-roles";
 
 export const metadata = { title: "Market Finder" };
 
@@ -171,7 +172,7 @@ export default async function MarketsPage({ searchParams }: PageProps<"/markets"
                       <div className="text-xs">
                         Contacts:{" "}
                         {r.contacts.map((c, i) => (
-                          <span key={c.id}>{i > 0 && "; "}<Link href={`/contacts/${c.id}`} className="hover:underline">{c.name}</Link> ({label(c.role)}){c.email && ` ${c.email}`}{c.phone && ` ${c.phone}`}</span>
+                          <span key={c.id}>{i > 0 && "; "}<Link href={`/contacts/${c.id}`} className="hover:underline">{c.name}</Link> ({contactRoleLabel(c.role)}){c.email && ` ${c.email}`}{c.phone && ` ${c.phone}`}</span>
                         ))}
                       </div>
                     )}
