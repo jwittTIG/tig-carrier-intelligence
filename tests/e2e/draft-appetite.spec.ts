@@ -78,4 +78,34 @@ test("draft appetite from a guide, review it, approve it, and find markets with 
   await page.getByRole("button", { name: "Find markets" }).click();
   const accepted = page.locator("section").filter({ has: page.getByRole("heading", { name: /^Accepted/ }) });
   await expect(accepted.getByRole("link", { name, exact: true })).toBeVisible();
+
+  // Drafted once: the Appetite tab shows where it stands, with no second "Draft" button (N24).
+  await page.goto(`${carrierUrl}?tab=appetite`);
+  const fromGuides = page.locator("section").filter({ has: page.getByRole("heading", { name: "Appetite from guides (AI)" }) });
+  await expect(fromGuides.getByText("Drafted from v1")).toBeVisible();
+  await expect(fromGuides.getByRole("link", { name: "Appetite v1 (Approved)" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Draft appetite from this guide" })).toHaveCount(0);
+
+  // A new version of the guide is read automatically and replaces what v1 drafted.
+  await fromGuides.getByRole("link", { name: `${name} HO guide v1` }).click();
+  const v2 = [
+    "EFFECTIVE: 2027-01-01",
+    "STATES: TN",
+    "ATTR: roof_covering | Roof covering | ENUM | Asphalt shingle,Metal,Wood shake | p8 | Roof covering of wood shakes",
+    "RULE: PROHIBITED | roof_covering IN Wood shake,Metal | p8 | Wood shake and metal roofs are ineligible.",
+  ].map((l) => `% ${l}`).join("\n");
+  await page.locator("#verFile").setInputFiles({ name: "guide-v2.pdf", mimeType: "application/pdf", buffer: Buffer.from(`%PDF-1.4\n${v2}\n%%EOF\n`) });
+  await page.getByRole("button", { name: "Upload new version" }).click();
+  await expect(page.getByText(/Version 2 uploaded\. AI is reading it to update the appetite/)).toBeVisible();
+  await expect(async () => {
+    await page.goto(`${carrierUrl}?tab=appetite`);
+    await expect(fromGuides.getByText("Ready for review")).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 30_000 });
+  await fromGuides.getByRole("link", { name: "Review the AI draft" }).click();
+  await expect(page.getByText("Wood shake and metal roofs are ineligible.").first()).toBeVisible();
+  await page.getByRole("button", { name: "Create draft from selected" }).click();
+  await expect(page.getByText(/This guide replaced what the AI drafted from the earlier guide: 2 rules/)).toBeVisible();
+  await page.goto(`${carrierUrl}?tab=appetite`);
+  await expect(fromGuides.getByText("Drafted from v2")).toBeVisible();
+  await expect(fromGuides.getByRole("link", { name: "Appetite v2 (Draft)" })).toBeVisible();
 });

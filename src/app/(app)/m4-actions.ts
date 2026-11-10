@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { requireAuth } from "@/server/auth/session";
 import { runAction, type ActionState } from "@/server/actions/run";
 import { ValidationError } from "@/server/errors";
@@ -10,6 +11,7 @@ import * as app from "@/server/services/appetite";
 import { decide } from "@/server/services/approvals";
 import * as com from "@/server/services/commissions";
 import * as docs from "@/server/services/documents";
+import { queueAutoDraft, runQueuedExtraction } from "@/server/services/extractions";
 import { addSource } from "@/server/services/sources";
 
 /** Server actions for Milestone 4 screens: documents, appetite, commissions, approvals. */
@@ -37,8 +39,15 @@ export async function uploadDocumentAction(returnTo: string | null, _s: ActionSt
 
 export async function uploadVersionAction(documentId: string, _s: ActionState, form: FormData): Promise<ActionState> {
   return runAction(async () => {
-    const v = await docs.uploadVersion(await requireAuth(), documentId, await fileFrom(form));
+    const ctx = await requireAuth();
+    const v = await docs.uploadVersion(ctx, documentId, await fileFrom(form));
     revalidatePath(`/documents/${documentId}`);
+    // A guide that already has drafted appetite: the new version replaces it, read in the background (N24).
+    const queued = await queueAutoDraft(ctx, v.id);
+    if (queued) {
+      after(() => runQueuedExtraction(ctx, queued));
+      return `Version ${v.versionNumber} uploaded. AI is reading it to update the appetite (a few minutes); the carrier’s Appetite tab shows when it’s ready for review.`;
+    }
     return `Version ${v.versionNumber} uploaded.`;
   });
 }

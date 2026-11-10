@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { can } from "@/server/auth/context";
 import { requireAuth } from "@/server/auth/session";
 import { NotFoundError } from "@/server/errors";
-import { getExtraction } from "@/server/services/extractions";
+import { getExtraction, isStalled } from "@/server/services/extractions";
 import { ActionForm } from "@/components/action-form";
 import { OutcomeBadge } from "@/components/m4";
 import { Badge, Section, fmtDateTime, label } from "@/components/ui";
@@ -50,7 +50,8 @@ export default async function ExtractionPage({ params }: PageProps<"/extractions
   }
   const p = ex.proposals;
   const vid = ex.documentVersionId;
-  const result = ex.result as { profileId: string; added: { riskDetails: number; rules: number; limits: number; requirements: number }; skipped: { kind: string; summary: string; reason: string }[] } | null;
+  const result = ex.result as { profileId: string; added: { riskDetails: number; rules: number; limits: number; requirements: number }; skipped: { kind: string; summary: string; reason: string }[]; replaced?: { rules: number; limits: number; requirements: number }; keptHandRules?: number } | null;
+  const replacedAny = !!result?.replaced && result.replaced.rules + result.replaced.limits + result.replaced.requirements > 0;
   const write = can(ctx, "appetite.write") && ex.status === "READY";
   const labels = new Map([...ex.carrierProduct.product.attributeDefinitions.map((a) => [a.key, a.label] as const), ...(p?.attributes ?? []).map((a) => [a.key, a.label] as const)]);
 
@@ -63,6 +64,16 @@ export default async function ExtractionPage({ params }: PageProps<"/extractions
         {ex.costUsd !== null && <> · estimated cost ${Number(ex.costUsd).toFixed(2)}</>}
       </p>
 
+      {ex.status === "RUNNING" && !isStalled(ex) && (
+        <p role="status" className="rounded-xl border border-blue-300 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-100">
+          AI is reading this guide version (started {fmtDateTime(ex.createdAt)}). This takes a few minutes. <Link href={`/extractions/${ex.id}`} className="font-medium underline">Refresh</Link> to see the proposals.
+        </p>
+      )}
+      {isStalled(ex) && (
+        <p role="alert" className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:bg-red-950 dark:text-red-100">
+          This read never finished (the app may have restarted). Use &quot;Read it again&quot; on the carrier&apos;s Appetite tab.
+        </p>
+      )}
       {ex.status === "FAILED" && <p role="alert" className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:bg-red-950 dark:text-red-100">The AI couldn&apos;t read this guide: {ex.error}</p>}
 
       {ex.status === "APPLIED" && result && (
@@ -71,6 +82,12 @@ export default async function ExtractionPage({ params }: PageProps<"/extractions
             Added {result.added.rules} rules, {result.added.riskDetails} new risk details, {result.added.limits} limits and {result.added.requirements} requirements.{" "}
             <Link href={`/appetite/${result.profileId}`} className="font-medium text-blue-800 hover:underline dark:text-blue-300">Open the appetite draft</Link> to edit it and submit it for approval.
           </p>
+          {replacedAny && result.replaced && (
+            <p className="text-sm">
+              This guide replaced what the AI drafted from the earlier guide: {result.replaced.rules} rules, {result.replaced.limits} limits and {result.replaced.requirements} requirements removed
+              {result.keptHandRules ? `; ${result.keptHandRules} hand-added rules kept` : ""}. The approved version stays in use until this draft is approved.
+            </p>
+          )}
           {result.skipped.length > 0 && (
             <>
               <h3 className="text-sm font-medium">Skipped ({result.skipped.length})</h3>

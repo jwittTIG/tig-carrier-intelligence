@@ -5,6 +5,16 @@
 
 Milestone 8 (Ask the guides) works with Josh's key (two real questions at $1.76 and $1.77 with the whole-PDF read).
 
+## N24: one AI draft per guide; new versions replace it (built 2026-11-10)
+Josh didn't like the "Draft appetite from a guide" section still offering to draft a guide already drafted, and wants each new upload to replace the previous one for that line. He chose: start the read automatically; keep hand-added rules.
+- Carrier Appetite tab, renamed "Appetite from guides (AI)": one line per guide with its status (AI is reading / Ready for review / Drafted from vN, with the appetite version / Couldn't read, with "Read it again"). The draft form shows only for a guide never read. Earlier reads are folded under "Earlier AI reads". The guide's own page shows the same line.
+- Uploading a new version of a guide already drafted starts an AI read of it in the background for the same product (about $2 for a long guide). The upload message says so.
+- Applying it replaces what the earlier version drafted: AI rules from other versions are dropped (from an open draft, or a new draft version starts with only the approved version's hand-added rules); AI limits and requirements from other versions are removed when the new read brings new ones. The approved version stays in use until the new draft is approved. The review page says what was replaced.
+- If the app restarts while a read is running, it shows as stopped after 20 minutes with "Read it again".
+- `npm run check`'s production build wrote into `.next`, the dev server's folder, which most likely caused the sign-in reload loop on 2026-11-10. Builds while the dev server runs should use `NEXT_DIST_DIR=.next-build` (ignored by git).
+- Tested (ran and saw pass): 3 new integration tests (background read for the same product and replacing on apply, keeping hand rules and the approved version; replacing in an open draft; nothing queued when never drafted, without appetite.write, with AI off or restricted; stopped reads); the existing extraction tests; the Travelers Appetite tab in the browser.
+- Not tested: a real background read with the Claude API (it costs about $2; happens the next time a new guide version is uploaded).
+
 ## N23: cheaper Ask the guides (built 2026-11-09; real AI call not run yet)
 Josh: "We've got to get that cost down from $1.77." He chose "B: relevant pages, Haiku".
 - Each guide version's page text is read once from the PDF (`unpdf`) and saved in `document_pages`; later questions don't reread the file.

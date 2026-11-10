@@ -6,9 +6,9 @@ import { channelLabel, listAgencyEntities, listChannelsForOrg } from "@/server/s
 import { fractionToPercent, listAgreementsForCarrier } from "@/server/services/commissions";
 import { listCitableVersions, listDocuments } from "@/server/services/documents";
 import { listCarrierUpdates } from "@/server/services/inbox-options";
-import { listExtractions } from "@/server/services/extractions";
+import { guideAppetite } from "@/server/services/extractions";
 import { aiStatus, listGuides } from "@/server/services/guides";
-import { DraftFromGuide } from "../../extractions/draft-from-guide";
+import { GuideAppetiteRow } from "../../extractions/guide-appetite";
 import { ActionForm } from "@/components/action-form";
 import { StatusBadge } from "@/components/m4";
 import { Badge, Field, Section, fmtDate, fmtDateTime, inputClass, label } from "@/components/ui";
@@ -21,33 +21,23 @@ export async function AppetiteTab({ carrier }: { carrier: Carrier }) {
   const ctx = await requireAuth();
   const profiles = await listProfilesForCarrier(ctx, carrier.id);
   const products = carrier.carrierProducts.filter((p) => !p.archivedAt);
-  const aiOn = aiStatus().mode !== "off" && can(ctx, "appetite.write") && can(ctx, "document.read");
-  const [guides, drafts] = await Promise.all([aiOn ? listGuides(ctx, carrier.id) : Promise.resolve([]), listExtractions(ctx, { carrierId: carrier.id })]);
+  const canRead = can(ctx, "document.read");
+  const canWrite = aiStatus().mode !== "off" && can(ctx, "appetite.write") && canRead;
+  const guides = canRead ? (await listGuides(ctx, carrier.id)).filter((g) => g.readable) : [];
+  const states = guides.length ? await guideAppetite(ctx, guides) : new Map();
   const targets = products.map((p) => ({ id: p.id, label: p.product.name }));
   return (
     <>
-    {(aiOn || drafts.length > 0) && (
-      <Section title="Draft appetite from a guide (AI)">
-        {aiOn && guides.filter((g) => g.readable).length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">Upload a PDF appetite guide or underwriting guidelines on the Documents tab first.</p>}
-        {aiOn && (
-          <ul className="flex flex-col gap-3">
-            {guides.filter((g) => g.readable).map((g) => (
-              <li key={g.documentVersionId} className="flex flex-col gap-1">
-                <Link href={`/documents/${g.documentId}`} className="text-sm font-medium text-blue-800 hover:underline dark:text-blue-300">{g.title} v{g.versionNumber}</Link>
-                <DraftFromGuide documentVersionId={g.documentVersionId} targets={targets} compact />
-              </li>
-            ))}
-          </ul>
-        )}
-        {drafts.length > 0 && (
+    {(guides.length > 0 || canWrite) && (
+      <Section title="Appetite from guides (AI)">
+        {guides.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">Upload a PDF appetite guide or underwriting guidelines on the Documents tab first.</p>}
+        {guides.length > 0 && (
           <>
-            <h3 className="text-sm font-medium">AI drafts</h3>
-            <ul className="flex flex-col gap-1 text-sm">
-              {drafts.map((d) => (
-                <li key={d.id}>
-                  <Link href={`/extractions/${d.id}`} className="text-blue-800 hover:underline dark:text-blue-300">{d.carrierProduct.product.name} from {d.documentVersion.document.title} v{d.documentVersion.versionNumber}</Link>{" "}
-                  <Badge tone={d.status === "APPLIED" ? "good" : d.status === "FAILED" ? "bad" : "warn"}>{d.status === "READY" ? "Waiting for review" : label(d.status)}</Badge>
-                  <span className="text-xs text-zinc-600 dark:text-zinc-400"> · {d.createdBy.name} · {fmtDateTime(d.createdAt)}</span>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400">Each guide is drafted into its product&apos;s appetite once. Upload a new version on the guide&apos;s page and AI reads it automatically; its draft replaces what the earlier version drafted (hand-added rules are kept).</p>
+            <ul className="flex flex-col gap-4">
+              {guides.map((g) => (
+                <li key={g.documentVersionId}>
+                  <GuideAppetiteRow guide={g} state={states.get(g.documentId)} targets={targets} canWrite={canWrite} showTitle />
                 </li>
               ))}
             </ul>

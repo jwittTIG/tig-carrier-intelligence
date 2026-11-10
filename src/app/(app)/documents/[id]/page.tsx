@@ -4,9 +4,9 @@ import { can } from "@/server/auth/context";
 import { requireAuth } from "@/server/auth/session";
 import { ForbiddenError, NotFoundError } from "@/server/errors";
 import { getDocument } from "@/server/services/documents";
-import { draftTargets, listExtractions } from "@/server/services/extractions";
+import { draftTargets, guideAppetite } from "@/server/services/extractions";
 import { aiStatus } from "@/server/services/guides";
-import { DraftFromGuide } from "../../extractions/draft-from-guide";
+import { GuideAppetiteRow } from "../../extractions/guide-appetite";
 import { ActionForm } from "@/components/action-form";
 import { Badge, Field, Section, fmtDateTime, inputClass, label } from "@/components/ui";
 import { archiveDocumentAction, updateDocumentAction, uploadVersionAction } from "../../m4-actions";
@@ -31,10 +31,11 @@ export default async function DocumentPage({ params }: PageProps<"/documents/[id
   const latest = [...doc.versions].sort((a, b) => b.versionNumber - a.versionNumber)[0];
   const isGuide = ["APPETITE_GUIDE", "UNDERWRITING_GUIDELINES"].includes(doc.documentType) && doc.status === "ACTIVE" && doc.classification !== "RESTRICTED" && latest?.mimeType === "application/pdf";
   const canDraft = isGuide && aiStatus().mode !== "off" && can(ctx, "appetite.write");
-  const [targets, drafts] = await Promise.all([
+  const [targets, states] = await Promise.all([
     canDraft ? draftTargets(ctx, doc.id) : Promise.resolve([]),
-    isGuide && can(ctx, "appetite.read") ? listExtractions(ctx, { documentId: doc.id }) : Promise.resolve([]),
+    isGuide && can(ctx, "appetite.read") ? guideAppetite(ctx, [{ documentId: doc.id, documentVersionId: latest.id }]) : Promise.resolve(null),
   ]);
+  const state = states?.get(doc.id);
   return (
     <>
       <Link href="/documents" className="text-sm hover:underline">← Documents</Link>
@@ -52,16 +53,14 @@ export default async function DocumentPage({ params }: PageProps<"/documents/[id
         </p>
       )}
 
-      {(canDraft || drafts.length > 0) && (
-        <Section title="Draft appetite from this guide (AI)">
-          {canDraft && <DraftFromGuide documentVersionId={latest.id} targets={targets.map((t) => ({ id: t.id, label: `${t.writingCompany.displayName}: ${t.product.name}` }))} />}
-          {drafts.length > 0 && (
-            <ul className="flex flex-col gap-1 text-sm">
-              {drafts.map((d) => (
-                <li key={d.id}><Link href={`/extractions/${d.id}`} className="text-blue-800 hover:underline dark:text-blue-300">{d.carrierProduct.product.name}, {fmtDateTime(d.createdAt)}</Link> <Badge tone={d.status === "APPLIED" ? "good" : d.status === "FAILED" ? "bad" : "warn"}>{d.status === "READY" ? "Waiting for review" : label(d.status)}</Badge></li>
-              ))}
-            </ul>
-          )}
+      {(canDraft || (state && state.history.length > 0)) && (
+        <Section title="Appetite from this guide (AI)">
+          <GuideAppetiteRow
+            guide={{ documentId: doc.id, documentVersionId: latest.id, title: doc.title, versionNumber: latest.versionNumber }}
+            state={state}
+            targets={targets.map((t) => ({ id: t.id, label: `${t.writingCompany.displayName}: ${t.product.name}` }))}
+            canWrite={canDraft && can(ctx, "document.read")}
+          />
         </Section>
       )}
 

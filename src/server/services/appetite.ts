@@ -198,6 +198,32 @@ export async function deleteDraft(ctx: AuthContext, id: string) {
   });
 }
 
+type RuleWithLinks = Prisma.AppetiteRuleGetPayload<{ include: { territories: true; industries: true } }>;
+
+/** Copies rules (with their states and industries) onto another profile. Returns the new rule ids. */
+export async function copyRules(tx: Tx, rules: RuleWithLinks[], toProfileId: string): Promise<string[]> {
+  const ids: string[] = [];
+  for (const r of rules) {
+    const row = await tx.appetiteRule.create({
+      data: {
+        profileId: toProfileId,
+        attributeDefinitionId: r.attributeDefinitionId,
+        operator: r.operator,
+        typedValue: r.typedValue ?? Prisma.DbNull,
+        outcome: r.outcome,
+        priority: r.priority,
+        effectiveFrom: r.effectiveFrom,
+        effectiveTo: r.effectiveTo,
+        rationale: r.rationale,
+        territories: { create: r.territories.map((t) => ({ territoryId: t.territoryId })) },
+        industries: { create: r.industries.map((i) => ({ classificationSystem: i.classificationSystem, code: i.code })) },
+      },
+    });
+    ids.push(row.id);
+  }
+  return ids;
+}
+
 /** Copies an approved or retired version into a new DRAFT (sources must be cited again). */
 export async function newVersion(ctx: AuthContext, id: string) {
   assertCan(ctx, "appetite.write");
@@ -211,23 +237,7 @@ export async function newVersion(ctx: AuthContext, id: string) {
     const copy = await tx.appetiteProfile.create({
       data: { carrierProductId: src.carrierProductId, marketChannelId: src.marketChannelId, version, status: "DRAFT", ownerUserId: src.ownerUserId ?? ctx.userId },
     });
-    for (const r of src.rules) {
-      await tx.appetiteRule.create({
-        data: {
-          profileId: copy.id,
-          attributeDefinitionId: r.attributeDefinitionId,
-          operator: r.operator,
-          typedValue: r.typedValue ?? Prisma.DbNull,
-          outcome: r.outcome,
-          priority: r.priority,
-          effectiveFrom: r.effectiveFrom,
-          effectiveTo: r.effectiveTo,
-          rationale: r.rationale,
-          territories: { create: r.territories.map((t) => ({ territoryId: t.territoryId })) },
-          industries: { create: r.industries.map((i) => ({ classificationSystem: i.classificationSystem, code: i.code })) },
-        },
-      });
-    }
+    await copyRules(tx, src.rules, copy.id);
     await recordAudit(tx, ctx, { action: "appetite.profile.new_version", entityType: "appetite_profile", entityId: copy.id, after: { ...copy, copiedFrom: src.id, rules: src.rules.length } });
     return copy;
   });

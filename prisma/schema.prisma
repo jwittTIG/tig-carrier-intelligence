@@ -1307,6 +1307,8 @@ model AiDocumentFile {
 // ───────────────────── AI-drafted appetite (M9, DECISIONS N22) ─────────────────────
 
 enum ExtractionStatus {
+  /// The AI read runs in the background (started by a new guide version upload).
+  RUNNING
   READY
   APPLIED
   FAILED
