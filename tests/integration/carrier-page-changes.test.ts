@@ -4,7 +4,7 @@ import type { AuthContext } from "@/server/auth/context";
 import { ConflictError, ForbiddenError, ValidationError } from "@/server/errors";
 import * as app from "@/server/services/appetite";
 import { approveProfileNow, decide } from "@/server/services/approvals";
-import { addCarrierProduct, addIdentifier, carrierLogoUrl, createCarrier, listProducts, removeCarrierLogo, setCarrierLogo } from "@/server/services/carriers";
+import { addCarrierProduct, addIdentifier, carrierLogoUrl, createCarrier, listPortalLinks, listProducts, removeCarrierLogo, setCarrierLogo } from "@/server/services/carriers";
 import { addContactToCarrier } from "@/server/services/contacts";
 import { addSource } from "@/server/services/sources";
 import { storage } from "@/server/storage";
@@ -126,5 +126,21 @@ describe("closing out an approved appetite version", () => {
     await expect(app.closeOutProfile(admin, p.id, { reason: "Carrier stopped writing this" })).rejects.toThrow(/delete it instead/);
     const writer = await limitedUser(db, ["appetite.read", "appetite.write"]);
     await expect(app.closeOutProfile(writer, p.id, { reason: "Carrier stopped writing this" })).rejects.toBeInstanceOf(ForbiddenError);
+  });
+});
+
+describe("carrier portal links for the Dashboard", () => {
+  it("lists active carriers with a portal site, with their logo link; not archived ones or agencies", async () => {
+    const withPortal = await createCarrier(staff, { legalName: `TEST Portal ${t()} Co`, displayName: `TEST Portal ${t()}`, type: "INSURER", portalUrl: "https://agents.example.invalid/a" });
+    await setCarrierLogo(staff, withPortal.id, { name: "logo.png", bytes: PNG });
+    const without = await carrier();
+    const archived = await createCarrier(staff, { legalName: `TEST Portal ${t()} Co`, displayName: `TEST Portal ${t()}`, type: "INSURER", portalUrl: "https://agents.example.invalid/b" });
+    await db.organization.update({ where: { id: archived.id }, data: { archivedAt: new Date() } });
+    const links = await listPortalLinks(staff);
+    const mine = links.find((l) => l.id === withPortal.id);
+    expect(mine).toMatchObject({ name: withPortal.displayName, portalUrl: "https://agents.example.invalid/a", logoUrl: expect.stringMatching(/^\/api\/v1\/files\?t=/) });
+    expect(links.some((l) => l.id === without.id || l.id === archived.id)).toBe(false);
+    const noRead = await limitedUser(db, ["contact.read"]);
+    await expect(listPortalLinks(noRead)).rejects.toBeInstanceOf(ForbiddenError);
   });
 });

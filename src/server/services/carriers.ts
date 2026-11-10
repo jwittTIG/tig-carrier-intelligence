@@ -539,3 +539,14 @@ export async function carrierLogoUrl(ctx: AuthContext, carrier: { id: string; lo
   if (!carrier.logoObjectKey || !carrier.logoMimeType) return null;
   return storage().signedUrl(carrier.logoObjectKey, { expiresAt: new Date(Date.now() + SIGNED_URL_TTL_MS), filename: `logo.${carrier.logoMimeType === "image/png" ? "png" : "jpg"}`, contentType: carrier.logoMimeType, inline: true });
 }
+
+/** Carriers with a portal site, for the Dashboard's slide-out "Carrier portals" tab. */
+export async function listPortalLinks(ctx: AuthContext) {
+  assertCan(ctx, "carrier.read");
+  const rows = await prisma.organization.findMany({
+    where: { archivedAt: null, type: { not: "AGENCY" }, portalUrl: { not: null } },
+    orderBy: { displayName: "asc" },
+    select: { id: true, displayName: true, portalUrl: true, logoObjectKey: true, logoMimeType: true },
+  });
+  return Promise.all(rows.map(async (r) => ({ id: r.id, name: r.displayName, portalUrl: r.portalUrl!, logoUrl: await carrierLogoUrl(ctx, r) })));
+}

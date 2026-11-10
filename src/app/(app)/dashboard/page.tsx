@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { requireAuth } from "@/server/auth/session";
+import { can } from "@/server/auth/context";
+import { listPortalLinks } from "@/server/services/carriers";
 import { dashboard } from "@/server/services/overview";
+import { PortalDrawer } from "@/components/portal-drawer";
 import { Icon } from "@/components/icons";
 import { Section, fmtDate, fmtDateTime, label } from "@/components/ui";
 
@@ -8,9 +11,10 @@ export const metadata = { title: "Dashboard" };
 
 export default async function DashboardPage() {
   const ctx = await requireAuth();
-  const d = await dashboard(ctx);
+  const [d, portals] = await Promise.all([dashboard(ctx), can(ctx, "carrier.read") ? listPortalLinks(ctx) : Promise.resolve(null)]);
   return (
     <>
+      {portals && <PortalDrawer portals={portals} />}
       <h1 className="text-xl font-semibold">Dashboard</h1>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <Tile href="/approvals" title="Waiting for your review" value={d.pending} icon="approvals" />

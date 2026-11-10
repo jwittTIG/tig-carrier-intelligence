@@ -5,6 +5,11 @@
 
 Milestone 8 (Ask the guides) works with Josh's key (two real questions at $1.76 and $1.77 with the whole-PDF read).
 
+## Dashboard: slide-out carrier portals tab (built 2026-11-10)
+Josh: a tab on the Dashboard that slides out from the right with each carrier's logo and a link to its portal sign-on.
+- A "Carrier portals" tab on the right edge of the Dashboard opens a panel with every active carrier that has a portal site: logo (or initials) and name, opening the sign-in page in a new tab. Escape or Close shuts it; while shut its links can't be reached. Carriers without a portal site aren't listed; the panel says where to add one.
+- Tested (ran and saw pass): integration test (only active carriers with a portal site, with logo links; needs carrier.read); e2e test (open, link and new-tab target, axe check while open, Escape returns focus to the tab). Checked on Josh's dev data: Travelers shows with its logo and opens signin.travelers.com.
+
 ## N25: carrier page, contact types, closing out and approving appetite, white background (built 2026-11-10)
 Josh asked for: the carrier name prominent and fixed (edit only with a button), a carrier logo, an identifier type list (NAIC, FEIN, AM Best), contact types (his list and others), closing out "open" appetite profiles, easier appetite approval, and a white background.
 - Carrier page: large name with the logo (or initials) at the top of every tab. Overview details are read-only with an **Edit details** button; Save returns to the read-only view. **Logo** section: upload (PNG/JPEG, 2 MB), replace, remove.
