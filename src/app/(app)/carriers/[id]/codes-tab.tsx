@@ -1,10 +1,10 @@
 import { can } from "@/server/auth/context";
 import { requireAuth } from "@/server/auth/session";
-import { channelLabel, listAgencyEntities, listChannelsForOrg, listCodesForCarrier, listPortals } from "@/server/services/appointments";
+import { channelLabel, codeTargets, listAgencyEntities, listCodesForCarrier, listPortals } from "@/server/services/appointments";
 import { listActiveUsers } from "@/server/services/users";
 import { ActionForm } from "@/components/action-form";
 import { Badge, Field, Section, inputClass, label } from "@/components/ui";
-import { addCodeAction, addPortalAction, removePortalAction, updateCodeAction } from "../appointment-actions";
+import { addCodesAction, addPortalAction, removePortalAction, updateCodeAction } from "../appointment-actions";
 
 const CODE_TYPES = ["MASTER", "PRODUCER", "SUB_CODE", "LOCATION", "OTHER"];
 
@@ -12,9 +12,9 @@ const CODE_TYPES = ["MASTER", "PRODUCER", "SUB_CODE", "LOCATION", "OTHER"];
 export async function CodesTab({ carrierId }: { carrierId: string }) {
   const ctx = await requireAuth();
   const write = can(ctx, "appointment.write");
-  const [codes, channels, entities, portals, users] = await Promise.all([
+  const [codes, targets, entities, portals, users] = await Promise.all([
     listCodesForCarrier(ctx, carrierId),
-    listChannelsForOrg(ctx, carrierId),
+    codeTargets(ctx, carrierId),
     listAgencyEntities(ctx),
     listPortals(ctx, carrierId),
     listActiveUsers(ctx),
@@ -77,11 +77,24 @@ export async function CodesTab({ carrierId }: { carrierId: string }) {
           </table>
         </div>
         <p className="text-xs text-zinc-600 dark:text-zinc-400">Changes are recorded in the carrier&apos;s change history. To change a code&apos;s value, mark it not in use and add the new one.</p>
-        {write && channels.length > 0 && entities.length > 0 && (
-          <ActionForm action={addCodeAction.bind(null, carrierId)} submitLabel="Add code" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <Field label="Product and channel" htmlFor="ncCh">
-              <select id="ncCh" name="marketChannelId" required className={inputClass}>{channels.map((ch) => <option key={ch.id} value={ch.id}>{channelLabel(ch)}</option>)}</select>
-            </Field>
+        {write && targets.length > 0 && entities.length > 0 && (
+          <ActionForm action={addCodesAction.bind(null, carrierId)} submitLabel="Add code" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <fieldset className="sm:col-span-3">
+              <legend className="text-sm font-medium">Lines it&apos;s for</legend>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400">Tick All lines for a code used across the carrier, or just the lines it applies to.</p>
+              {targets.length > 1 && (
+                <label className="mt-1 flex items-center gap-2 text-sm font-medium">
+                  <input type="checkbox" name="targets" value="all" /> All lines ({targets.length})
+                </label>
+              )}
+              <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+                {targets.map((t) => (
+                  <label key={t.value} className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" name="targets" value={t.value} defaultChecked={targets.length === 1} /> {t.label}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
             {entities.length > 1 && (
               <Field label="Agency entity" htmlFor="ncEnt">
                 <select id="ncEnt" name="agencyEntityId" required className={inputClass}>{entities.map((e) => <option key={e.id} value={e.id}>{e.organization.displayName}</option>)}</select>
@@ -100,7 +113,8 @@ export async function CodesTab({ carrierId }: { carrierId: string }) {
             <Field label="Notes (optional)" htmlFor="ncNotes"><input id="ncNotes" name="notes" maxLength={1000} className={inputClass} /></Field>
           </ActionForm>
         )}
-        {write && channels.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">Add a product and channel on the Writing companies &amp; channels tab first.</p>}
+        {write && targets.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">To add a code, first add the lines this carrier writes on the Writing companies &amp; channels tab.</p>}
+        {write && targets.length > 0 && entities.length === 0 && <p role="alert" className="text-sm text-red-700 dark:text-red-400">Codes need the agency set up (the agency entity), and none is active. Ask an admin to set it up.</p>}
       </Section>
 
       <Section title="Other portal links">

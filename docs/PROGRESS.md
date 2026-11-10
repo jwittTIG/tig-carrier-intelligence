@@ -5,6 +5,12 @@
 
 Milestone 8 (Ask the guides) works with Josh's key (two real questions at $1.76 and $1.77 with the whole-PDF read).
 
+## Agency and producer codes without the channel step (2026-11-10)
+Josh: "There is no where to add the agency or producer code." The Add code form only appeared once a line had a distribution channel, and adding lines doesn't create one, so carriers like Travelers had no form.
+- The Codes & portals tab now offers **Lines it's for** checkboxes (each line, or each channel where one exists) and **All lines**. A line without a channel gets its direct channel created (audited). One code is stored per line.
+- If the agency entity isn't set up, the tab says so instead of showing nothing.
+- Tested (ran and saw pass): integration tests (several lines at once with channel creation and reuse; refuses another carrier's lines, no lines, missing permission; duplicates refused with nothing half-added; All lines; 25 lines in one save). Checked on Travelers in the browser: the form shows its 25 lines. No code was added to Josh's data.
+
 ## Dashboard: slide-out carrier portals tab (built 2026-11-10)
 Josh: a tab on the Dashboard that slides out from the right with each carrier's logo and a link to its portal sign-on.
 - A "Carrier portals" tab on the right edge of the Dashboard opens a panel with every active carrier that has a portal site: logo (or initials) and name, opening the sign-in page in a new tab. Escape or Close shuts it; while shut its links can't be reached. Carriers without a portal site aren't listed; the panel says where to add one.

@@ -115,3 +115,62 @@ describe("portal links", () => {
     await expect(svc.removePortal(staff, (await setup()).insurer.id, ok.id)).rejects.toBeInstanceOf(NotFoundError);
   });
 });
+
+describe("adding a code for a carrier's lines (no channel needed)", () => {
+  it("adds one code for several lines, creating a line's direct channel when it has none, and reuses existing ones", async () => {
+    const insurer = await createCarrier(staff, { legalName: `TEST L ${t()} Co`, displayName: `TEST L ${t()}`, type: "INSURER" });
+    const p1 = await db.insuranceProduct.findFirstOrThrow({ where: { id: (await listProducts(staff))[0].id } });
+    const p2 = await db.insuranceProduct.create({ data: { lineId: p1.lineId, code: `TEST_LINE_${t()}`, name: `TEST Second line ${t()}` } });
+    const home = await addCarrierProduct(staff, insurer.id, { productId: p1.id });
+    const auto = await addCarrierProduct(staff, insurer.id, { productId: p2.id });
+    const autoChannel = await addChannel(staff, insurer.id, auto.id, { distributionType: "DIRECT" });
+
+    const targets = await svc.codeTargets(staff, insurer.id);
+    expect(targets.map((x) => x.value).sort()).toEqual([`ch:${autoChannel.id}`, `cp:${home.id}`].sort());
+
+    const value = `MULTI-${t()}`;
+    const rows = await svc.addAgencyCodes(staff, insurer.id, { targets: targets.map((x) => x.value), agencyEntityId: entityId, codeType: "MASTER", codeValue: value });
+    expect(rows).toHaveLength(2);
+    const homeChannels = await db.marketChannel.findMany({ where: { carrierProductId: home.id } });
+    expect(homeChannels.map((c) => [c.distributionType, c.intermediaryOrgId])).toEqual([["DIRECT", null]]);
+    expect((await svc.listCodesForCarrier(staff, insurer.id)).filter((c) => c.codeValue === value)).toHaveLength(2);
+    // The home line now has a channel, so it's offered as that channel.
+    expect((await svc.codeTargets(staff, insurer.id)).map((x) => x.value)).toContain(`ch:${homeChannels[0].id}`);
+    // The same code again on the same line is refused; nothing is half-added.
+    await expect(svc.addAgencyCodes(staff, insurer.id, { targets: [`ch:${homeChannels[0].id}`], agencyEntityId: entityId, codeType: "MASTER", codeValue: value })).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  it("refuses lines of another carrier, no lines picked, and needs appointment.write", async () => {
+    const a = await setup();
+    const b = await setup();
+    const otherLine = await db.carrierProduct.findFirstOrThrow({ where: { writingCompanyId: b.insurer.id } });
+    await expect(svc.addAgencyCodes(staff, a.insurer.id, { targets: [`cp:${otherLine.id}`], agencyEntityId: entityId, codeType: "MASTER", codeValue: "X" })).rejects.toThrow(/isn't on this carrier/);
+    await expect(svc.addAgencyCodes(staff, a.insurer.id, { targets: [`ch:${b.channel.id}`], agencyEntityId: entityId, codeType: "MASTER", codeValue: "X" })).rejects.toThrow(/isn't on this carrier/);
+    await expect(svc.addAgencyCodes(staff, a.insurer.id, { targets: [], agencyEntityId: entityId, codeType: "MASTER", codeValue: "X" })).rejects.toThrow(/at least one line/);
+    const reader = await limitedUser(db, ["carrier.read", "appointment.read"]);
+    await expect(svc.addAgencyCodes(reader, a.insurer.id, { targets: [`ch:${a.channel.id}`], codeType: "MASTER", codeValue: "X" })).rejects.toBeInstanceOf(ForbiddenError);
+  });
+});
+
+describe("a code for all of a carrier's lines", () => {
+  it("\"all\" adds it for every line", async () => {
+    const s = await setup();
+    const extra = await db.insuranceProduct.create({ data: { lineId: (await db.insuranceProduct.findUniqueOrThrow({ where: { id: s.product.id } })).lineId, code: `TEST_ALL_${t()}`, name: `TEST All ${t()}` } });
+    await addCarrierProduct(staff, s.insurer.id, { productId: extra.id });
+    const rows = await svc.addAgencyCodes(staff, s.insurer.id, { targets: ["all"], agencyEntityId: entityId, codeType: "MASTER", codeValue: `ALL-${t()}` });
+    expect(rows).toHaveLength(2);
+  });
+});
+
+describe("a code for a carrier with many lines", () => {
+  it("adds it for 25 lines in one go", async () => {
+    const insurer = await createCarrier(staff, { legalName: `TEST Many ${t()} Co`, displayName: `TEST Many ${t()}`, type: "INSURER" });
+    const lineId = (await db.insuranceProduct.findFirstOrThrow({ where: { id: (await listProducts(staff))[0].id } })).lineId;
+    for (let i = 0; i < 25; i++) {
+      const p = await db.insuranceProduct.create({ data: { lineId, code: `TEST_MANY_${t()}`, name: `TEST Many ${i} ${t()}` } });
+      await addCarrierProduct(staff, insurer.id, { productId: p.id });
+    }
+    const rows = await svc.addAgencyCodes(staff, insurer.id, { targets: ["all"], agencyEntityId: entityId, codeType: "MASTER", codeValue: `MANY-${t()}` });
+    expect(rows).toHaveLength(25);
+  }, 120_000);
+});

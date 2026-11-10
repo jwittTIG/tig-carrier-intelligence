@@ -288,3 +288,76 @@ export function codesCsv(rows: Awaited<ReturnType<typeof listAgencyCodes>>): str
   );
   return [header.map(cell).join(","), ...lines].join("\r\n") + "\r\n";
 }
+
+const targetsSchema = z.object({
+  /** "ch:<market channel id>", "cp:<carrier product id>" (a line with no channel yet: its direct channel is created), or "all". */
+  targets: z.preprocess(
+    (v) => (Array.isArray(v) ? v : typeof v === "string" && v !== "" ? [v] : []),
+    z.array(z.string().regex(/^((ch|cp):[0-9a-f-]{36}|all)$/, "Pick the lines the code is for")).min(1, "Pick at least one line the code is for"),
+  ),
+  agencyEntityId: optionalId,
+  codeType: z.enum(AgencyCodeType),
+  codeValue: requiredText(60),
+  assignedUserId: optionalId,
+  notes: optionalText(1000),
+});
+
+/** The channel a code target points at; a line without one gets its direct channel (no intermediary). */
+async function channelFor(tx: Tx, ctx: AuthContext, carrierId: string, target: string): Promise<string> {
+  const [kind, id] = target.split(":") as ["ch" | "cp", string];
+  if (kind === "ch") {
+    const ch = await tx.marketChannel.findFirst({ where: { id, archivedAt: null, OR: [{ intermediaryOrgId: carrierId }, { carrierProduct: { writingCompanyId: carrierId } }] } });
+    if (!ch) throw new ValidationError("That channel isn't on this carrier.");
+    return ch.id;
+  }
+  const cp = await tx.carrierProduct.findFirst({ where: { id, writingCompanyId: carrierId, archivedAt: null } });
+  if (!cp) throw new ValidationError("That line isn't on this carrier.");
+  const direct = await tx.marketChannel.findFirst({ where: { carrierProductId: cp.id, distributionType: "DIRECT", intermediaryOrgId: null, archivedAt: null } });
+  if (direct) return direct.id;
+  const row = await tx.marketChannel.create({ data: { carrierProductId: cp.id, distributionType: "DIRECT", accessStatus: "AVAILABLE" } });
+  await recordAudit(tx, ctx, { action: "carrier.channel.add", entityType: "market_channel", entityId: row.id, after: { ...row, reason: "Created for an agency code (direct)" } });
+  return row.id;
+}
+
+/**
+ * Adds one code for one or more of a carrier's lines (Josh, 2026-11-10: there was nowhere to add
+ * a code until a channel existed). Each line gets its own row, so codes can differ by line later.
+ */
+export async function addAgencyCodes(ctx: AuthContext, carrierId: string, input: unknown) {
+  assertCan(ctx, "appointment.write");
+  const data = parse(targetsSchema, input);
+  // "all": every line of the carrier, as offered on the Codes tab (looked up before the transaction).
+  const targets = data.targets.includes("all") ? (await codeTargets(ctx, carrierId)).map((x) => x.value) : data.targets;
+  try {
+    return await prisma.$transaction(async (tx) => {
+      await checkProducer(tx, data.assignedUserId);
+      const rows = [];
+      for (const target of [...new Set(targets)]) {
+        const channelId = await channelFor(tx, ctx, carrierId, target);
+        const group = await codeGroup(tx, ctx, channelId, data.agencyEntityId);
+        const row = await tx.agencyCode.create({
+          data: { appointmentId: group.id, codeType: data.codeType, codeValue: data.codeValue, assignedUserId: data.assignedUserId ?? null, notes: data.notes ?? null, effectiveFrom: todayUtc(), status: "ACTIVE" },
+        });
+        await recordAudit(tx, ctx, { action: "agency_code.create", entityType: "agency_code", entityId: row.id, after: row });
+        rows.push(row);
+      }
+      return rows;
+    }, { timeout: 60_000 }); // a code for every line of a big carrier is many writes
+  } catch (e) {
+    if (isExclusionViolation(e)) throw new ConflictError(overlapMessage(data.codeValue));
+    throw e;
+  }
+}
+
+/** The lines a code can be added for: each channel, plus each line that has no channel yet. */
+export async function codeTargets(ctx: AuthContext, carrierId: string) {
+  assertCan(ctx, "carrier.read");
+  const [channels, lines] = await Promise.all([
+    listChannelsForOrg(ctx, carrierId),
+    prisma.carrierProduct.findMany({ where: { writingCompanyId: carrierId, archivedAt: null }, include: { product: { select: { name: true } }, channels: { where: { archivedAt: null }, select: { id: true } } }, orderBy: { product: { name: "asc" } } }),
+  ]);
+  return [
+    ...lines.filter((l) => l.channels.length === 0).map((l) => ({ value: `cp:${l.id}`, label: l.product.name })),
+    ...channels.map((ch) => ({ value: `ch:${ch.id}`, label: channelLabel(ch) })),
+  ].sort((a, b) => a.label.localeCompare(b.label));
+}

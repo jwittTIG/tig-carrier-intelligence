@@ -38,3 +38,12 @@ export async function removePortalAction(carrierId: string, portalId: string, _s
     revalidatePath(page(carrierId));
   });
 }
+
+export async function addCodesAction(carrierId: string, _s: ActionState, form: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    const targets = form.getAll("targets").filter((v): v is string => typeof v === "string");
+    const rows = await appts.addAgencyCodes(await requireAuth(), carrierId, { ...formObject(form), targets });
+    revalidatePath(page(carrierId));
+    return rows.length === 1 ? "Code added." : `Code added for ${rows.length} lines.`;
+  });
+}
