@@ -5,6 +5,12 @@
 
 Milestone 8 (Ask the guides) works with Josh's key (two real questions at $1.76 and $1.77 with the whole-PDF read).
 
+## Dashboard: Carrier contacts tab (built 2026-11-10)
+Josh: a tab on the right of the Dashboard to pick a carrier from a dropdown and list all its contacts.
+- A second right-edge tab, **Carrier contacts**, below **Carrier portals**. Pick a carrier: its current contacts show with type, title, territory, lines, email (mailto) and phones (tel). Links to each contact and to the carrier's Contacts tab. One panel opens at a time; Escape or Close shuts it. Needs contact.read (the tab is hidden otherwise).
+- Tested (ran and saw pass): e2e (add a contact on a carrier, pick the carrier in the tab, see the contact, type and mailto link, axe check while open, opening Portals closes Contacts). Checked on Josh's data: Travelers lists its marketing rep.
+- Found: the sign-in reload loop (2026-11-10 morning and again on the e2e server) came from a stale Next build cache after a source file was deleted. Fix: stop the server, delete `.next` (or `.next-e2e`), start again.
+
 ## Agency and producer codes without the channel step (2026-11-10)
 Josh: "There is no where to add the agency or producer code." The Add code form only appeared once a line had a distribution channel, and adding lines doesn't create one, so carriers like Travelers had no form.
 - The Codes & portals tab now offers **Lines it's for** checkboxes (each line, or each channel where one exists) and **All lines**. A line without a channel gets its direct channel created (audited). One code is stored per line.

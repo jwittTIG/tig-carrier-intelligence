@@ -41,3 +41,8 @@ The `dev` sign-in, `dev` storage and the dev malware-scan stub all refuse to run
 Both need `CRON_SECRET` (32+ characters) and send `Authorization: Bearer <CRON_SECRET>`. Neither has run on a schedule yet (no hosting).
 - `GET /api/cron/mail-intake`: every 15 minutes (M6).
 - `GET /api/cron/reminders`: once a day, early morning (M7). It sends in-app reminders for appointments ending within `appointment.expiry_warning_days` and for appetite reviews due. It is safe to run more than once: each record and date is sent once.
+
+## Troubleshooting (local)
+- **Pages reload over and over (sign-in won't click, "Compiled in 1ms" repeating):** a stale Next build cache, usually after a source file was deleted. Stop the dev server, delete `.next` (or `.next-e2e` for the test server), and start it again.
+- **Builds while the dev server runs:** use `NEXT_DIST_DIR=.next-build npm run build` so the build doesn't write into the dev server's `.next`.
+- **"connect ECONNREFUSED" on port 51214/51218:** the local databases stopped (e.g. after a restart). Run `npm run db:start`.
