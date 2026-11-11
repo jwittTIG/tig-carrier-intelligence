@@ -391,6 +391,10 @@ model Organization {
   website     String?
   /// Carrier portal site staff use to log in (link only; logins live in the password manager).
   portalUrl   String?            @map("portal_url")
+  /// Carrier phone numbers for the Dashboard's Carrier SnapShot (Josh, 2026-11-11).
+  mainPhone    String?           @map("main_phone")
+  billingPhone String?           @map("billing_phone")
+  claimsPhone  String?           @map("claims_phone")
   /// Carrier logo (PNG or JPEG) in private storage, shown on the carrier page.
   logoObjectKey String?          @map("logo_object_key")
   logoMimeType  String?          @map("logo_mime_type")

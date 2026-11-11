@@ -175,6 +175,9 @@ async function Overview({ carrier, write, editing, hasLogo }: { carrier: Carrier
             <dt className="text-zinc-600 dark:text-zinc-400">Owner</dt><dd>{carrier.owner?.name ?? "Unassigned"}</dd>
             <dt className="text-zinc-600 dark:text-zinc-400">Parent</dt><dd>{carrier.parent?.displayName ?? "None"}</dd>
             <dt className="text-zinc-600 dark:text-zinc-400">Carrier portal site</dt><dd>{carrier.portalUrl ? <a href={carrier.portalUrl} target="_blank" rel="noopener noreferrer" className="break-all text-blue-800 hover:underline dark:text-blue-300">{carrier.portalUrl}</a> : "—"}</dd>
+            <dt className="text-zinc-600 dark:text-zinc-400">Main phone</dt><dd>{carrier.mainPhone ? <a href={`tel:${carrier.mainPhone}`} className="text-blue-800 hover:underline dark:text-blue-300">{carrier.mainPhone}</a> : "—"}</dd>
+            <dt className="text-zinc-600 dark:text-zinc-400">Billing phone</dt><dd>{carrier.billingPhone ? <a href={`tel:${carrier.billingPhone}`} className="text-blue-800 hover:underline dark:text-blue-300">{carrier.billingPhone}</a> : "—"}</dd>
+            <dt className="text-zinc-600 dark:text-zinc-400">Claims phone</dt><dd>{carrier.claimsPhone ? <a href={`tel:${carrier.claimsPhone}`} className="text-blue-800 hover:underline dark:text-blue-300">{carrier.claimsPhone}</a> : "—"}</dd>
             <dt className="text-zinc-600 dark:text-zinc-400">Website</dt><dd>{carrier.website ? <a href={carrier.website} target="_blank" rel="noopener noreferrer" className="break-all text-blue-800 hover:underline dark:text-blue-300">{carrier.website}</a> : "—"}</dd>
           </dl>
         )}

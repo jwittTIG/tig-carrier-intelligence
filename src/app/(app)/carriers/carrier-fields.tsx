@@ -11,6 +11,9 @@ export type CarrierDefaults = {
   ownerUserId?: string | null;
   website?: string | null;
   portalUrl?: string | null;
+  mainPhone?: string | null;
+  billingPhone?: string | null;
+  claimsPhone?: string | null;
 };
 
 /** Shared inputs for creating and editing a carrier. */
@@ -50,6 +53,15 @@ export function CarrierFields({ d = {}, types, parents, owners }: { d?: CarrierD
       </Field>
       <Field label="Website" htmlFor="website">
         <input id="website" name="website" type="url" placeholder="https://" defaultValue={d.website ?? ""} className={inputClass} />
+      </Field>
+      <Field label="Main phone" htmlFor="mainPhone">
+        <input id="mainPhone" name="mainPhone" type="tel" maxLength={40} defaultValue={d.mainPhone ?? ""} className={inputClass} />
+      </Field>
+      <Field label="Billing phone" htmlFor="billingPhone">
+        <input id="billingPhone" name="billingPhone" type="tel" maxLength={40} defaultValue={d.billingPhone ?? ""} className={inputClass} />
+      </Field>
+      <Field label="Claims phone" htmlFor="claimsPhone">
+        <input id="claimsPhone" name="claimsPhone" type="tel" maxLength={40} defaultValue={d.claimsPhone ?? ""} className={inputClass} />
       </Field>
     </div>
   );

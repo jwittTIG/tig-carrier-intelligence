@@ -210,7 +210,11 @@ const carrierFields = {
   ownerUserId: optionalId,
   website: optionalUrl,
   portalUrl,
+  mainPhone: optionalText(40),
+  billingPhone: optionalText(40),
+  claimsPhone: optionalText(40),
 };
+const PHONE_FIELDS = ["mainPhone", "billingPhone", "claimsPhone"] as const;
 const createSchema = z.object(carrierFields);
 const updateSchema = z.object({
   legalName: carrierFields.legalName.optional(),
@@ -221,6 +225,9 @@ const updateSchema = z.object({
   ownerUserId: optionalId,
   website: optionalUrl,
   portalUrl,
+  mainPhone: optionalText(40),
+  billingPhone: optionalText(40),
+  claimsPhone: optionalText(40),
 });
 
 async function checkParent(tx: Prisma.TransactionClient, selfId: string | null, parentId: string | null | undefined) {
@@ -247,7 +254,7 @@ export async function createCarrier(ctx: AuthContext, input: unknown) {
   return prisma.$transaction(async (tx) => {
     await checkParent(tx, null, data.parentId);
     await checkOwner(tx, data.ownerUserId);
-    const org = await tx.organization.create({ data: { ...data, parentId: data.parentId ?? null, ownerUserId: data.ownerUserId ?? null, website: data.website ?? null, portalUrl: data.portalUrl ?? null } });
+    const org = await tx.organization.create({ data: { ...data, parentId: data.parentId ?? null, ownerUserId: data.ownerUserId ?? null, website: data.website ?? null, portalUrl: data.portalUrl ?? null, mainPhone: data.mainPhone ?? null, billingPhone: data.billingPhone ?? null, claimsPhone: data.claimsPhone ?? null } });
     await recordAudit(tx, ctx, { action: "carrier.create", entityType: "organization", entityId: org.id, after: org });
     return org;
   });
@@ -260,9 +267,10 @@ export async function updateCarrier(ctx: AuthContext, id: string, input: unknown
     const before = await findCarrier(tx, id);
     if (data.parentId !== undefined) await checkParent(tx, id, data.parentId);
     if (data.ownerUserId !== undefined) await checkOwner(tx, data.ownerUserId);
-    // A blank portal or website field clears it.
+    // A blank portal, website or phone field clears it.
     const raw = (input ?? {}) as Record<string, unknown>;
-    const patch = { ...data, ...("portalUrl" in raw && { portalUrl: data.portalUrl ?? null }), ...("website" in raw && { website: data.website ?? null }) };
+    const patch: Prisma.OrganizationUncheckedUpdateInput = { ...data, ...("portalUrl" in raw && { portalUrl: data.portalUrl ?? null }), ...("website" in raw && { website: data.website ?? null }) };
+    for (const k of PHONE_FIELDS) if (k in raw) patch[k] = data[k] ?? null;
     const after = await tx.organization.update({ where: { id }, data: patch });
     await recordAudit(tx, ctx, { action: "carrier.update", entityType: "organization", entityId: id, before, after });
     return after;

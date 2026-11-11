@@ -5,6 +5,12 @@
 
 Milestone 8 (Ask the guides) works with Josh's key (two real questions at $1.76 and $1.77 with the whole-PDF read).
 
+## Dashboard: Carrier SnapShot (built 2026-11-11)
+Josh: a Carrier SnapShot on the main page: choose a carrier, see its main, billing and claims phone numbers, the marketing rep's email and phone, and the agency code. He then said "Go ahead and deploy"; there is no hosted environment yet (D8 hosting, D7a Postgres open), so it was put live in the local app only.
+- New carrier fields **Main phone**, **Billing phone**, **Claims phone** (in Edit details; shown on the Overview).
+- **Carrier SnapShot** box below Ask and Find a market: logo, name, Portal button, the three phones (tap to call), active marketing reps (contacts of type Marketing rep) with email and phone, and in-use agency codes (master first; one entry per code with its lines). Anything missing says "Not recorded · add it" with a link to where it's entered. Sections the person can't see (contacts, codes) are left out.
+- Tested (ran and saw pass): integration tests (phones, reps filtered to marketing reps, codes grouped across lines, blank phone clears, permissions); e2e (phones entered on the carrier, rep added, SnapShot shows them with tel/mailto links, missing items marked, axe check). Checked on Josh's data: Travelers shows its rep; phones and code not entered yet.
+
 ## Dashboard: quick boxes and stacked menus (built 2026-11-11)
 Josh: two medium boxes on the main page to 1) Ask the guides or 2) Find a market; on the right, instead of sliding menus, stacked menus that open vertically when clicked, starting with Carrier portals and Contacts.
 - **Ask the guides** box: question and carrier, Ask goes to the answer page (same as the Ask page; page-text mode). Shows a note instead when AI isn't set up.

@@ -86,3 +86,34 @@ test("Dashboard boxes: ask the guides and find a market", async ({ page }) => {
   // No carrier named or picked: the form says so instead of guessing.
   await expect(ask.getByText(/Which carrier\?/)).toBeVisible();
 });
+
+test("Carrier SnapShot: phones entered on the carrier, marketing rep, and missing items marked", async ({ page }) => {
+  const name = `E2E Snap ${Date.now()}`;
+  await signInAndCreateCarrier(page, name);
+  const carrierUrl = page.url().split("?")[0];
+  await page.getByRole("link", { name: "Edit details" }).click();
+  await page.getByLabel("Main phone").fill("800-555-0100");
+  await page.getByLabel("Claims phone").fill("800-555-0102");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByRole("link", { name: "800-555-0100" })).toBeVisible();
+  await page.goto(`${carrierUrl}?tab=contacts`);
+  await page.getByLabel("Type of contact").selectOption({ label: "Marketing rep" });
+  await page.getByLabel("First name").fill("Morgan");
+  await page.getByLabel("Last name").fill("E2E");
+  await page.getByLabel("Email").fill("morgan.e2e@example.invalid");
+  await page.getByLabel("Office phone").fill("865-555-0110");
+  await page.getByRole("button", { name: "Add contact" }).click();
+  await expect(page.getByText("Added Morgan E2E.")).toBeVisible();
+
+  await page.goto("/dashboard");
+  const snap = page.locator("section").filter({ has: page.getByRole("heading", { name: "Carrier SnapShot" }) });
+  await snap.getByLabel("Carrier").selectOption({ label: name });
+  await expect(snap.getByRole("link", { name, exact: true })).toBeVisible();
+  await expect(snap.getByRole("link", { name: "800-555-0100" })).toHaveAttribute("href", "tel:800-555-0100");
+  await expect(snap.getByRole("link", { name: "800-555-0102" })).toBeVisible();
+  await expect(snap.getByRole("link", { name: "Morgan E2E" })).toBeVisible();
+  await expect(snap.getByRole("link", { name: "morgan.e2e@example.invalid" })).toHaveAttribute("href", "mailto:morgan.e2e@example.invalid");
+  // Billing phone and agency code weren't entered: shown as not recorded, with a link to add them.
+  await expect(snap.getByText(/Not recorded/)).toHaveCount(2);
+  await axeCheck(page);
+});

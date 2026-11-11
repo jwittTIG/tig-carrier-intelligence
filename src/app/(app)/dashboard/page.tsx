@@ -6,6 +6,7 @@ import { listTerritories } from "@/server/services/contacts";
 import { aiStatus, listAskableCarriers } from "@/server/services/guides";
 import { dashboard } from "@/server/services/overview";
 import { RightMenus } from "@/components/right-tabs";
+import { CarrierSnapshot } from "@/components/carrier-snapshot";
 import { ActionForm } from "@/components/action-form";
 import { askAction } from "../ask/actions";
 import { Icon } from "@/components/icons";
@@ -21,12 +22,13 @@ export default async function DashboardPage() {
   const [d, portals, carriers, askable, lines, territories] = await Promise.all([
     dashboard(ctx),
     canCarriers ? listPortalLinks(ctx) : Promise.resolve(null),
-    canCarriers && can(ctx, "contact.read") ? listCarrierOptions(ctx) : Promise.resolve(null),
+    canCarriers ? listCarrierOptions(ctx) : Promise.resolve(null),
     canAsk ? listAskableCarriers(ctx) : Promise.resolve([]),
     canFind ? listLines(ctx) : Promise.resolve([]),
     canFind && can(ctx, "contact.read") ? listTerritories(ctx) : Promise.resolve([]),
   ]);
   const aiOn = aiStatus().mode !== "off";
+  const carrierList = (carriers ?? []).map((c) => ({ id: c.id, name: c.displayName }));
   return (
     <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
       <div className="flex min-w-0 flex-1 flex-col gap-4">
@@ -83,6 +85,12 @@ export default async function DashboardPage() {
         </div>
       )}
 
+      {carriers && (
+        <Section title="Carrier SnapShot">
+          <CarrierSnapshot carriers={carrierList} />
+        </Section>
+      )}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-5">
         <Tile href="/approvals" title="Waiting for your review" value={d.pending} icon="approvals" />
         <Tile href="/approvals" title="Your submissions waiting" value={d.mySubmissions} icon="documents" />
@@ -119,7 +127,7 @@ export default async function DashboardPage() {
 
       {(portals || carriers) && (
         <aside aria-label="Quick links" className="w-full shrink-0 xl:w-80">
-          <RightMenus portals={portals} carriers={carriers && carriers.map((c) => ({ id: c.id, name: c.displayName }))} />
+          <RightMenus portals={portals} carriers={carriers && can(ctx, "contact.read") ? carrierList : null} />
         </aside>
       )}
     </div>
