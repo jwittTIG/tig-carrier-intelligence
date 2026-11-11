@@ -5,6 +5,14 @@
 
 Milestone 8 (Ask the guides) works with Josh's key (two real questions at $1.76 and $1.77 with the whole-PDF read).
 
+## Dashboard: quick boxes and stacked menus (built 2026-11-11)
+Josh: two medium boxes on the main page to 1) Ask the guides or 2) Find a market; on the right, instead of sliding menus, stacked menus that open vertically when clicked, starting with Carrier portals and Contacts.
+- **Ask the guides** box: question and carrier, Ask goes to the answer page (same as the Ask page; page-text mode). Shows a note instead when AI isn't set up.
+- **Find a market** box: line, state and industry words, opening the Market Finder with them; a link to the full finder for products, limits and risk details.
+- Right column (on wide screens; below the boxes on narrow ones): **Carrier portals** and **Carrier contacts** menus, each opening downward on click; both can be open. The sliding tabs are gone.
+- `npm run test:e2e` now clears `.next-e2e` each run (stale caches caused reload loops).
+- Tested (ran and saw pass): e2e for both menus (open/close, portal link, contact lookup, axe checks) and both boxes (finder opens with line and state; Ask without a carrier says which carrier). Checked on Josh's data at desktop width: menus on the right, portals list Liberty Mutual (Safeco) and Travelers; the finder box finds Travelers for Personal Homeowners.
+
 ## Dashboard: Carrier contacts tab (built 2026-11-10)
 Josh: a tab on the right of the Dashboard to pick a carrier from a dropdown and list all its contacts.
 - A second right-edge tab, **Carrier contacts**, below **Carrier portals**. Pick a carrier: its current contacts show with type, title, territory, lines, email (mailto) and phones (tel). Links to each contact and to the carrier's Contacts tab. One panel opens at a time; Escape or Close shuts it. Needs contact.read (the tab is hidden otherwise).

@@ -1,84 +1,41 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useRef, useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { carrierContactsAction, type ContactCard } from "@/app/(app)/dashboard/actions";
 
 type Portal = { id: string; name: string; portalUrl: string; logoUrl: string | null };
 type Carrier = { id: string; name: string };
-type Panel = "portals" | "contacts";
 
 const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("");
-const TABS: { key: Panel; label: string; top: string }[] = [
-  { key: "portals", label: "Carrier portals", top: "top-[22%]" },
-  { key: "contacts", label: "Carrier contacts", top: "top-[52%]" },
-];
 
 /**
- * Tabs on the right edge of the Dashboard. Each slides out a panel: carrier portal sign-ins
- * (logos), or a carrier's contacts. One panel is open at a time. Panels stay in the page while
- * closed (inert, off-screen) so logos load right away.
+ * The Dashboard's right-hand column: stacked menus that open downward when clicked
+ * (Josh, 2026-11-11). Carrier portals and Carrier contacts for now. Each opens on its own.
  */
-export function RightTabs({ portals, carriers }: { portals: Portal[] | null; carriers: Carrier[] | null }) {
-  const [open, setOpen] = useState<Panel | null>(null);
-  const tabRefs = useRef<Record<Panel, HTMLButtonElement | null>>({ portals: null, contacts: null });
-  const panels = useRef<Record<Panel, HTMLElement | null>>({ portals: null, contacts: null });
-  const available = TABS.filter((t) => (t.key === "portals" ? portals : carriers));
-
-  const close = () => {
-    const was = open;
-    setOpen(null);
-    if (was) tabRefs.current[was]?.focus();
-  };
-
-  useEffect(() => {
-    if (!open) return;
-    panels.current[open]?.querySelector<HTMLElement>("select, a, button")?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-run only when a panel opens or closes
-  }, [open]);
-
+export function RightMenus({ portals, carriers }: { portals: Portal[] | null; carriers: Carrier[] | null }) {
   return (
-    <>
-      {available.map((t) => (
-        <button
-          key={t.key}
-          ref={(el) => { tabRefs.current[t.key] = el; }}
-          type="button"
-          onClick={() => setOpen((o) => (o === t.key ? null : t.key))}
-          aria-expanded={open === t.key}
-          aria-controls={`drawer-${t.key}`}
-          className={`fixed right-0 ${t.top} z-30 flex items-center gap-2 rounded-l-xl px-2 py-4 text-sm font-semibold text-white shadow-lg transition-transform [writing-mode:vertical-rl] ${open === t.key ? "-translate-x-80 bg-blue-800" : "bg-blue-700 hover:bg-blue-800"} ${open && open !== t.key ? "-translate-x-80" : ""}`}
-        >
-          <span aria-hidden="true">{open === t.key ? "›" : "‹"}</span>
-          {t.label}
-        </button>
-      ))}
-
+    <div className="flex flex-col gap-3">
       {portals && (
-        <Drawer id="portals" title="Carrier portals" open={open === "portals"} onClose={close} panelRef={(el) => { panels.current.portals = el; }}>
+        <Menu title="Carrier portals" count={portals.length}>
           <p className="text-xs text-zinc-600 dark:text-zinc-400">Opens the carrier&apos;s sign-in page in a new tab. Use the password manager to log in.</p>
           {portals.length === 0 ? (
             <p className="text-sm">No portal sites saved yet. Add one on a carrier&apos;s Overview (Edit details → Carrier portal site).</p>
           ) : (
-            <ul className="grid grid-cols-2 gap-3 overflow-y-auto pb-4">
+            <ul className="grid grid-cols-2 gap-2">
               {portals.map((p) => (
                 <li key={p.id}>
                   <a
                     href={p.portalUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex h-full flex-col items-center gap-2 rounded-xl border border-zinc-200 p-3 text-center text-sm font-medium hover:border-blue-600 hover:bg-blue-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                    className="flex h-full flex-col items-center gap-2 rounded-xl border border-zinc-200 p-2 text-center text-sm font-medium hover:border-blue-600 hover:bg-blue-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
                   >
                     {p.logoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element -- a short-lived private link, not a static asset
-                      <img src={p.logoUrl} alt="" className="h-14 w-14 rounded-lg bg-white object-contain p-1" />
+                      <img src={p.logoUrl} alt="" className="h-12 w-12 rounded-lg bg-white object-contain p-1" />
                     ) : (
-                      <span aria-hidden="true" className="flex h-14 w-14 items-center justify-center rounded-lg bg-blue-100 text-lg font-bold text-blue-800 dark:bg-blue-900 dark:text-blue-100">{initials(p.name)}</span>
+                      <span aria-hidden="true" className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 text-base font-bold text-blue-800 dark:bg-blue-900 dark:text-blue-100">{initials(p.name)}</span>
                     )}
                     <span>
                       {p.name}
@@ -89,36 +46,42 @@ export function RightTabs({ portals, carriers }: { portals: Portal[] | null; car
               ))}
             </ul>
           )}
-          <Link href="/carriers" className="mt-auto text-xs text-blue-800 hover:underline dark:text-blue-300">All carriers</Link>
-        </Drawer>
+        </Menu>
       )}
-
       {carriers && (
-        <Drawer id="contacts" title="Carrier contacts" open={open === "contacts"} onClose={close} panelRef={(el) => { panels.current.contacts = el; }}>
+        <Menu title="Carrier contacts">
           <ContactsPanel carriers={carriers} />
-        </Drawer>
+        </Menu>
       )}
-    </>
+    </div>
   );
 }
 
-function Drawer({ id, title, open, onClose, panelRef, children }: { id: Panel; title: string; open: boolean; onClose: () => void; panelRef: (el: HTMLElement | null) => void; children: React.ReactNode }) {
+/** A heading button that opens its content below it. The content stays in the page (hidden) so logos load right away. */
+function Menu({ title, count, children }: { title: string; count?: number; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
   return (
-    <aside
-      id={`drawer-${id}`}
-      ref={panelRef}
-      aria-label={title}
-      inert={!open}
-      className={`fixed right-0 top-0 z-30 flex h-full w-80 flex-col gap-3 border-l border-zinc-200 bg-white p-4 shadow-2xl transition-transform duration-200 dark:border-zinc-700 dark:bg-zinc-900 ${open ? "translate-x-0" : "translate-x-full"}`}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-base font-semibold text-blue-800 dark:text-blue-200">{title}</h2>
-        <button type="button" onClick={onClose} className="rounded-lg px-2 py-1 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800">
-          Close<span className="sr-only"> {title.toLowerCase()}</span>
+    <section className="rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+      <h2>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          aria-controls={id}
+          className="flex w-full items-center justify-between gap-2 rounded-2xl px-4 py-3 text-left text-base font-semibold text-blue-800 hover:bg-blue-50 dark:text-blue-200 dark:hover:bg-zinc-800"
+        >
+          <span>
+            {title}
+            {count !== undefined && <span className="ml-2 text-sm font-normal text-zinc-600 dark:text-zinc-400">({count})</span>}
+          </span>
+          <span aria-hidden="true" className={`transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
         </button>
+      </h2>
+      <div id={id} hidden={!open} className="flex flex-col gap-3 border-t border-zinc-200 px-4 py-3 dark:border-zinc-700">
+        {children}
       </div>
-      {children}
-    </aside>
+    </section>
   );
 }
 
@@ -143,7 +106,7 @@ function ContactsPanel({ carriers }: { carriers: Carrier[] }) {
           {carriers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
       </div>
-      <div aria-live="polite" aria-busy={pending} className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pb-4">
+      <div aria-live="polite" aria-busy={pending} className="flex flex-col gap-2">
         {pending && <p className="text-sm text-zinc-600 dark:text-zinc-400">Loading contacts…</p>}
         {result && !result.ok && <p role="alert" className="text-sm text-red-700 dark:text-red-400">{result.error}</p>}
         {result?.ok && result.contacts.length === 0 && (
