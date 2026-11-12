@@ -17,7 +17,7 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/docume
   const [docs, carriers] = await Promise.all([listDocuments(ctx, params), listCarrierOptions(ctx)]);
   return (
     <>
-      <h1 className="text-xl font-semibold">Documents</h1>
+      <h1 className="page-title">Documents</h1>
       {can(ctx, "document.write") && (
         <Section title="Upload a document">
           <UploadForm carriers={carriers} />
@@ -41,10 +41,10 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/docume
           </select>
         </label>
         <label className="flex items-center gap-2"><input type="checkbox" name="includeArchived" defaultChecked={params.includeArchived === "on"} />Include archived</label>
-        <button className="rounded-lg bg-blue-700 px-3 py-1.5 font-medium text-white hover:bg-blue-800">Filter</button>
+        <button className="inline-flex min-h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-[13px] font-medium bg-blue-700 text-white shadow-xs hover:bg-blue-800">Filter</button>
         <Link href="/documents" className="px-2 py-1.5 hover:underline">Clear</Link>
       </form>
-      <div className="overflow-x-auto rounded-2xl border border-transparent bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+      <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table (scrolls sideways on small screens)">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-zinc-200 text-xs uppercase text-zinc-600 dark:text-zinc-400 dark:border-zinc-700">
             <tr><th scope="col" className="px-3 py-2">Title</th><th scope="col" className="px-3 py-2">Type</th><th scope="col" className="px-3 py-2">Visibility</th><th scope="col" className="px-3 py-2">Latest</th><th scope="col" className="px-3 py-2">Owner</th></tr>
@@ -54,7 +54,7 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/docume
             {docs.map((d) => (
               <tr key={d.id} className="border-b border-zinc-100 last:border-0 dark:border-zinc-800">
                 <td className="px-3 py-2">
-                  <Link href={`/documents/${d.id}`} className="font-medium text-blue-800 hover:underline dark:text-blue-300">{d.title}</Link>
+                  <Link href={`/documents/${d.id}`} className="font-medium text-zinc-900 hover:text-blue-700 dark:text-zinc-100 dark:hover:text-blue-300">{d.title}</Link>
                   {d.status === "ARCHIVED" && <Badge>Archived</Badge>}
                 </td>
                 <td className="px-3 py-2">{label(d.documentType)}</td>

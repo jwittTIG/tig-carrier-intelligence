@@ -26,16 +26,16 @@ export default async function ComparePage({ searchParams }: PageProps<"/markets/
 
   return (
     <>
-      <Link href={back} className="text-sm hover:underline">← Back to Market Finder</Link>
-      <h1 className="text-xl font-semibold">Compare markets</h1>
+      <Link href={back} className="back-link">← Back to Market Finder</Link>
+      <h1 className="page-title">Compare markets</h1>
       {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
       {data && (
         <>
-          <p role="note" className="rounded border border-zinc-300 bg-zinc-100 p-2 text-sm dark:border-zinc-600 dark:bg-zinc-800">{data.disclaimer}</p>
+          <p role="note" className="rounded-xl border border-zinc-300 bg-zinc-100 p-2 text-sm dark:border-zinc-600 dark:bg-zinc-800">{data.disclaimer}</p>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
             Risk: {[data.filters.stateCode, data.filters.industry, data.filters.limit ? `limit $${data.filters.limit.toLocaleString("en-US")}` : null, ...data.attributes.filter((a) => data!.risk[a.key] !== undefined).map((a) => `${a.label} ${data!.risk[a.key]}${a.unit ? ` ${a.unit}` : ""}`)].filter(Boolean).join(" · ") || "no details entered"}
           </p>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table (scrolls sideways on small screens)">
             <table className="w-full min-w-[640px] table-fixed border-collapse text-sm">
               <caption className="sr-only">Selected markets side by side</caption>
               <thead>

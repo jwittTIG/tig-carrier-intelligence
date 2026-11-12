@@ -43,44 +43,44 @@ export default async function MarketsPage({ searchParams }: PageProps<"/markets"
 
   return (
     <>
-      <h1 className="text-xl font-semibold">Market Finder</h1>
-      <form method="get" role="search" className="flex flex-col gap-3 rounded-2xl border border-transparent bg-white shadow-sm p-3 dark:border-zinc-700 dark:bg-zinc-900">
+      <h1 className="page-title">Market Finder</h1>
+      <form method="get" role="search" className="flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white shadow-xs p-3 dark:border-zinc-700 dark:bg-zinc-900">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          <label className="flex flex-col gap-1 text-sm">
+          <label className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">
             Line
             <select name="lineId" defaultValue={params.lineId ?? ""} className={inputClass}>
               <option value="">—</option>
               {lines.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
             </select>
           </label>
-          <label className="flex flex-col gap-1 text-sm">
+          <label className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">
             or product
             <select name="productId" defaultValue={params.productId ?? ""} className={inputClass}>
               <option value="">—</option>
               {products.map((p) => <option key={p.id} value={p.id}>{p.line.name}: {p.name}</option>)}
             </select>
           </label>
-          <label className="flex flex-col gap-1 text-sm">
+          <label className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">
             State
             <select name="stateCode" defaultValue={params.stateCode ?? ""} className={inputClass}>
               <option value="">Any</option>
               {territories.filter((t) => t.stateCode).map((t) => <option key={t.id} value={t.stateCode!}>{t.name}</option>)}
             </select>
           </label>
-          <label className="flex flex-col gap-1 text-sm">
+          <label className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">
             Industry (words or code)
             <input name="industry" defaultValue={params.industry} placeholder="roofing or 238160" className={inputClass} />
           </label>
-          <label className="flex flex-col gap-1 text-sm">
+          <label className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">
             Limit wanted ($)
             <input name="limit" defaultValue={params.limit} inputMode="decimal" placeholder="2,000,000" className={inputClass} />
           </label>
           <div className="flex flex-col justify-end gap-2">
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="includeIntermediaries" defaultChecked={params.includeIntermediaries !== "false" && (params.includeIntermediaries === "on" || !asked)} />Include wholesalers/MGAs</label>
-            <button type="submit" className="rounded-lg bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800">Find markets</button>
+            <button type="submit" className="inline-flex min-h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-[13px] font-medium bg-blue-700 text-white shadow-xs hover:bg-blue-800">Find markets</button>
           </div>
         </div>
-        <RiskAttributeInputs attributes={attributes} values={params} asked={asked} />
+        <RiskAttributeInputs attributes={attributes} values={params} asked={asked} needsInfo={!!result?.groups.some((g) => g.outcome === "NEEDS_INFO" && g.results.length)} />
       </form>
 
       {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
@@ -94,7 +94,7 @@ export default async function MarketsPage({ searchParams }: PageProps<"/markets"
       {result && result.industryChoices.length > 0 && (
         <Section title={`Which industry? ${result.industryChoices.length} NAICS ${result.industryChoices.length === 1 ? "match" : "matches"} for “${params.industry}”`}>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">Choose the one that describes the risk. Six-digit codes are the most specific; a shorter code covers every industry under it.</p>
-          <ul className="flex flex-col gap-1 text-sm">
+          <ul className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">
             {result.industryChoices.map((c) => (
               <li key={c.code}>
                 <Link href={withIndustry(c.code)} className="text-blue-800 hover:underline dark:text-blue-300">NAICS {c.code}: {c.title}</Link>
@@ -116,7 +116,7 @@ export default async function MarketsPage({ searchParams }: PageProps<"/markets"
               {result.industry.matchedWords && <span className="text-zinc-600 dark:text-zinc-400"> (the only six-digit match for “{result.industry.matchedWords}”)</span>}
             </p>
           )}
-          <p role="note" className="rounded border border-zinc-300 bg-zinc-100 p-2 text-sm dark:border-zinc-600 dark:bg-zinc-800">{result.disclaimer}</p>
+          <p role="note" className="rounded-xl border border-zinc-300 bg-zinc-100 p-2 text-sm dark:border-zinc-600 dark:bg-zinc-800">{result.disclaimer}</p>
           <p className="text-xs text-zinc-600 dark:text-zinc-400">
             Only approved appetite in effect today is used. Rules for a specific class only count when you enter an industry.
             Conditions such as revenue limits are checked against the risk details you enter; a missing detail is never treated as acceptable.
@@ -125,7 +125,7 @@ export default async function MarketsPage({ searchParams }: PageProps<"/markets"
           {result.total > 1 && (
             <form id="compare" method="get" action="/markets/compare" className="flex flex-wrap items-center gap-3 text-sm">
               {carry.map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
-              <button type="submit" className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 font-medium hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900">Compare selected</button>
+              <button type="submit" className="inline-flex min-h-8 items-center rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-[13px] font-medium text-zinc-800 shadow-xs hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800">Compare selected</button>
               <span className="text-xs text-zinc-600 dark:text-zinc-400">Tick 2 to {MAX_COMPARE} markets below.</span>
             </form>
           )}
@@ -133,7 +133,7 @@ export default async function MarketsPage({ searchParams }: PageProps<"/markets"
             <Section key={g.outcome} title={`${GROUP_TITLE[g.outcome]} (${g.results.length})`}>
               <ul className="flex flex-col gap-3">
                 {g.results.map((r) => (
-                  <li key={r.key} className="flex flex-col gap-1 rounded border border-zinc-200 p-3 text-sm dark:border-zinc-700">
+                  <li key={r.key} className="flex flex-col gap-2.5 rounded-xl border border-zinc-200 p-4 text-[13px] hover:border-zinc-300 dark:border-zinc-700 dark:hover:border-zinc-600">
                     <div className="flex flex-wrap items-center gap-2">
                       {result.total > 1 && (
                         <label className="flex items-center gap-1 text-xs">
@@ -141,20 +141,30 @@ export default async function MarketsPage({ searchParams }: PageProps<"/markets"
                           <span className="sr-only">Compare {r.carrier.displayName} {r.product} {r.channel}</span>
                         </label>
                       )}
-                      <Link href={`/carriers/${r.carrier.id}`} className="font-medium text-blue-800 hover:underline dark:text-blue-300">{r.carrier.displayName}</Link>
-                      <span>· {r.product} · {r.channel}</span>
+                      <Link href={`/carriers/${r.carrier.id}`} className="text-[15px] font-semibold text-zinc-900 hover:text-blue-700 dark:text-zinc-100 dark:hover:text-blue-300">{r.carrier.displayName}</Link>
+                      <span className="text-zinc-600 dark:text-zinc-400">{r.product} · {r.channel}</span>
+                      <span className="flex-1" />
                       {r.group === "NEEDS_INFO" ? <Badge tone="warn">Needs information</Badge> : <OutcomeBadge outcome={r.outcome} />}
                       {r.stale && <Badge tone="warn">Appetite review overdue</Badge>}
                       {r.conflicting && <Badge tone="bad">Conflicting rules: check</Badge>}
                       {r.limit.state === "BELOW" && <Badge tone="bad">Limit too low</Badge>}
                     </div>
                     {r.missing.length > 0 && (
-                      <p className="text-xs text-amber-800 dark:text-amber-300">
-                        Missing: {r.missing.map((m) => `${m.label} (${m.reason}; could make it ${label(m.outcome).toLowerCase()})`).join("; ")}.
-                        {" "}Otherwise: {label(r.outcome)}.
-                      </p>
+                      <details className="group rounded-lg border border-amber-200 bg-amber-50/70 dark:border-amber-900/60 dark:bg-amber-950/30">
+                        <summary className="flex list-none items-center justify-between gap-2 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
+                          <span><strong className="font-semibold">{r.missing.length} {r.missing.length === 1 ? "detail" : "details"} missing</strong> that could change the answer. Otherwise: {label(r.outcome)}.</span>
+                          <span aria-hidden="true" className="transition-transform duration-200 group-open:rotate-180">▾</span>
+                        </summary>
+                        <ul className="flex flex-wrap gap-1.5 border-t border-amber-200 px-3 py-2.5 dark:border-amber-900/60">
+                          {r.missing.map((m, i) => (
+                            <li key={i} className="rounded-md bg-white px-2 py-1 text-xs text-zinc-800 ring-1 ring-inset ring-amber-200 dark:bg-zinc-900 dark:text-zinc-200 dark:ring-amber-900/60">
+                              {m.label} <span className="text-zinc-600 dark:text-zinc-400">· {m.reason}; could make it {label(m.outcome).toLowerCase()}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
                     )}
-                    <div className="text-zinc-600 dark:text-zinc-400">
+                    <div className="flex flex-wrap items-center gap-x-1 text-xs text-zinc-600 dark:text-zinc-400">
                       {r.profileId ? (
                         <Link href={`/appetite/${r.profileId}`} className="hover:underline">Appetite v{r.version}</Link>
                       ) : "No appetite profile"}
@@ -162,15 +172,15 @@ export default async function MarketsPage({ searchParams }: PageProps<"/markets"
                       {r.note && <> · {r.note}</>}
                     </div>
                     {r.matchedRules.length > 0 && (
-                      <ul className="text-xs">
-                        {r.matchedRules.map((m) => <li key={m.id}>{label(m.outcome)}: {m.scope}{m.rationale && ` · “${m.rationale}”`}</li>)}
+                      <ul className="flex flex-col gap-1 border-l-2 border-zinc-200 pl-3 text-xs text-zinc-700 dark:border-zinc-700 dark:text-zinc-300">
+                        {r.matchedRules.map((m) => <li key={m.id}><span className="font-medium">{label(m.outcome)}:</span> {m.scope}{m.rationale && ` · “${m.rationale}”`}</li>)}
                       </ul>
                     )}
                     <ConditionList conditions={r.conditions} />
-                    <div className="text-xs">Limits: {r.limit.text}</div>
+                    <div className="text-xs text-zinc-700 dark:text-zinc-300"><span className="text-zinc-600 dark:text-zinc-400">Limits:</span> {r.limit.text}</div>
                     {r.contacts.length > 0 && (
-                      <div className="text-xs">
-                        Contacts:{" "}
+                      <div className="text-xs text-zinc-700 dark:text-zinc-300">
+                        <span className="text-zinc-600 dark:text-zinc-400">Contacts:</span>{" "}
                         {r.contacts.map((c, i) => (
                           <span key={c.id}>{i > 0 && "; "}<Link href={`/contacts/${c.id}`} className="hover:underline">{c.name}</Link> ({contactRoleLabel(c.role)}){c.email && ` ${c.email}`}{c.phone && ` ${c.phone}`}</span>
                         ))}

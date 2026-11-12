@@ -28,8 +28,8 @@ export default async function IndustryPage({ params }: PageProps<"/setup/industr
 
   return (
     <>
-      <Link href="/setup/industries" className="text-sm hover:underline">← Industry codes</Link>
-      <h1 className="text-xl font-semibold">NAICS {industry.code}: {industry.title}</h1>
+      <Link href="/setup/industries" className="back-link">← Industry codes</Link>
+      <h1 className="page-title">NAICS {industry.code}: {industry.title}</h1>
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
         Source: {industry.sourceVersion} (U.S. Census Bureau).
         {industry.level < 6 && " This is a broader group: a carrier rule for it covers every industry under it."}
@@ -75,7 +75,7 @@ export default async function IndustryPage({ params }: PageProps<"/setup/industr
 
       {industry.children.length > 0 && (
         <Section title="Industries in this group">
-          <ul className="flex flex-col gap-1 text-sm">
+          <ul className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">
             {industry.children.map((c) => <li key={c.code}><Link href={`/setup/industries/NAICS/${c.code}`} className="hover:underline">{c.code} {c.title}</Link></li>)}
           </ul>
         </Section>

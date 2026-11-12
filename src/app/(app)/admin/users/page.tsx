@@ -17,8 +17,8 @@ export default async function UsersPage() {
 
   return (
     <>
-      <Link href="/setup" className="text-sm hover:underline">← Setup</Link>
-      <h1 className="text-xl font-semibold">Users</h1>
+      <Link href="/setup" className="back-link">← Setup</Link>
+      <h1 className="page-title">Users</h1>
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
         Everyone sees all carrier information, including commissions and codes (DECISIONS D1). Admins can also manage users and settings.
         People sign in with their Microsoft 365 account and must be invited first.
@@ -38,7 +38,7 @@ export default async function UsersPage() {
         </ActionForm>
       </Section>
 
-      <div className="overflow-x-auto rounded-2xl border border-transparent bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+      <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table (scrolls sideways on small screens)">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-zinc-200 text-xs uppercase text-zinc-600 dark:text-zinc-400 dark:border-zinc-700">
             <tr>

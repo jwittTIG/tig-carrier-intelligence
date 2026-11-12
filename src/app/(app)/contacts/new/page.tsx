@@ -13,8 +13,8 @@ export default async function NewContactPage() {
   if (!can(ctx, "contact.write")) return <p role="alert">You don&apos;t have permission to add contacts.</p>;
   return (
     <>
-      <Link href="/contacts" className="text-sm hover:underline">← Contacts</Link>
-      <h1 className="text-xl font-semibold">New contact</h1>
+      <Link href="/contacts" className="back-link">← Contacts</Link>
+      <h1 className="page-title">New contact</h1>
       <Section title="Details">
         <ActionForm action={createContactAction} submitLabel="Create contact" showOk={false}>
           <ContactFields />

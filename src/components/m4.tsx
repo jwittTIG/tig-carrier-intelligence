@@ -27,7 +27,7 @@ export function DecisionPanel({ ctx, cr, permission, returnTo }: { ctx: AuthCont
   const own = cr.proposedById === ctx.userId;
   const allowed = can(ctx, "change_request.review") && can(ctx, permission) && (!own || ctx.roles.includes("ADMIN"));
   return (
-    <div className="flex flex-col gap-2 rounded border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-700 dark:bg-amber-950">
+    <div className="flex flex-col gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-700 dark:bg-amber-950">
       <p>
         Submitted by <strong>{cr.proposedBy.name}</strong> on {fmtDateTime(cr.createdAt)}.{cr.rationale && <> Note: {cr.rationale}</>}
       </p>

@@ -13,7 +13,7 @@ export default async function ApprovalsPage() {
   const [queue, quality] = await Promise.all([listQueue(ctx), dataQuality(ctx)]);
   return (
     <>
-      <h1 className="text-xl font-semibold">Approvals &amp; data quality</h1>
+      <h1 className="page-title">Approvals &amp; data quality</h1>
 
       <Section title={`Waiting for approval (${queue.pending.length})`}>
         <p className="text-xs text-zinc-600 dark:text-zinc-400">You can&apos;t approve your own submissions. An admin can, with a written reason (DECISIONS D14).</p>
@@ -22,7 +22,7 @@ export default async function ApprovalsPage() {
           {queue.pending.map((cr) => (
             <li key={cr.id} className="flex flex-col gap-2">
               <div className="flex flex-wrap items-center gap-2 text-sm">
-                {cr.link ? <Link href={cr.link.href} className="font-medium text-blue-800 hover:underline dark:text-blue-300">{cr.link.label}</Link> : <span>{label(cr.recordType)}</span>}
+                {cr.link ? <Link href={cr.link.href} className="font-medium text-zinc-900 hover:text-blue-700 dark:text-zinc-100 dark:hover:text-blue-300">{cr.link.label}</Link> : <span>{label(cr.recordType)}</span>}
                 {cr.isOwn && <Badge>Your submission</Badge>}
                 <ProposedSummary patch={cr.proposedPatch} />
               </div>

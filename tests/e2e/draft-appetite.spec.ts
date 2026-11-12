@@ -58,6 +58,7 @@ test("draft appetite from a guide, review it, approve it, and find markets with 
   await expect(page.getByText("Waiting for approval").first()).toBeVisible();
 
   // Someone else approves it.
+  await page.getByRole("button", { name: /^Account:/ }).click(); // Sign out is in the account menu
   await page.getByRole("button", { name: "Sign out" }).click();
   await signIn(page, "DEMO Admin");
   await page.getByRole("link", { name: "Approvals" }).click();

@@ -1,41 +1,311 @@
 @import "tailwindcss";
 
-/* Dark mode only when chosen in the Color menu (class "dark" on <html>), never from the computer's setting. */
+/*
+ * TIG design system (2026-11-11 redesign). Navy, orange and white.
+ *
+ * The app's components use Tailwind's `zinc` (neutrals) and `blue` (brand) classes. Both scales
+ * are redefined here, so every screen picks up the TIG palette from one place:
+ *   zinc  = navy-tinted neutrals (borders, muted text, surfaces); light and dark mode share it.
+ *   blue  = TIG navy (primary buttons, headings, links). Dark mode lifts the action shades so
+ *           buttons and links stand out on dark surfaces.
+ *   orange = TIG accent (#F28C28): active states and highlights, used sparingly. Never for small
+ *           text on white (too little contrast).
+ */
+
+/* Dark mode only when chosen (class "dark" on <html>), never from the computer's setting. */
 @custom-variant dark (&:where(.dark, .dark *));
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, "Segoe UI", Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "Cascadia Mono", Consolas, monospace;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: ui-sans-serif, system-ui, "Segoe UI", Arial, sans-serif;
-  --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  /* Neutrals (navy-tinted). Light: 50 page wash, 200 borders, 600 secondary text, 900 body text.
+     Dark: 950 background, 900 cards, 800 raised surfaces, 700 borders, 400 secondary text. */
+  --color-zinc-50: #f7f9fc;
+  --color-zinc-100: #f1f4f9;
+  --color-zinc-200: #e2e8f0;
+  --color-zinc-300: #cbd5e1;
+  --color-zinc-400: #94a3b8;
+  --color-zinc-500: #74839a;
+  --color-zinc-600: #5b6b82;
+  --color-zinc-700: #29394f;
+  --color-zinc-800: #1c2d45;
+  --color-zinc-900: #162338;
+  --color-zinc-950: #0b1220;
+
+  /* TIG navy. 700 primary (#142B49), 900 deep navy (#0B1C30). */
+  --color-blue-50: #f3f6fb;
+  --color-blue-100: #e6ecf5;
+  --color-blue-200: #ccd8ea;
+  --color-blue-300: #a3b6d3;
+  --color-blue-400: #7189b1;
+  --color-blue-500: #46628f;
+  --color-blue-600: #2a4670;
+  --color-blue-700: #142b49;
+  --color-blue-800: #0f223c;
+  --color-blue-900: #0b1c30;
+  --color-blue-950: #07121f;
+
+  /* TIG orange. 500 is the brand accent (#F28C28). */
+  --color-orange-50: #fef5ec;
+  --color-orange-100: #fde6cf;
+  --color-orange-200: #fbcd9f;
+  --color-orange-300: #f8b46f;
+  --color-orange-400: #f5a04b;
+  --color-orange-500: #f28c28;
+  --color-orange-600: #d9741a;
+  --color-orange-700: #b45c12;
+  --color-orange-800: #8a4510;
+  --color-orange-900: #5c2f0c;
+
+  /* Sidebar. */
+  --color-rail: #0b1c30;
+  --color-rail-hover: #13284a;
+  --color-rail-active: #1a3358;
+
+  /* Radii: 6px controls, 8px small panels, 10px cards. */
+  --radius-md: 0.3125rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.625rem;
+  --radius-3xl: 0.75rem;
+
+  /* Shadows: barely there. */
+  --shadow-xs: 0 1px 1px 0 rgb(15 23 42 / 0.03);
+  --shadow-sm: 0 1px 2px 0 rgb(15 23 42 / 0.05);
+  --shadow-md: 0 4px 12px -4px rgb(15 23 42 / 0.10);
+  --shadow-lg: 0 12px 28px -8px rgb(15 23 42 / 0.16);
+  --shadow-2xl: 0 24px 48px -12px rgb(15 23 42 / 0.22);
+
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
   color-scheme: dark;
+  /* Action shades lifted so buttons and links read on dark navy. */
+  --color-blue-200: #c9d8f0;
+  --color-blue-300: #a6bfe6;
+  --color-blue-500: #6f93cf;
+  --color-blue-600: #4271b6;
+  --color-blue-700: #2f5c9e;
+  --color-blue-800: #264c85;
+  --color-blue-900: #13243d;
+  --color-blue-950: #0e1b2e;
+  --color-rail: #101c2e;
+  --color-rail-hover: #162741;
+  --color-rail-active: #1c2d45;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 6px 16px -6px rgb(0 0 0 / 0.5);
+  --shadow-lg: 0 16px 32px -10px rgb(0 0 0 / 0.6);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background: var(--color-white);
+    color: var(--color-zinc-900);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out);
+  }
+  .dark body {
+    background: var(--color-zinc-950);
+    color: #f1f5f9;
+  }
+  ::placeholder {
+    color: var(--color-zinc-400);
+    opacity: 1;
+  }
+  .dark ::placeholder {
+    color: var(--color-zinc-500);
+  }
+  ::selection {
+    background: var(--color-orange-200);
+    color: #0b1c30;
+  }
+  /* Smooth, quick state changes on everything interactive. */
+  a, button, input, select, textarea, summary {
+    transition-property: color, background-color, border-color, box-shadow, opacity;
+    transition-duration: 150ms;
+    transition-timing-function: var(--ease-out);
+  }
+  button:not(:disabled), summary, [role="button"] {
+    cursor: pointer;
+  }
 }
 
-/* WCAG 1.4.1: links in page content are underlined, not told apart by color alone.
-   Navigation tabs and button-style links (with a background or border) are excluded. */
+@layer components {
+  /* Page title: 28px semibold navy. */
+  .page-title {
+    font-size: 1.75rem;
+    line-height: 2.125rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--color-blue-700);
+  }
+  .dark .page-title {
+    color: #f1f5f9;
+  }
+}
+
+/*
+ * Data tables, everywhere in the main workspace: light gray header, hairline rows, quiet hover.
+ * Unlayered on purpose so it wins over the per-table spacing classes and every table matches.
+ */
+main table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+main thead th {
+  background: var(--color-zinc-50);
+  color: var(--color-zinc-600);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid var(--color-zinc-200);
+  border-bottom: 1px solid var(--color-zinc-200);
+  white-space: nowrap;
+}
+main thead th:first-child {
+  border-left: 1px solid var(--color-zinc-200);
+  border-top-left-radius: var(--radius-lg);
+  border-bottom-left-radius: var(--radius-lg);
+}
+main thead th:last-child {
+  border-right: 1px solid var(--color-zinc-200);
+  border-top-right-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
+}
+main tbody td {
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--color-zinc-100);
+  font-size: 0.8125rem;
+}
+main tbody tr {
+  border-top-width: 0;
+}
+main tbody tr:hover > td {
+  background: var(--color-zinc-50);
+}
+main tbody tr:last-child > td {
+  border-bottom: 0;
+}
+.dark main thead th {
+  background: var(--color-zinc-800);
+  color: var(--color-zinc-400);
+  border-color: var(--color-zinc-700);
+}
+.dark main tbody td {
+  border-bottom-color: var(--color-zinc-800);
+}
+.dark main tbody tr:hover > td {
+  background: rgb(28 45 69 / 0.5);
+}
+
+/*
+ * WCAG 1.4.1: links in page content are underlined, not told apart by color alone. A soft
+ * underline that firms up on hover. Navigation and button-style links are excluded.
+ */
 main a:not(nav a):not([class*="bg-"]):not([class*="border"]) {
   text-decoration-line: underline;
-  text-underline-offset: 2px;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+main a:not(nav a):not([class*="bg-"]):not([class*="border"]):hover {
+  text-decoration-color: currentColor;
 }
 
-/* Visible keyboard focus everywhere. */
+/* Visible keyboard focus everywhere: navy ring in light mode, orange in dark. */
 :focus-visible {
-  outline: 2px solid var(--color-blue-700);
+  outline: 2px solid var(--color-blue-500);
   outline-offset: 2px;
+}
+.dark :focus-visible {
+  outline-color: var(--color-orange-500);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+}
+
+/* "← Back" link above a page title. */
+.back-link {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: -0.75rem;
+  font-size: 0.8125rem;
+  color: var(--color-zinc-600);
+  text-decoration: none !important;
+}
+.back-link:hover {
+  color: var(--color-blue-700);
+}
+.dark .back-link {
+  color: var(--color-zinc-400);
+}
+.dark .back-link:hover {
+  color: #f1f5f9;
+}
+
+/* File pickers: a small outlined button instead of the browser default. */
+input[type="file"] {
+  font-size: 0.8125rem;
+  color: var(--color-zinc-600);
+}
+input[type="file"]::file-selector-button {
+  margin-right: 0.75rem;
+  height: 2rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-zinc-200);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+  color: var(--color-zinc-900);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 150ms var(--ease-out), border-color 150ms var(--ease-out);
+}
+input[type="file"]::file-selector-button:hover {
+  background: var(--color-zinc-50);
+  border-color: var(--color-zinc-300);
+}
+.dark input[type="file"] {
+  color: var(--color-zinc-400);
+}
+.dark input[type="file"]::file-selector-button {
+  background: var(--color-zinc-900);
+  border-color: var(--color-zinc-700);
+  color: #f1f5f9;
+}
+
+/* Checkboxes and radios in the brand navy (orange in dark mode). */
+input[type="checkbox"], input[type="radio"] {
+  accent-color: var(--color-blue-700);
+  width: 0.95rem;
+  height: 0.95rem;
+}
+.dark input[type="checkbox"], .dark input[type="radio"] {
+  accent-color: var(--color-orange-500);
+}
+
+/* A record name that is the whole cell is a link by context: underline only on hover. */
+main td > a:first-child:not([class*="bg-"]):not([class*="border"]),
+main li > a:first-child:only-child:not([class*="bg-"]):not([class*="border"]) {
+  text-decoration-line: none;
+}
+main td > a:first-child:not([class*="bg-"]):not([class*="border"]):hover,
+main li > a:first-child:only-child:not([class*="bg-"]):not([class*="border"]):hover {
+  text-decoration-line: underline;
 }

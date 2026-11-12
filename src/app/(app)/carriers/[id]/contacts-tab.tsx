@@ -20,7 +20,7 @@ export async function ContactsTab({ carrierId }: { carrierId: string }) {
     >
       {rows.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">No contacts at this carrier yet.</p>}
       {current.length > 0 && (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table (scrolls sideways on small screens)">
           <table className="w-full text-left text-sm">
             <thead className="text-xs uppercase text-zinc-600 dark:text-zinc-400">
               <tr><th scope="col" className="py-1 pr-3">Name</th><th scope="col" className="py-1 pr-3">Role</th><th scope="col" className="py-1 pr-3">Territory</th><th scope="col" className="py-1 pr-3">Lines</th><th scope="col" className="py-1">Confirmed</th></tr>

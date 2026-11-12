@@ -27,45 +27,45 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">Contacts</h1>
+        <h1 className="page-title">Contacts</h1>
         {can(ctx, "contact.write") && <ButtonLink href="/contacts/new">New contact</ButtonLink>}
       </div>
 
-      <form method="get" role="search" className="grid grid-cols-1 gap-3 rounded-2xl border border-transparent bg-white shadow-sm p-3 sm:grid-cols-3 lg:grid-cols-6 dark:border-zinc-700 dark:bg-zinc-900">
+      <form method="get" role="search" className="grid grid-cols-1 gap-3 rounded-2xl border border-zinc-200 bg-white shadow-xs p-3 sm:grid-cols-3 lg:grid-cols-6 dark:border-zinc-700 dark:bg-zinc-900">
         <p className="text-sm font-medium sm:col-span-3 lg:col-span-6">Who&apos;s my rep for…</p>
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">
           Carrier
           <select name="organizationId" defaultValue={params.organizationId ?? ""} className={inputClass}>
             <option value="">Any</option>
             {carriers.map((c) => <option key={c.id} value={c.id}>{c.displayName}</option>)}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">
           State
           <select name="stateCode" defaultValue={params.stateCode ?? ""} className={inputClass}>
             <option value="">Any</option>
             {states.map((t) => <option key={t.id} value={t.stateCode!}>{t.name}</option>)}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">
           Line
           <select name="lineId" defaultValue={params.lineId ?? ""} className={inputClass}>
             <option value="">Any</option>
             {lines.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">
           Role
           <select name="role" defaultValue={params.role ?? ""} className={inputClass}>
             <option value="">Any</option>
             {CONTACT_ROLES.map((r) => <option key={r.code} value={r.code}>{r.label}</option>)}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">
           Name or email
           <input name="q" defaultValue={params.q} className={inputClass} />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">
           Confirmation
           <select name="freshness" defaultValue={params.freshness ?? ""} className={inputClass}>
             <option value="">Any</option>
@@ -78,8 +78,8 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
           Include inactive
         </label>
         <div className="flex items-end gap-2">
-          <button type="submit" className="rounded-lg bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800">Search</button>
-          <Link href="/contacts" className="px-2 py-1.5 text-sm hover:underline">Clear</Link>
+          <button type="submit" className="inline-flex min-h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-[13px] font-medium bg-blue-700 text-white shadow-xs hover:bg-blue-800">Search</button>
+          <Link href="/contacts" className="inline-flex min-h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-[13px] font-medium border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">Clear</Link>
         </div>
         <p className="text-xs text-zinc-600 dark:text-zinc-400 sm:col-span-3 lg:col-span-6">
           A state search matches people assigned to that state or to the whole US. People with no territory recorded don&apos;t match a state search.
@@ -89,7 +89,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
 
       <p className="text-sm text-zinc-600 dark:text-zinc-400" aria-live="polite">{result.total} {result.total === 1 ? "contact" : "contacts"}</p>
 
-      <div className="overflow-x-auto rounded-2xl border border-transparent bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+      <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table (scrolls sideways on small screens)">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-zinc-200 text-xs uppercase text-zinc-600 dark:text-zinc-400 dark:border-zinc-700">
             <tr>
@@ -104,7 +104,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
             {result.items.map((c) => (
               <tr key={c.id} className="border-b border-zinc-100 align-top last:border-0 dark:border-zinc-800">
                 <td className="px-3 py-2">
-                  <Link href={`/contacts/${c.id}`} className="font-medium text-blue-800 hover:underline dark:text-blue-300">{c.firstName} {c.lastName}</Link>
+                  <Link href={`/contacts/${c.id}`} className="font-medium text-zinc-900 hover:text-blue-700 dark:text-zinc-100 dark:hover:text-blue-300">{c.firstName} {c.lastName}</Link>
                   {c.status !== "ACTIVE" && <span className="text-xs text-zinc-600 dark:text-zinc-400"> (inactive)</span>}
                 </td>
                 <td className="px-3 py-2">
@@ -132,9 +132,9 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
 
       {pages > 1 && (
         <nav aria-label="Pages" className="flex items-center gap-3 text-sm">
-          {result.page > 1 && <Link href={pageHref(result.page - 1)} className="hover:underline">← Previous</Link>}
+          {result.page > 1 && <Link href={pageHref(result.page - 1)} className="inline-flex min-h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-[13px] font-medium border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">← Previous</Link>}
           <span>Page {result.page} of {pages}</span>
-          {result.page < pages && <Link href={pageHref(result.page + 1)} className="hover:underline">Next →</Link>}
+          {result.page < pages && <Link href={pageHref(result.page + 1)} className="inline-flex min-h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-[13px] font-medium border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">Next →</Link>}
         </nav>
       )}
     </>

@@ -5,6 +5,16 @@
 
 Milestone 8 (Ask the guides) works with Josh's key (two real questions at $1.76 and $1.77 with the whole-PDF read).
 
+## N26: premium UI redesign (built 2026-11-11)
+Josh pasted a full redesign brief (Vercel / Linear / Attio feel; TIG navy, orange and white; visual only, no behavior changes). He chose to remove the accent color picker.
+- **Design system** (src/app/globals.css): TIG palette for light and dark, Geist and Geist Mono, 6–10px radii, hairline borders, near-flat shadows, quick 150–200ms transitions (off when the computer asks for reduced motion), navy focus rings (orange in dark), styled file pickers and checkboxes, one data-table style everywhere (light gray header, hairline rows, quiet hover).
+- **App shell**: deep navy sidebar with Workspace / Directory / Activity / Admin groups, Lucide icons, an orange marker on the current page, unread badge in orange, and a Collapse button (icons only; saved in this browser). Top bar: breadcrumb, search, Light/Dark toggle, account menu (name, role, Sign out). Phones: the sidebar slides in from a menu button.
+- **Components**: cards (Section), PageHeader, soft status badges with a dot, compact buttons (navy primary, orange accent for key actions like Ask and the carrier portal, outlined secondary and danger), 36px inputs with a soft focus ring.
+- **Screens**: Dashboard (metric strip, Ask / Find a market, SnapShot, three compact lists, right-hand menus); carrier profile (logo, fixed name, soft badges, orange-underlined tabs, orange portal button); Carriers table (line tags with "+N more"); Market Finder (risk details folded into a panel, opened when filled in or when results need details; missing details and long condition lists fold into counts); sign-in and no-access (navy brand panel + clean form); every page title, back link, filter bar, pagination and table restyled.
+- Accessibility: tables that scroll sideways are keyboard reachable; secondary text darkened slightly for contrast; the a11y sweep now covers light, dark, collapsed sidebar and dark at phone width, plus tests for the theme toggle and sidebar collapse.
+- Behavior unchanged except: Sign out moved into the account menu; the accent color picker is gone.
+- Tested (ran and saw pass): lint, typecheck, 306 unit/integration tests, production build, the a11y sweep in 4 setups, and all 21 browser tests (3.6 min). Found and worked around: on the local single-connection test database, a request cut off at the end of one test could stall the next; the Dashboard tests now wait for the page to go idle before ending. Checked by eye in the browser: Dashboard, carrier profile, Carriers, Contacts, Market Finder, appetite profile, sign-in, light/dark, phone width.
+
 ## Dashboard: Carrier SnapShot (built 2026-11-11)
 Josh: a Carrier SnapShot on the main page: choose a carrier, see its main, billing and claims phone numbers, the marketing rep's email and phone, and the agency code. He then said "Go ahead and deploy"; there is no hosted environment yet (D8 hosting, D7a Postgres open), so it was put live in the local app only.
 - New carrier fields **Main phone**, **Billing phone**, **Claims phone** (in Edit details; shown on the Overview).

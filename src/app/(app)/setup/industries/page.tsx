@@ -24,17 +24,17 @@ export default async function IndustriesPage({ searchParams }: PageProps<"/setup
 
   return (
     <>
-      <Link href="/setup" className="text-sm hover:underline">← Setup</Link>
-      <h1 className="text-xl font-semibold">Industry codes</h1>
+      <Link href="/setup" className="back-link">← Setup</Link>
+      <h1 className="page-title">Industry codes</h1>
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
         NAICS 2022 titles from the U.S. Census Bureau. Open a code to add search words staff use for it (for example “hvac” for Plumbing, Heating, and Air-Conditioning Contractors), so the Market Finder finds it.
       </p>
       <form method="get" role="search" className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">
           Words or code
           <input name="q" defaultValue={q} placeholder="air conditioning or 238220" className={inputClass} />
         </label>
-        <button type="submit" className="rounded-lg bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800">Search</button>
+        <button type="submit" className="inline-flex min-h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-[13px] font-medium bg-blue-700 text-white shadow-xs hover:bg-blue-800">Search</button>
       </form>
       {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
       {code && (
@@ -47,7 +47,7 @@ export default async function IndustriesPage({ searchParams }: PageProps<"/setup
           {results.length === 0 ? (
             <p className="text-sm">No title or search word matches. Search for a word in the official title (e.g. “air conditioning”), then add “{q}” as a search word on that code.</p>
           ) : (
-            <ul className="flex flex-col gap-1 text-sm">
+            <ul className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">
               {results.map((r) => (
                 <li key={r.code}>
                   <Link href={`/setup/industries/NAICS/${r.code}`} className="text-blue-800 hover:underline dark:text-blue-300">NAICS {r.code}: {r.title}</Link>

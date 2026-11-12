@@ -24,7 +24,7 @@ export async function CodesTab({ carrierId }: { carrierId: string }) {
     <div className="flex flex-col gap-4">
       <Section title="Agency and producer codes">
         <p className="text-xs text-zinc-600 dark:text-zinc-400">For looking codes up. Appointments themselves are managed by TIG&apos;s corporate office, not here.</p>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table (scrolls sideways on small screens)">
           <table className="w-full text-left text-sm">
             <thead className="text-xs text-zinc-600 dark:text-zinc-400">
               <tr>
@@ -125,7 +125,7 @@ export async function CodesTab({ carrierId }: { carrierId: string }) {
           <ul className="flex flex-col gap-2 text-sm">
             {portals.map((p) => (
               <li key={p.id} className="flex flex-wrap items-center gap-3">
-                <a href={p.url} target="_blank" rel="noopener noreferrer" className="font-medium text-blue-800 hover:underline dark:text-blue-300">{p.name}</a>
+                <a href={p.url} target="_blank" rel="noopener noreferrer" className="font-medium text-zinc-900 hover:text-blue-700 dark:text-zinc-100 dark:hover:text-blue-300">{p.name}</a>
                 {p.credentialVaultReference && <span className="text-zinc-600 dark:text-zinc-400">Login: {p.credentialVaultReference}</span>}
                 {p.accessInstructions && <span className="text-zinc-600 dark:text-zinc-400">{p.accessInstructions}</span>}
                 {write && <ActionForm action={removePortalAction.bind(null, carrierId, p.id)} submitLabel="Remove" variant="danger" showOk={false} confirm={`Remove ${p.name}?`}>{null}</ActionForm>}

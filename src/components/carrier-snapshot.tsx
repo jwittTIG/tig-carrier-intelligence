@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useId, useState, useTransition } from "react";
 import { carrierSnapshotAction, type Snapshot } from "@/app/(app)/dashboard/snapshot-action";
+import { inputClass } from "./ui";
 
 const CODE_TYPE: Record<string, string> = { MASTER: "Master", PRODUCER: "Producer", SUB_CODE: "Sub-code", LOCATION: "Location", OTHER: "Other" };
 const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("");
@@ -24,8 +25,8 @@ export function CarrierSnapshot({ carriers }: { carriers: { id: string; name: st
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1 sm:max-w-sm">
-        <label htmlFor={id} className="text-sm">Carrier</label>
-        <select id={id} value={carrierId} onChange={(e) => pick(e.target.value)} className="rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-600 dark:bg-zinc-800">
+        <label htmlFor={id} className="text-[13px] font-medium text-zinc-700 dark:text-zinc-200">Carrier</label>
+        <select id={id} value={carrierId} onChange={(e) => pick(e.target.value)} className={inputClass}>
           <option value="">Choose a carrier…</option>
           {carriers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
@@ -72,7 +73,7 @@ export function CarrierSnapshot({ carriers }: { carriers: { id: string; name: st
               </Item>
             </dl>
             <div className="text-sm">
-              <h3 className="text-xs font-medium uppercase text-zinc-600 dark:text-zinc-400">Agency code</h3>
+              <h3 className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Agency code</h3>
               {s.codes === null ? (
                 <p className="text-zinc-600 dark:text-zinc-400">No access to codes</p>
               ) : s.codes.length === 0 ? (
@@ -100,8 +101,8 @@ export function CarrierSnapshot({ carriers }: { carriers: { id: string; name: st
 
 function Item({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-0.5 rounded-xl border border-zinc-200 p-2 dark:border-zinc-700">
-      <dt className="text-xs font-medium uppercase text-zinc-600 dark:text-zinc-400">{label}</dt>
+    <div className="flex flex-col gap-1 rounded-xl border border-zinc-200 bg-zinc-50/60 p-3 dark:border-zinc-700 dark:bg-zinc-800/40">
+      <dt className="text-xs font-medium text-zinc-600 dark:text-zinc-400">{label}</dt>
       <dd>{children}</dd>
     </div>
   );

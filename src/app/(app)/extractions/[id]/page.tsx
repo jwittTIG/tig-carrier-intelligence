@@ -57,8 +57,8 @@ export default async function ExtractionPage({ params }: PageProps<"/extractions
 
   return (
     <>
-      <Link href={`/carriers/${ex.carrierProduct.writingCompany.id}?tab=appetite`} className="text-sm hover:underline">← {ex.carrierProduct.writingCompany.displayName}</Link>
-      <h1 className="text-xl font-semibold">AI draft: {ex.carrierProduct.product.name}</h1>
+      <Link href={`/carriers/${ex.carrierProduct.writingCompany.id}?tab=appetite`} className="back-link">← {ex.carrierProduct.writingCompany.displayName}</Link>
+      <h1 className="page-title">AI draft: {ex.carrierProduct.product.name}</h1>
       <p className="-mt-3 text-sm text-zinc-600 dark:text-zinc-400">
         From <Link href={`/documents/${ex.documentVersion.document.id}`} className="hover:underline">{ex.documentVersion.document.title} v{ex.documentVersion.versionNumber}</Link> · read by {ex.model} for {ex.createdBy.name} · {fmtDateTime(ex.createdAt)}
         {ex.costUsd !== null && <> · estimated cost ${Number(ex.costUsd).toFixed(2)}</>}
@@ -80,7 +80,7 @@ export default async function ExtractionPage({ params }: PageProps<"/extractions
         <Section title="Applied">
           <p className="text-sm">
             Added {result.added.rules} rules, {result.added.riskDetails} new risk details, {result.added.limits} limits and {result.added.requirements} requirements.{" "}
-            <Link href={`/appetite/${result.profileId}`} className="font-medium text-blue-800 hover:underline dark:text-blue-300">Open the appetite draft</Link> to edit it and submit it for approval.
+            <Link href={`/appetite/${result.profileId}`} className="font-medium text-zinc-900 hover:text-blue-700 dark:text-zinc-100 dark:hover:text-blue-300">Open the appetite draft</Link> to edit it and submit it for approval.
           </p>
           {replacedAny && result.replaced && (
             <p className="text-sm">
@@ -91,7 +91,7 @@ export default async function ExtractionPage({ params }: PageProps<"/extractions
           {result.skipped.length > 0 && (
             <>
               <h3 className="text-sm font-medium">Skipped ({result.skipped.length})</h3>
-              <ul className="flex flex-col gap-1 text-sm">{result.skipped.map((s, i) => <li key={i}><Badge tone="warn">{s.kind}</Badge> {s.summary}: <span className="text-zinc-600 dark:text-zinc-400">{s.reason}</span></li>)}</ul>
+              <ul className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">{result.skipped.map((s, i) => <li key={i}><Badge tone="warn">{s.kind}</Badge> {s.summary}: <span className="text-zinc-600 dark:text-zinc-400">{s.reason}</span></li>)}</ul>
               {can(ctx, "appetite.write") && (
                 <ActionForm action={retrySkippedAction.bind(null, ex.id)} submitLabel="Retry skipped items" pendingLabel="Retrying…" variant="secondary" className="flex flex-wrap items-center gap-2">
                   <span className="text-xs text-zinc-600 dark:text-zinc-400">Tries them again into the same draft (useful after a fix). No new AI read, no cost.</span>

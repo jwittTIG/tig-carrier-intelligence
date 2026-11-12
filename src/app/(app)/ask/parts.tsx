@@ -33,7 +33,7 @@ export function AskForm({ carriers, defaultCarrierId, aiReady }: { carriers: { i
   // No form until AI is set up: the page shows why instead (no buttons that do nothing).
   if (!aiReady) return null;
   return (
-    <ActionForm action={askAction} submitLabel="Ask" pendingLabel="Reading the guides… (this can take a minute)" showOk={false} className="flex flex-col gap-3 rounded-2xl border border-transparent bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <ActionForm action={askAction} submitLabel="Ask" pendingLabel="Reading the guides… (this can take a minute)" showOk={false} className="flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
       <Field label="Question" htmlFor="question" hint="Name the carrier in the question, or pick it below.">
         <textarea id="question" name="question" required minLength={3} maxLength={1000} rows={3} placeholder="Will Travelers write a home with a wood shake roof?" className={inputClass} />
       </Field>

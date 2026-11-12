@@ -8,7 +8,8 @@ import { listActiveUsers } from "@/server/services/users";
 import { isFollowing } from "@/server/services/notifications";
 import { followAction } from "../../notifications/actions";
 import { ActionForm } from "@/components/action-form";
-import { Badge, ButtonLink, Field, Section, fmtDate, fmtDateTime, inputClass, label } from "@/components/ui";
+import { Badge, ButtonLink, Field, Section, buttonBase, buttonClass, fmtDate, fmtDateTime, inputClass, label } from "@/components/ui";
+import { Icon } from "@/components/icons";
 import { IDENTIFIER_TYPES, identifierLabel } from "@/lib/contact-roles";
 import {
   addActivityAction,
@@ -82,32 +83,41 @@ export default async function CarrierPage({ params, searchParams }: PageProps<"/
 
   return (
     <>
-      <Link href="/carriers" className="text-sm hover:underline">← Carriers</Link>
-      <div className="flex flex-wrap items-center gap-4">
+      <Link href="/carriers" className="back-link">← Carriers</Link>
+      {/* Profile header: logo, fixed name, type and status, actions on the right. */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 flex-1 items-center gap-4">
         <CarrierLogo url={logo} name={carrier.displayName} />
-        <h1 className="text-3xl font-bold tracking-tight">{carrier.displayName}</h1>
-        <Badge>{label(carrier.type)}</Badge>
-        {carrier.archivedAt ? <Badge tone="bad">Archived {fmtDate(carrier.archivedAt)}</Badge> : <Badge tone={carrier.status === "ACTIVE" ? "good" : "neutral"}>{label(carrier.status)}</Badge>}
-        {carrier.portalUrl && (
-          <a href={carrier.portalUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-lg bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800">
-            Log in to carrier portal <span aria-hidden="true">↗</span><span className="sr-only"> (opens in a new tab)</span>
-          </a>
-        )}
-        {carrier.type !== "AGENCY" && (
-          <ActionForm action={followAction.bind(null, id, following)} submitLabel={following ? "Unfollow" : "Follow"} variant="secondary" className="ml-auto flex items-center gap-2">
-            {following && <span className="text-xs text-zinc-600 dark:text-zinc-400">You get notifications for this carrier.</span>}
-          </ActionForm>
-        )}
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <h1 className="page-title break-words sm:truncate">{carrier.displayName}</h1>
+          <div className="flex flex-wrap items-center gap-2 text-[13px] text-zinc-600 dark:text-zinc-400">
+            {carrier.legalName !== carrier.displayName && <span>{carrier.legalName}</span>}
+            <Badge tone="info">{label(carrier.type)}</Badge>
+            {carrier.archivedAt ? <Badge tone="bad">Archived {fmtDate(carrier.archivedAt)}</Badge> : <Badge tone={carrier.status === "ACTIVE" ? "good" : "neutral"}>{label(carrier.status)}</Badge>}
+          </div>
+        </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {carrier.portalUrl && (
+            <a href={carrier.portalUrl} target="_blank" rel="noopener noreferrer" className={`${buttonBase} ${buttonClass.accent}`}>
+              Log in to carrier portal <Icon name="external" className="h-3.5 w-3.5" /><span className="sr-only"> (opens in a new tab)</span>
+            </a>
+          )}
+          {carrier.type !== "AGENCY" && (
+            <ActionForm action={followAction.bind(null, id, following)} submitLabel={following ? "Unfollow" : "Follow"} variant="secondary" className="flex items-center gap-2">
+              {following && <span className="text-xs text-zinc-600 dark:text-zinc-400">You get notifications for this carrier.</span>}
+            </ActionForm>
+          )}
+        </div>
       </div>
-      {carrier.legalName !== carrier.displayName && <p className="-mt-3 text-sm text-zinc-600 dark:text-zinc-400">{carrier.legalName}</p>}
 
-      <nav aria-label="Carrier sections" className="flex flex-wrap gap-1 border-b border-zinc-200 dark:border-zinc-700">
+      <nav aria-label="Carrier sections" className="-mt-2 flex gap-1 overflow-x-auto border-b border-zinc-200 [scrollbar-width:none] dark:border-zinc-800">
         {TABS.filter((t) => t.key !== "commissions" || can(ctx, "commission.read")).map((t) => (
           <Link
             key={t.key}
             href={t.key === "overview" ? `/carriers/${id}` : `/carriers/${id}?tab=${t.key}`}
             aria-current={tab === t.key ? "page" : undefined}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm ${tab === t.key ? "border-blue-700 font-medium" : "border-transparent hover:border-zinc-300"}`}
+            className={`whitespace-nowrap border-b-2 px-3 pb-2.5 pt-1 text-[13px] font-medium ${tab === t.key ? "border-orange-500 text-blue-700 dark:text-white" : "border-transparent text-zinc-600 hover:border-zinc-300 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:text-zinc-100"}`}
           >
             {t.name}
           </Link>
@@ -135,9 +145,9 @@ function CarrierLogo({ url, name }: { url: string | null; name: string }) {
   const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("");
   return url ? (
     // eslint-disable-next-line @next/next/no-img-element -- a short-lived private link, not a static asset
-    <img src={url} alt={`${name} logo`} className="h-16 w-16 rounded-xl border border-zinc-200 bg-white object-contain p-1 dark:border-zinc-700" />
+    <img src={url} alt={`${name} logo`} className="h-14 w-14 shrink-0 rounded-xl border border-zinc-200 bg-white object-contain p-1.5 shadow-xs dark:border-zinc-700" />
   ) : (
-    <span aria-hidden="true" className="flex h-16 w-16 items-center justify-center rounded-xl bg-blue-100 text-xl font-bold text-blue-800 dark:bg-blue-900 dark:text-blue-100">{initials}</span>
+    <span aria-hidden="true" className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-700 text-lg font-semibold text-white shadow-xs dark:bg-zinc-800 dark:text-zinc-100">{initials}</span>
   );
 }
 
@@ -153,7 +163,7 @@ async function Overview({ carrier, write, editing, hasLogo }: { carrier: Carrier
 
   return (
     <div className="flex flex-col gap-4">
-      <Section title="Details" actions={write && !editing ? <ButtonLink href={`/carriers/${id}?edit=1`}>Edit details</ButtonLink> : undefined}>
+      <Section title="Details" actions={write && !editing ? <ButtonLink href={`/carriers/${id}?edit=1`} variant="secondary">Edit details</ButtonLink> : undefined}>
         {editing ? (
           <>
             <ActionForm action={updateCarrierAction.bind(null, id)} submitLabel="Save changes">
@@ -303,7 +313,7 @@ async function Channels({ carrier, write }: { carrier: Carrier; write: boolean }
     <div className="flex flex-col gap-4">
       {carrier.channelsAsIntermediary.length > 0 && (
         <Section title="Acts as a channel for">
-          <ul className="flex flex-col gap-1 text-sm">
+          <ul className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">
             {carrier.channelsAsIntermediary.map((ch) => (
               <li key={ch.id}>
                 {label(ch.distributionType)} for{" "}
@@ -324,7 +334,7 @@ async function Channels({ carrier, write }: { carrier: Carrier; write: boolean }
           {carrier.carrierProducts.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">No products recorded.</p>}
           <ul className="flex flex-col gap-4">
             {carrier.carrierProducts.map((cp) => (
-              <li key={cp.id} className="flex flex-col gap-2 rounded border border-zinc-200 p-3 dark:border-zinc-700">
+              <li key={cp.id} className="flex flex-col gap-2 rounded-xl border border-zinc-200 p-3 dark:border-zinc-700">
                 <div className="flex flex-wrap items-center gap-2 text-sm">
                   <strong>{cp.product.name}</strong>
                   <span className="text-zinc-600 dark:text-zinc-400">{cp.product.line.name}</span>
@@ -463,7 +473,7 @@ async function History({ id }: { id: string }) {
   return (
     <Section title="Change history">
       {events.length === 0 ? <p className="text-sm text-zinc-600 dark:text-zinc-400">No recorded changes.</p> : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table (scrolls sideways on small screens)">
           <table className="w-full text-left text-sm">
             <thead className="text-xs uppercase text-zinc-600 dark:text-zinc-400">
               <tr><th scope="col" className="py-1 pr-3">When</th><th scope="col" className="py-1 pr-3">Who</th><th scope="col" className="py-1 pr-3">What</th><th scope="col" className="py-1">Changes</th></tr>

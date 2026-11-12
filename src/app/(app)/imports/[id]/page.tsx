@@ -32,9 +32,9 @@ export default async function ImportPage({ params }: PageProps<"/imports/[id]">)
 
   return (
     <>
-      <Link href="/imports" className="text-sm hover:underline">← Imports</Link>
+      <Link href="/imports" className="back-link">← Imports</Link>
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-xl font-semibold">{job.sourceFilename}</h1>
+        <h1 className="page-title">{job.sourceFilename}</h1>
         <Badge>{TARGETS[job.target].label}</Badge>
         <Badge tone={committed ? "good" : job.status === "FAILED" ? "bad" : "neutral"}>{label(job.status)}</Badge>
       </div>
@@ -52,7 +52,7 @@ export default async function ImportPage({ params }: PageProps<"/imports/[id]">)
             <ActionForm action={saveMappingAction.bind(null, id)} submitLabel="Update preview">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 {fields.map((f) => (
-                  <label key={f.key} className="flex flex-col gap-1 text-sm">
+                  <label key={f.key} className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">
                     {f.label}{f.required && " *"}
                     <select name={`col:${f.key}`} defaultValue={map.columns[f.key] ?? ""} className={inputClass}>
                       <option value="">(not in file)</option>

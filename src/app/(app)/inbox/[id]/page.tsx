@@ -28,9 +28,9 @@ export default async function InboxMessagePage({ params }: PageProps<"/inbox/[id
 
   return (
     <>
-      <Link href="/inbox" className="text-sm hover:underline">← Inbox</Link>
+      <Link href="/inbox" className="back-link">← Inbox</Link>
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-xl font-semibold">{m.subject}</h1>
+        <h1 className="page-title">{m.subject}</h1>
         {m.senderStatus === "HELD" ? <Badge tone="warn">Held: unknown sender</Badge> : <Badge tone={m.status === "NEW" ? "warn" : "good"}>{m.status === "TRIAGED" ? "Done" : label(m.status)}</Badge>}
       </div>
       <p className="-mt-2 text-sm text-zinc-600 dark:text-zinc-400">
@@ -60,7 +60,7 @@ export default async function InboxMessagePage({ params }: PageProps<"/inbox/[id
       )}
 
       <Section title="Attachments">
-        <ul className="flex flex-col gap-1 text-sm">
+        <ul className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">
           <li>
             Original email (.eml):{" "}
             <a href={`/api/v1/document-versions/${m.rawDocumentVersionId}/download`}>Download</a>

@@ -17,6 +17,12 @@ async function signInAndCreateCarrier(page: Page, name: string, portal?: string)
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 }
 
+// Let in-flight requests finish before a test ends: the local test database has one connection,
+// and a request cut off mid-way can hold it and stall the next test.
+test.afterEach(async ({ page }) => {
+  await page.waitForLoadState("networkidle");
+});
+
 const axeCheck = async (page: Page) => {
   const axe = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
   expect(axe.violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => v.id)).toEqual([]);

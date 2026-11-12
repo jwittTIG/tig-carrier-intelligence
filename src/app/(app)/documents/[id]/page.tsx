@@ -38,16 +38,16 @@ export default async function DocumentPage({ params }: PageProps<"/documents/[id
   const state = states?.get(doc.id);
   return (
     <>
-      <Link href="/documents" className="text-sm hover:underline">← Documents</Link>
+      <Link href="/documents" className="back-link">← Documents</Link>
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-xl font-semibold">{doc.title}</h1>
+        <h1 className="page-title">{doc.title}</h1>
         <Badge>{label(doc.documentType)}</Badge>
         <Badge tone={doc.classification === "RESTRICTED" ? "warn" : "neutral"}>{label(doc.classification)}</Badge>
         {doc.status === "ARCHIVED" && <Badge tone="bad">Archived</Badge>}
       </div>
 
       {doc.duplicates.length > 0 && (
-        <p role="note" className="rounded border border-amber-300 bg-amber-50 p-2 text-sm dark:border-amber-700 dark:bg-amber-950">
+        <p role="note" className="rounded-xl border border-amber-300 bg-amber-50 p-2 text-sm dark:border-amber-700 dark:bg-amber-950">
           The same file is also stored as:{" "}
           {doc.duplicates.map((d, i) => <span key={d.document.id}>{i > 0 && ", "}<Link href={`/documents/${d.document.id}`} className="underline">{d.document.title}</Link></span>)}
         </p>

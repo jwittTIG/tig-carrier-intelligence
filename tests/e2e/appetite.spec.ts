@@ -59,6 +59,7 @@ test("upload a guide, draft appetite, submit, and have someone else approve it",
   const profileUrl = page.url();
 
   // Someone else approves it from the queue.
+  await page.getByRole("button", { name: /^Account:/ }).click(); // Sign out is in the account menu
   await page.getByRole("button", { name: "Sign out" }).click();
   await signIn(page, "DEMO Admin");
   await page.getByRole("link", { name: "Approvals" }).click();

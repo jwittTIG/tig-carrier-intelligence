@@ -61,6 +61,7 @@ test("follow a carrier, then get notified when an email is filed under it", asyn
     "",
   ].join("\r\n"));
 
+  await page.getByRole("button", { name: /^Account:/ }).click(); // Sign out is in the account menu
   await page.getByRole("button", { name: "Sign out" }).click();
   await signIn(page, "DEMO Admin");
   await page.getByRole("link", { name: "Inbox", exact: true }).click();
@@ -71,6 +72,7 @@ test("follow a carrier, then get notified when an email is filed under it", asyn
   await page.getByRole("button", { name: "File under carrier" }).click();
   await expect(page.getByText("Filed under the carrier.")).toBeVisible();
 
+  await page.getByRole("button", { name: /^Account:/ }).click(); // Sign out is in the account menu
   await page.getByRole("button", { name: "Sign out" }).click();
   await signIn(page, "DEMO Producer");
   await expect(page.getByRole("link", { name: /Notifications, \d+ unread/ })).toBeVisible();

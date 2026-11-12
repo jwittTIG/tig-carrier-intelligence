@@ -28,8 +28,8 @@ export default async function AnswerPage({ params }: PageProps<"/ask/[id]">) {
 
   return (
     <>
-      <Link href="/ask" className="text-sm hover:underline">← Ask the guides</Link>
-      <h1 className="text-xl font-semibold">{q.question}</h1>
+      <Link href="/ask" className="back-link">← Ask the guides</Link>
+      <h1 className="page-title">{q.question}</h1>
       <p className="-mt-3 text-sm text-zinc-600 dark:text-zinc-400">
         <Link href={`/carriers/${q.organization.id}`} className="hover:underline">{q.organization.displayName}</Link> · asked by {q.askedBy.name} · {fmtDateTime(q.createdAt)}
       </p>
@@ -66,7 +66,7 @@ export default async function AnswerPage({ params }: PageProps<"/ask/[id]">) {
       </Section>
 
       <Section title="Guides read">
-        <ul className="flex flex-col gap-1 text-sm">
+        <ul className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">
           {q.guides.map((g) => (
             <li key={g.id}><Link href={`/documents/${g.document.id}`} className="hover:underline">{g.document.title} v{g.versionNumber}</Link> <span className="text-xs text-zinc-600 dark:text-zinc-400">uploaded {fmtDate(g.uploadedAt)}</span></li>
           ))}

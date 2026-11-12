@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
 import { cookies } from "next/headers";
 import { ClerkProvider } from "@clerk/nextjs";
-import { ACCENT_COOKIE, DEFAULT_ACCENT, MODE_COOKIE, accentCss, modeOf, normalizeHex } from "@/lib/theme";
+import { MODE_COOKIE, modeOf } from "@/lib/theme";
 import "./globals.css";
+
+const geist = Geist({ subsets: ["latin"], variable: "--font-geist-sans", display: "swap" });
+const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap" });
 
 export const metadata: Metadata = {
   title: { default: "TIG Carrier Intelligence", template: "%s · TIG Carrier Intelligence" },
@@ -11,16 +15,10 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  // The staff member's chosen color (cookie), validated as #rrggbb before it reaches CSS.
-  const jar = await cookies();
-  const accent = normalizeHex(jar.get(ACCENT_COOKIE)?.value) ?? DEFAULT_ACCENT;
-  const mode = modeOf(jar.get(MODE_COOKIE)?.value);
+  const mode = modeOf((await cookies()).get(MODE_COOKIE)?.value);
   const page = (
-    <html lang="en" className={`h-full antialiased${mode === "dark" ? " dark" : ""}`}>
-      <head>
-        <style id="accent-theme">{accentCss(accent)}</style>
-      </head>
-      <body className="min-h-full flex flex-col bg-white font-sans text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">{children}</body>
+    <html lang="en" className={`h-full ${geist.variable} ${geistMono.variable}${mode === "dark" ? " dark" : ""}`}>
+      <body className="min-h-full">{children}</body>
     </html>
   );
   // Clerk is only loaded when it is the configured sign-in driver (DECISIONS D9).

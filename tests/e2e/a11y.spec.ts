@@ -7,17 +7,20 @@ import { expect, test } from "@playwright/test";
  */
 const PAGES = ["/dashboard", "/markets", "/carriers", "/contacts", "/documents", "/approvals", "/imports", "/admin/users", "/admin/audit", "/search?q=DEMO", "/inbox", "/notifications", "/setup/industries?q=roofing", "/setup/industries/NAICS/238160", "/setup", "/ask"];
 
-// Light and dark mode (chosen in the Color menu), and a light and a dark custom accent color (shades are derived from the pick).
-for (const { scheme, accent } of [
-  { scheme: "light", accent: null },
-  { scheme: "dark", accent: null },
-  { scheme: "light", accent: "#ffff00" },
-  { scheme: "dark", accent: "#1e1b4b" },
+// TIG theme (2026-11-11 redesign): light and dark (chosen with the top-bar toggle, a cookie),
+// the sidebar collapsed to icons, and a phone-width screen.
+for (const { name, mode, sidebar, phone } of [
+  { name: "light", mode: "light", sidebar: "open", phone: false },
+  { name: "dark", mode: "dark", sidebar: "open", phone: false },
+  { name: "light, sidebar collapsed", mode: "light", sidebar: "collapsed", phone: false },
+  { name: "dark, phone width", mode: "dark", sidebar: "open", phone: true },
 ] as const) {
-  test(`primary screens have no serious or critical accessibility violations (${scheme}${accent ? `, accent ${accent}` : ""})`, async ({ page, context, baseURL }) => {
-    // Dark mode is a choice in the Color menu (a cookie), not the computer's setting.
-    if (scheme === "dark") await context.addCookies([{ name: "tci-mode", value: "dark", url: baseURL! }]);
-    if (accent) await context.addCookies([{ name: "tci-accent", value: accent, url: baseURL! }]);
+  test(`primary screens have no serious or critical accessibility violations (${name})`, async ({ page, context, baseURL }) => {
+    await context.addCookies([
+      { name: "tci-mode", value: mode, url: baseURL! },
+      { name: "tci-sidebar", value: sidebar, url: baseURL! },
+    ]);
+    if (phone) await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/sign-in");
     await page.getByRole("button", { name: /Sign in as DEMO Admin/ }).click();
     await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
@@ -32,3 +35,38 @@ for (const { scheme, accent } of [
     expect(problems, problems.join("\n")).toEqual([]);
   });
 }
+
+test("the theme toggle switches to dark and back, and the choice survives page changes", async ({ page }) => {
+  await page.goto("/sign-in");
+  await page.getByRole("button", { name: /Sign in as DEMO Producer/ }).click();
+  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  const html = page.locator("html");
+  await expect(html).not.toHaveClass(/\bdark\b/);
+  await page.getByRole("button", { name: "Switch to dark mode" }).click();
+  await expect(html).toHaveClass(/\bdark\b/);
+  await page.getByRole("link", { name: "Carriers", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Carriers", level: 1 })).toBeVisible();
+  await expect(html).toHaveClass(/\bdark\b/);
+  await page.reload();
+  await expect(html).toHaveClass(/\bdark\b/);
+  await page.getByRole("button", { name: "Switch to light mode" }).click();
+  await expect(html).not.toHaveClass(/\bdark\b/);
+});
+
+test("the sidebar collapses to icons and stays that way", async ({ page, context }) => {
+  await page.goto("/sign-in");
+  await page.getByRole("button", { name: /Sign in as DEMO Producer/ }).click();
+  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  const sidebar = page.getByRole("complementary", { name: "Sidebar" });
+  const wide = (await sidebar.boundingBox())!.width;
+  await page.getByRole("button", { name: "Collapse sidebar" }).click();
+  await expect.poll(async () => (await sidebar.boundingBox())!.width).toBeLessThan(wide / 2);
+  // Saved in this browser before reloading.
+  await expect.poll(async () => (await context.cookies()).find((c) => c.name === "tci-sidebar")?.value).toBe("collapsed");
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Expand sidebar" })).toBeVisible();
+  // Collapsed links keep their names for screen readers.
+  await expect(page.getByRole("link", { name: "Carriers", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Expand sidebar" }).click();
+  await expect.poll(async () => (await sidebar.boundingBox())!.width).toBeGreaterThan(wide - 4);
+});

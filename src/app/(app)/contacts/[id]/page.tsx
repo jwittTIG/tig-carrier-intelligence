@@ -61,9 +61,9 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
 
   return (
     <>
-      <Link href="/contacts" className="text-sm hover:underline">← Contacts</Link>
+      <Link href="/contacts" className="back-link">← Contacts</Link>
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-xl font-semibold">{contact.firstName} {contact.lastName}</h1>
+        <h1 className="page-title">{contact.firstName} {contact.lastName}</h1>
         {contact.status !== "ACTIVE" && <Badge>Inactive</Badge>}
         {contact.archivedAt && <Badge tone="bad">Archived</Badge>}
         <FreshnessBadge f={contact.freshness} />
@@ -101,7 +101,7 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
         {contact.assignments.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">No assignments yet.</p>}
         <ul className="flex flex-col gap-3">
           {contact.assignments.map((a) => (
-            <li key={a.id} className={`flex flex-col gap-2 rounded border p-3 text-sm dark:border-zinc-700 ${a.current ? "border-zinc-200" : "border-dashed border-zinc-300 text-zinc-600 dark:text-zinc-400"}`}>
+            <li key={a.id} className={`flex flex-col gap-2 rounded-xl border p-3 text-sm dark:border-zinc-700 ${a.current ? "border-zinc-200" : "border-dashed border-zinc-300 text-zinc-600 dark:text-zinc-400"}`}>
               <div className="flex flex-wrap items-center gap-2">
                 <strong>{contactRoleLabel(a.role)}</strong>
                 {a.title && <span>({a.title})</span>}

@@ -51,7 +51,7 @@ export async function AppetiteTab({ carrier }: { carrier: Carrier }) {
       <p className="text-xs text-zinc-600 dark:text-zinc-400">Appetite is a guide, not a commitment to quote or bind. Each product (or product + channel) has numbered versions; only one draft at a time.</p>
       {profiles.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">No appetite recorded for this carrier.</p>}
       {profiles.length > 0 && (
-        <div className="overflow-x-auto"><table className="w-full text-left text-sm">
+        <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table (scrolls sideways on small screens)"><table className="w-full text-left text-sm">
           <thead className="text-xs uppercase text-zinc-600 dark:text-zinc-400">
             <tr><th scope="col" className="py-1 pr-3">Product</th><th scope="col" className="py-1 pr-3">Version</th><th scope="col" className="py-1 pr-3">Status</th><th scope="col" className="py-1 pr-3">Effective</th><th scope="col" className="py-1 pr-3">Rules</th><th scope="col" className="py-1 pr-3">Review</th><th scope="col" className="py-1"><span className="sr-only">Actions</span></th></tr>
           </thead>
@@ -70,8 +70,8 @@ export async function AppetiteTab({ carrier }: { carrier: Carrier }) {
                 <td className="py-1 pr-3">{p.stale ? <Badge tone="warn">Review overdue</Badge> : p.nextReviewAt ? fmtDate(p.nextReviewAt) : "—"}</td>
                 <td className="py-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    {p.status === "DRAFT" && p._count.rules > 0 && <Link href={`/appetite/${p.id}#approve`} className="font-medium text-blue-800 hover:underline dark:text-blue-300">Approve…</Link>}
-                    {p.status === "PENDING" && <Link href={`/appetite/${p.id}`} className="font-medium text-blue-800 hover:underline dark:text-blue-300">Review…</Link>}
+                    {p.status === "DRAFT" && p._count.rules > 0 && <Link href={`/appetite/${p.id}#approve`} className="font-medium text-zinc-900 hover:text-blue-700 dark:text-zinc-100 dark:hover:text-blue-300">Approve…</Link>}
+                    {p.status === "PENDING" && <Link href={`/appetite/${p.id}`} className="font-medium text-zinc-900 hover:text-blue-700 dark:text-zinc-100 dark:hover:text-blue-300">Review…</Link>}
                     {p.status === "APPROVED" && canApprove && <Link href={`/appetite/${p.id}?closeout=1#close-out`} className="text-blue-800 hover:underline dark:text-blue-300">Close out…</Link>}
                     {p.status === "DRAFT" && p._count.rules === 0 && canWriteAppetite && (
                       <ActionForm action={deleteDraftAction.bind(null, p.id, carrier.id)} submitLabel="Delete" submitHint={`empty draft ${p.carrierProduct.product.name} v${p.version}`} variant="secondary" showOk={false} confirm={`Delete the empty ${p.carrierProduct.product.name} draft?`}>{null}</ActionForm>
@@ -113,9 +113,9 @@ export async function CommissionsTab({ carrierId }: { carrierId: string }) {
       {agreements.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">No commission agreements recorded.</p>}
       <ul className="flex flex-col gap-3">
         {agreements.map((a) => (
-          <li key={a.id} className="rounded border border-zinc-200 p-3 text-sm dark:border-zinc-700">
+          <li key={a.id} className="rounded-xl border border-zinc-200 p-3 text-sm dark:border-zinc-700">
             <div className="flex flex-wrap items-center gap-2">
-              <Link href={`/commissions/${a.id}`} className="font-medium text-blue-800 hover:underline dark:text-blue-300">{a.agreementRef ?? "Agreement"}</Link>
+              <Link href={`/commissions/${a.id}`} className="font-medium text-zinc-900 hover:text-blue-700 dark:text-zinc-100 dark:hover:text-blue-300">{a.agreementRef ?? "Agreement"}</Link>
               <span>· {channelLabel(a.marketChannel)} · {a.agencyEntity.organization.displayName}</span>
               <StatusBadge status={a.status} />
             </div>

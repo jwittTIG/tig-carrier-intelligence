@@ -23,7 +23,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
   const empty = r && !r.carriers.length && !r.contacts.length && !r.codes.length && !r.documents.length;
   return (
     <>
-      <h1 className="text-xl font-semibold">Search{term && <>: &ldquo;{term}&rdquo;</>}</h1>
+      <h1 className="page-title">Search{term && <>: &ldquo;{term}&rdquo;</>}</h1>
       {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
       {!term && <p className="text-sm text-zinc-600 dark:text-zinc-400">Use the search box at the top to find carriers, contacts, codes and documents.</p>}
       {empty && <p className="text-sm">Nothing found.</p>}

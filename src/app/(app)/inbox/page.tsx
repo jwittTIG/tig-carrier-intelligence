@@ -18,7 +18,7 @@ export default async function InboxPage({ searchParams }: PageProps<"/inbox">) {
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">Inbox: carrier updates</h1>
+        <h1 className="page-title">Inbox: carrier updates</h1>
         {can(ctx, "inbox.manage") && (
           <ActionForm action={runIntakeAction} submitLabel="Check mailbox now" variant="secondary" className="flex flex-col items-end gap-1">{null}</ActionForm>
         )}
@@ -27,7 +27,7 @@ export default async function InboxPage({ searchParams }: PageProps<"/inbox">) {
         Forward carrier bulletins, guideline updates and appetite changes to the carrier-updates mailbox. Each one appears here to be filed under a carrier,
         cited as a source, or turned into an appetite draft. Nothing changes in the app until someone does that, and appetite still needs approval.
       </p>
-      {devMode && <p role="note" className="rounded border border-amber-400 bg-amber-50 p-2 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100">Development mailbox: reading <code>.eml</code> files from <code>.data/inbox</code>, not Microsoft 365.</p>}
+      {devMode && <p role="note" className="rounded-xl border border-amber-400 bg-amber-50 p-2 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100">Development mailbox: reading <code>.eml</code> files from <code>.data/inbox</code>, not Microsoft 365.</p>}
       {r.state.length > 0 && (
         <p className="text-xs text-zinc-600 dark:text-zinc-400">
           {r.state.map((s) => <span key={s.mailbox} className="mr-3">{s.mailbox}: last checked {s.lastRunAt ? fmtDateTime(s.lastRunAt) : "never"}{s.lastError && <span className="text-red-700"> · problem: {s.lastError}</span>}</span>)}
@@ -42,7 +42,7 @@ export default async function InboxPage({ searchParams }: PageProps<"/inbox">) {
           {params.status && <input type="hidden" name="status" value={params.status} />}
           <label className="sr-only" htmlFor="inboxQ">Search the inbox</label>
           <input id="inboxQ" name="q" defaultValue={params.q} placeholder="Subject, sender or text" className={inputClass} />
-          <button className="rounded-lg bg-blue-700 px-3 py-1 text-white">Search</button>
+          <button className="inline-flex min-h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-[13px] font-medium bg-blue-700 text-white shadow-xs hover:bg-blue-800">Search</button>
         </form>
       </nav>
 

@@ -88,9 +88,9 @@ export default async function AppetiteProfilePage({ params, searchParams }: Page
 
   return (
     <>
-      <Link href={`/carriers/${cp.writingCompany.id}?tab=appetite`} className="text-sm hover:underline">← {cp.writingCompany.displayName}</Link>
+      <Link href={`/carriers/${cp.writingCompany.id}?tab=appetite`} className="back-link">← {cp.writingCompany.displayName}</Link>
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-xl font-semibold">{cp.product.name} · v{p.version}</h1>
+        <h1 className="page-title">{cp.product.name} · v{p.version}</h1>
         <StatusBadge status={p.status} />
         {p.freshness && <FreshnessBadge f={p.freshness} />}
       </div>
@@ -106,7 +106,7 @@ export default async function AppetiteProfilePage({ params, searchParams }: Page
       {p.pending && <DecisionPanel ctx={ctx} cr={p.pending} permission="appetite.approve" returnTo={path} />}
 
       {p.conflicts.length > 0 && (
-        <div role="alert" className="rounded border border-red-300 bg-red-50 p-3 text-sm dark:border-red-800 dark:bg-red-950">
+        <div role="alert" className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm dark:border-red-800 dark:bg-red-950">
           <strong>Possible conflicts:</strong>
           <ul className="list-disc pl-5">{p.conflicts.map((c) => <li key={`${c.a}-${c.b}`}>Rules {ruleIdx.get(c.a)} and {ruleIdx.get(c.b)}: {c.reason}.</li>)}</ul>
         </div>
@@ -153,7 +153,7 @@ export default async function AppetiteProfilePage({ params, searchParams }: Page
 
       {draft && write && (
         <Section title="Approve this version" id="approve">
-          <ul className="flex flex-col gap-1 text-sm">
+          <ul className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">
             {ready.map((r) => (
               <li key={r.text} className="flex items-center gap-2">
                 <span aria-hidden="true" className={r.ok ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}>{r.ok ? "✓" : "✗"}</span>
@@ -190,7 +190,7 @@ export default async function AppetiteProfilePage({ params, searchParams }: Page
       <Section title={`Rules (${p.rules.length})`}>
         <p className="text-xs text-zinc-600 dark:text-zinc-400">A rule with no states applies in every state, and one with no industry codes applies to every industry. &ldquo;Unknown&rdquo; is never treated as eligible.</p>
         {p.rules.length === 0 ? <p className="text-sm text-zinc-600 dark:text-zinc-400">No rules yet.</p> : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table (scrolls sideways on small screens)">
             <table className="w-full text-left text-sm">
               <thead className="text-xs uppercase text-zinc-600 dark:text-zinc-400">
                 <tr><th scope="col" className="py-1 pr-2">#</th><th scope="col" className="py-1 pr-2">Outcome</th><th scope="col" className="py-1 pr-2">States</th><th scope="col" className="py-1 pr-2">Industries</th><th scope="col" className="py-1 pr-2">Condition</th><th scope="col" className="py-1 pr-2">Dates</th><th scope="col" className="py-1 pr-2">Why</th><th scope="col" className="py-1"><span className="sr-only">Remove</span></th></tr>

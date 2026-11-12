@@ -14,8 +14,8 @@ export default async function ImportsPage() {
   const jobs = await listImports(ctx);
   return (
     <>
-      <Link href="/setup" className="text-sm hover:underline">← Setup</Link>
-      <h1 className="text-xl font-semibold">Import from a spreadsheet</h1>
+      <Link href="/setup" className="back-link">← Setup</Link>
+      <h1 className="page-title">Import from a spreadsheet</h1>
       <Section title="Upload a CSV">
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           Save the sheet as CSV (UTF-8) with a header row, up to {MAX_ROWS.toLocaleString()} rows. You&apos;ll match columns and preview every row before anything is saved.

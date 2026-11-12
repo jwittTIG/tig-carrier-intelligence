@@ -46,9 +46,9 @@ export default async function AgreementPage({ params }: PageProps<"/commissions/
 
   return (
     <>
-      <Link href={`/carriers/${ch.carrierProduct.writingCompany.id}?tab=commissions`} className="text-sm hover:underline">← {ch.carrierProduct.writingCompany.displayName}</Link>
+      <Link href={`/carriers/${ch.carrierProduct.writingCompany.id}?tab=commissions`} className="back-link">← {ch.carrierProduct.writingCompany.displayName}</Link>
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-xl font-semibold">Commission agreement{a.agreementRef && ` ${a.agreementRef}`}</h1>
+        <h1 className="page-title">Commission agreement{a.agreementRef && ` ${a.agreementRef}`}</h1>
         <StatusBadge status={a.status} />
       </div>
       <p className="-mt-2 text-sm text-zinc-600 dark:text-zinc-400">
@@ -108,7 +108,7 @@ export default async function AgreementPage({ params }: PageProps<"/commissions/
         {a.schedules.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">No schedules yet.</p>}
         <ul className="flex flex-col gap-3">
           {a.schedules.map((s) => (
-            <li key={s.id} id={`schedule-${s.id}`} className={`flex flex-col gap-2 rounded border p-3 text-sm dark:border-zinc-700 ${s.current ? "border-green-300" : "border-zinc-200"}`}>
+            <li key={s.id} id={`schedule-${s.id}`} className={`flex flex-col gap-2 rounded-xl border p-3 text-sm dark:border-zinc-700 ${s.current ? "border-green-300" : "border-zinc-200"}`}>
               <div className="flex flex-wrap items-center gap-2">
                 <strong>{s.product.name}</strong>
                 <span>· {label(s.transactionType)}</span>

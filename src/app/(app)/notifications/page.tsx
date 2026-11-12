@@ -16,7 +16,7 @@ export default async function NotificationsPage({ searchParams }: PageProps<"/no
 
   return (
     <>
-      <h1 className="text-xl font-semibold">Notifications</h1>
+      <h1 className="page-title">Notifications</h1>
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
         Shown here only; nothing is emailed. You get notifications for carriers you follow (use Follow on a carrier page), and when your own submissions are decided.
       </p>
@@ -37,7 +37,7 @@ export default async function NotificationsPage({ searchParams }: PageProps<"/no
         ) : (
           <ul className="flex flex-col gap-2">
             {items.map((n) => (
-              <li key={n.id} className={`flex flex-wrap items-start justify-between gap-2 rounded border p-3 text-sm ${n.readAt ? "border-zinc-200 dark:border-zinc-700" : "border-blue-300 bg-blue-50 dark:border-blue-800 dark:bg-blue-950"}`}>
+              <li key={n.id} className={`flex flex-wrap items-start justify-between gap-2 rounded-xl border p-3 text-sm ${n.readAt ? "border-zinc-200 dark:border-zinc-700" : "border-blue-300 bg-blue-50 dark:border-blue-800 dark:bg-blue-950"}`}>
                 <div className="flex min-w-0 flex-col gap-1">
                   <span>
                     {!n.readAt && <span className="sr-only">Unread: </span>}

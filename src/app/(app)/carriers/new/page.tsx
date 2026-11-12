@@ -16,8 +16,8 @@ export default async function NewCarrierPage() {
   const [parents, owners] = await Promise.all([listCarrierOptions(ctx), listActiveUsers(ctx)]);
   return (
     <>
-      <Link href="/carriers" className="text-sm hover:underline">← Carriers</Link>
-      <h1 className="text-xl font-semibold">New carrier</h1>
+      <Link href="/carriers" className="back-link">← Carriers</Link>
+      <h1 className="page-title">New carrier</h1>
       <Section title="Details">
         <ActionForm action={createCarrierAction} submitLabel="Create carrier" showOk={false}>
           <CarrierFields types={CARRIER_TYPES} parents={parents.map((p) => ({ id: p.id, name: p.displayName }))} owners={owners} />

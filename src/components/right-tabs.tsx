@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useId, useState, useTransition } from "react";
 import { carrierContactsAction, type ContactCard } from "@/app/(app)/dashboard/actions";
+import { Icon } from "./icons";
+import { inputClass } from "./ui";
 
 type Portal = { id: string; name: string; portalUrl: string; logoUrl: string | null };
 type Carrier = { id: string; name: string };
@@ -29,7 +31,7 @@ export function RightMenus({ portals, carriers }: { portals: Portal[] | null; ca
                     href={p.portalUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex h-full flex-col items-center gap-2 rounded-xl border border-zinc-200 p-2 text-center text-sm font-medium hover:border-blue-600 hover:bg-blue-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                    className="flex h-full flex-col items-center gap-2 rounded-xl border border-zinc-200 p-3 text-center text-[13px] font-medium text-zinc-800 hover:border-orange-300 hover:bg-orange-50/50 dark:border-zinc-700 dark:text-zinc-100 dark:hover:border-orange-800 dark:hover:bg-zinc-800"
                   >
                     {p.logoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element -- a short-lived private link, not a static asset
@@ -62,23 +64,23 @@ function Menu({ title, count, children }: { title: string; count?: number; child
   const [open, setOpen] = useState(false);
   const id = useId();
   return (
-    <section className="rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+    <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
       <h2>
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
           aria-controls={id}
-          className="flex w-full items-center justify-between gap-2 rounded-2xl px-4 py-3 text-left text-base font-semibold text-blue-800 hover:bg-blue-50 dark:text-blue-200 dark:hover:bg-zinc-800"
+          className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-[15px] font-semibold text-blue-700 hover:bg-zinc-50 dark:text-zinc-100 dark:hover:bg-zinc-800"
         >
           <span>
             {title}
-            {count !== undefined && <span className="ml-2 text-sm font-normal text-zinc-600 dark:text-zinc-400">({count})</span>}
+            {count !== undefined && <span className="ml-2 rounded-md bg-zinc-100 px-1.5 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">{count}</span>}
           </span>
-          <span aria-hidden="true" className={`transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
+          <Icon name="chevron" className={`h-4 w-4 text-zinc-500 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
         </button>
       </h2>
-      <div id={id} hidden={!open} className="flex flex-col gap-3 border-t border-zinc-200 px-4 py-3 dark:border-zinc-700">
+      <div id={id} hidden={!open} className="flex flex-col gap-3 border-t border-zinc-100 px-4 py-4 dark:border-zinc-800">
         {children}
       </div>
     </section>
@@ -101,7 +103,7 @@ function ContactsPanel({ carriers }: { carriers: Carrier[] }) {
     <>
       <div className="flex flex-col gap-1">
         <label htmlFor={id} className="text-sm font-medium">Carrier</label>
-        <select id={id} value={carrierId} onChange={(e) => pick(e.target.value)} className="rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-600 dark:bg-zinc-800">
+        <select id={id} value={carrierId} onChange={(e) => pick(e.target.value)} className={inputClass}>
           <option value="">Choose a carrier…</option>
           {carriers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
@@ -119,7 +121,7 @@ function ContactsPanel({ carriers }: { carriers: Carrier[] }) {
             <p className="text-xs text-zinc-600 dark:text-zinc-400">{result.contacts.length} {result.contacts.length === 1 ? "contact" : "contacts"}</p>
             <ul className="flex flex-col gap-2">
               {result.contacts.map((c) => (
-                <li key={c.assignmentId} className="rounded-xl border border-zinc-200 p-3 text-sm dark:border-zinc-700">
+                <li key={c.assignmentId} className="rounded-xl border border-zinc-200 p-3 text-[13px] dark:border-zinc-700">
                   <Link href={`/contacts/${c.contactId}`} className="font-medium text-blue-800 hover:underline dark:text-blue-300">{c.name}</Link>
                   {c.inactive && <span className="text-zinc-600 dark:text-zinc-400"> (inactive)</span>}
                   <div className="text-xs font-medium">{c.type}{c.title && ` · ${c.title}`}</div>
