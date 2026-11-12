@@ -5,6 +5,8 @@ import { expect, test, type Page } from "@playwright/test";
  * Dashboard (Josh, 2026-11-11): Ask the guides and Find a market boxes, and stacked menus on
  * the right (Carrier portals, Carrier contacts) that open downward when clicked.
  */
+const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
+
 async function signInAndCreateCarrier(page: Page, name: string, portal?: string) {
   await page.goto("/sign-in");
   await page.getByRole("button", { name: /Sign in as DEMO Producer/ }).click();
@@ -41,9 +43,26 @@ test("Carrier portals menu opens downward with a carrier's sign-in link", async 
   await expect(link).toBeVisible();
   await expect(link).toHaveAttribute("href", "https://agents.example.invalid/login");
   await expect(link).toHaveAttribute("target", "_blank");
+  // No logo yet: a large initials tile keeps the buttons consistent.
+  await expect(link.locator("[data-monogram]")).toHaveText("EP");
   await axeCheck(page);
   await menu.click();
   await expect(link).toBeHidden();
+
+  // With a logo, the logo is the main part of the button (Josh, 2026-11-12); the name stays, smaller.
+  await page.goto("/carriers");
+  await page.getByRole("link", { name, exact: true }).click();
+  await page.getByLabel("Image").setInputFiles({ name: "logo.png", mimeType: "image/png", buffer: PNG });
+  await page.getByRole("button", { name: "Upload logo" }).click();
+  await expect(page.getByText("Logo saved.")).toBeVisible();
+  await page.goto("/dashboard");
+  await menu.click();
+  const logo = link.locator("img");
+  await expect(logo).toBeVisible();
+  const logoBox = (await logo.boundingBox())!;
+  const nameBox = (await link.getByText(name).boundingBox())!;
+  expect(logoBox.height).toBeGreaterThan(nameBox.height * 3);
+  await axeCheck(page);
 });
 
 test("Carrier contacts menu: pick a carrier and see its contacts; both menus can be open", async ({ page }) => {

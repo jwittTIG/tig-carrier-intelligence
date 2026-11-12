@@ -20,28 +20,37 @@ export function RightMenus({ portals, carriers }: { portals: Portal[] | null; ca
     <div className="flex flex-col gap-3">
       {portals && (
         <Menu title="Carrier portals" count={portals.length}>
-          <p className="text-xs text-zinc-600 dark:text-zinc-400">Opens the carrier&apos;s sign-in page in a new tab. Use the password manager to log in.</p>
+          <p className="text-xs text-zinc-600 dark:text-zinc-400">Click a logo to open that carrier&apos;s sign-in page in a new tab. Use the password manager to log in.</p>
           {portals.length === 0 ? (
             <p className="text-sm">No portal sites saved yet. Add one on a carrier&apos;s Overview (Edit details → Carrier portal site).</p>
           ) : (
-            <ul className="grid grid-cols-2 gap-2">
+            <ul className="grid grid-cols-2 gap-2.5">
               {portals.map((p) => (
                 <li key={p.id}>
+                  {/* The logo is the button (Josh, 2026-11-12); the name stays, small, so look-alike logos can't be mixed up. */}
                   <a
                     href={p.portalUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex h-full flex-col items-center gap-2 rounded-xl border border-zinc-200 p-3 text-center text-[13px] font-medium text-zinc-800 hover:border-orange-300 hover:bg-orange-50/50 dark:border-zinc-700 dark:text-zinc-100 dark:hover:border-orange-800 dark:hover:bg-zinc-800"
+                    className="group flex h-full flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs hover:-translate-y-px hover:border-orange-400 hover:shadow-md focus-visible:border-orange-400 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-orange-500"
                   >
                     {p.logoUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- a short-lived private link, not a static asset
-                      <img src={p.logoUrl} alt="" className="h-12 w-12 rounded-lg bg-white object-contain p-1" />
+                      // Always a white tile, in dark mode too, so transparent and dark logos stay legible.
+                      <span className="flex h-20 items-center justify-center bg-white px-3 py-2.5">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- a short-lived private link, not a static asset */}
+                        <img src={p.logoUrl} alt="" className="max-h-full w-full object-contain transition-transform duration-200 group-hover:scale-[1.04]" />
+                      </span>
                     ) : (
-                      <span aria-hidden="true" className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 text-base font-bold text-blue-800 dark:bg-blue-900 dark:text-blue-100">{initials(p.name)}</span>
+                      <span aria-hidden="true" data-monogram className="flex h-20 items-center justify-center bg-blue-700 text-2xl font-semibold tracking-tight text-white dark:bg-zinc-800">
+                        {initials(p.name)}
+                      </span>
                     )}
-                    <span>
-                      {p.name}
-                      <span className="sr-only"> portal (opens in a new tab)</span>
+                    <span className="flex items-center justify-between gap-1.5 border-t border-zinc-200 px-2.5 py-1.5 text-[11px] font-medium leading-4 text-zinc-600 group-hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:group-hover:text-white">
+                      <span className="truncate" title={p.name}>
+                        {p.name}
+                        <span className="sr-only"> portal (opens in a new tab)</span>
+                      </span>
+                      <Icon name="external" className="h-3 w-3 shrink-0" />
                     </span>
                   </a>
                 </li>

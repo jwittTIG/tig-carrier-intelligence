@@ -5,6 +5,13 @@
 
 Milestone 8 (Ask the guides) works with Josh's key (two real questions at $1.76 and $1.77 with the whole-PDF read).
 
+## Carrier portal buttons: logo first (built 2026-11-12)
+Josh: "I would like the logo to be the predominant part of the carrier portals link button" (relayed by the main session).
+- Dashboard → Carrier portals: each button is now mostly logo: an 80px white tile with the logo filling it (white in dark mode too, so transparent and dark logos stay legible), then a small strip with the carrier name and an open-in-new-tab icon. Hover lifts the button with an orange border.
+- The name stays visible but small, so look-alike logos (or a sister company sharing a logo) can't be mixed up; it is cut short on narrow buttons with the full name on hover, and screen readers hear "<name> portal (opens in a new tab)".
+- No logo: a navy tile with the carrier's initials in large type, so every button matches.
+- Tested (ran and saw pass): e2e (initials tile without a logo; after a logo upload the logo is over 3x the height of the name; link, new-tab target and axe checks). Captured light, dark and phone-width screenshots of Josh's two carriers (Liberty Mutual and Travelers).
+
 ## Main contacts card (built 2026-11-12)
 Josh: "Let's make the Contacts page more user friendly. Let's show a Main contacts square that shows: any marketing rep for the carrier / any claims contact / any billing contact." (Relayed by the main session.)
 - No data change: the contact types already include Marketing rep, Claims adjuster / Claims manager / Claims (other), and Billing / accounting.
