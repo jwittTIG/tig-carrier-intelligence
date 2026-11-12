@@ -301,3 +301,8 @@ input[type="checkbox"], input[type="radio"] {
 }
 
 
+
+/* On the navy boxes (Dashboard menus), the keyboard focus ring is orange so it shows on navy. */
+.on-navy :focus-visible {
+  outline-color: var(--color-orange-400);
+}

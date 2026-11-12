@@ -5,6 +5,12 @@
 
 Milestone 8 (Ask the guides) works with Josh's key (two real questions at $1.76 and $1.77 with the whole-PDF read).
 
+## Dashboard menus on navy (built 2026-11-12)
+Josh: "Let's make the background of the carrier portals and carrier contacts boxes navy blue (just need it to pop from the other sections)" (relayed by the main session). These are the two right-hand menus on the Dashboard titled Carrier portals and Carrier contacts (not the Main contacts card on the Contacts pages).
+- Both boxes are TIG navy (#142B49) with a soft shadow; in dark mode a brighter navy (#1D3A63) with a light outline so they still stand out from the dark page.
+- Inside: white headings and labels, light gray text, light orange links (all pass WCAG AA on navy), translucent contact cards, and an orange keyboard focus ring. Logo tiles stay white; carriers without a logo get a translucent tile with white initials.
+- Tested (ran and saw pass): the Dashboard e2e tests with axe checks while the boxes are open; captured light, dark and phone screenshots with Josh's three carriers.
+
 ## Carrier portal buttons: logo first (built 2026-11-12)
 Josh: "I would like the logo to be the predominant part of the carrier portals link button" (relayed by the main session).
 - Dashboard → Carrier portals: each button is now mostly logo: an 80px white tile with the logo filling it (white in dark mode too, so transparent and dark logos stay legible), then a small strip with the carrier name and an open-in-new-tab icon. Hover lifts the button with an orange border.
