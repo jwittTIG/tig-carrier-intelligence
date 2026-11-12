@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { can } from "@/server/auth/context";
 import { requireAuth } from "@/server/auth/session";
-import { listContactsForCarrier, listTerritories } from "@/server/services/contacts";
+import { listContactsForCarrier, listTerritories, mainContacts } from "@/server/services/contacts";
+import { MainContactsCard } from "@/components/main-contacts";
 import { ActionForm } from "@/components/action-form";
 import { addContactToCarrierAction } from "../../contacts/actions";
 import { FreshnessBadge } from "@/components/freshness";
@@ -11,12 +12,14 @@ import { CONTACT_ROLES, contactRoleLabel } from "@/lib/contact-roles";
 export async function ContactsTab({ carrierId }: { carrierId: string }) {
   const ctx = await requireAuth();
   const write = can(ctx, "contact.write");
-  const [rows, territories] = await Promise.all([listContactsForCarrier(ctx, carrierId), write ? listTerritories(ctx) : Promise.resolve([])]);
+  const [rows, territories, main] = await Promise.all([listContactsForCarrier(ctx, carrierId), write ? listTerritories(ctx) : Promise.resolve([]), mainContacts(ctx, carrierId)]);
   const current = rows.filter((r) => r.current);
   const past = rows.filter((r) => !r.current);
   return (
+    <div className="flex flex-col gap-6">
+    <MainContactsCard data={main} addHref={write ? "#add-contact" : undefined} />
     <Section
-      title="Contacts"
+      title="All contacts"
     >
       {rows.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">No contacts at this carrier yet.</p>}
       {current.length > 0 && (
@@ -56,7 +59,7 @@ export async function ContactsTab({ carrierId }: { carrierId: string }) {
         </details>
       )}
       {write && (
-        <div className="rounded-xl border border-zinc-200 p-3 dark:border-zinc-700">
+        <div id="add-contact" className="scroll-mt-20 rounded-xl border border-zinc-200 p-3 dark:border-zinc-700">
           <h3 className="text-sm font-medium">Add a contact</h3>
           <ActionForm action={addContactToCarrierAction.bind(null, carrierId)} submitLabel="Add contact" className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Field label="Type of contact" htmlFor="ccRole">
@@ -82,5 +85,6 @@ export async function ContactsTab({ carrierId }: { carrierId: string }) {
         </div>
       )}
     </Section>
+    </div>
   );
 }

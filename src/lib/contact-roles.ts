@@ -51,3 +51,6 @@ export const IDENTIFIER_TYPES = [
   { code: "AM_BEST_ID", label: "AM Best" },
 ] as const;
 export const identifierLabel = (code: string) => IDENTIFIER_TYPES.find((t) => t.code === code)?.label ?? code;
+
+/** True when a phone field holds a number that can be dialed (7+ digits), not a note like "See CL/PL". */
+export const isDialable = (v: string | null | undefined): v is string => !!v && (v.match(/\d/g)?.length ?? 0) >= 7;

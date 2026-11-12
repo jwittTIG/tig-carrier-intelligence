@@ -5,6 +5,15 @@
 
 Milestone 8 (Ask the guides) works with Josh's key (two real questions at $1.76 and $1.77 with the whole-PDF read).
 
+## Main contacts card (built 2026-11-12)
+Josh: "Let's make the Contacts page more user friendly. Let's show a Main contacts square that shows: any marketing rep for the carrier / any claims contact / any billing contact." (Relayed by the main session.)
+- No data change: the contact types already include Marketing rep, Claims adjuster / Claims manager / Claims (other), and Billing / accounting.
+- **Main contacts** card with three rows (Marketing rep, Claims, Billing): each current, active contact with name (link), type for claims, title and territory, email (mailto) and phones (tel); the carrier's own claims and billing lines underneath. An empty row says "No marketing rep / claims contact / billing contact on file" with an Add one link (for people who can add contacts).
+- Shown at the top of each carrier's **Contacts** tab, and on the **Contacts** page whenever the Carrier filter is set ("Main contacts: <carrier>"). Three columns on wide screens, stacked on phones; light and dark.
+- Phone fields that hold a note (e.g. "See CL/PL") show as text, not a tap-to-call link (here and in the Dashboard SnapShot).
+- Accessibility fix: links inside table cells keep their soft underline (a redesign rule had removed it; axe flagged a name link next to an email).
+- Tested (ran and saw pass): 5 integration tests (grouping, every group returned, ended/inactive/archived/other-carrier contacts left out, permissions, dialable numbers); e2e on the carrier tab and the filtered Contacts page with empty-row messages, axe in light and dark, and phone width. Checked on Josh's Travelers data.
+
 ## N26: premium UI redesign (built 2026-11-11)
 Josh pasted a full redesign brief (Vercel / Linear / Attio feel; TIG navy, orange and white; visual only, no behavior changes). He chose to remove the accent color picker.
 - **Design system** (src/app/globals.css): TIG palette for light and dark, Geist and Geist Mono, 6–10px radii, hairline borders, near-flat shadows, quick 150–200ms transitions (off when the computer asks for reduced motion), navy focus rings (orange in dark), styled file pickers and checkboxes, one data-table style everywhere (light gray header, hairline rows, quiet hover).

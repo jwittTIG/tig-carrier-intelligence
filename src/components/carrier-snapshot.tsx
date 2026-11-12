@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useId, useState, useTransition } from "react";
 import { carrierSnapshotAction, type Snapshot } from "@/app/(app)/dashboard/snapshot-action";
 import { inputClass } from "./ui";
+import { isDialable } from "@/lib/contact-roles";
 
 const CODE_TYPE: Record<string, string> = { MASTER: "Master", PRODUCER: "Producer", SUB_CODE: "Sub-code", LOCATION: "Location", OTHER: "Other" };
 const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("");
@@ -109,7 +110,9 @@ function Item({ label, children }: { label: string; children: React.ReactNode })
 }
 
 function Phone({ value, carrierId }: { value: string | null; carrierId: string }) {
-  return value ? <a href={`tel:${value}`} className="inline-flex min-h-6 items-center text-base font-medium text-blue-800 hover:underline dark:text-blue-300">{value}</a> : <NotRecorded href={`/carriers/${carrierId}?edit=1`} />;
+  if (!value) return <NotRecorded href={`/carriers/${carrierId}?edit=1`} />;
+  // A note such as "See CL/PL" is shown as text; only real numbers are tap-to-call.
+  return isDialable(value) ? <a href={`tel:${value}`} className="inline-flex min-h-6 items-center text-base font-medium text-blue-800 hover:underline dark:text-blue-300">{value}</a> : <span className="text-base font-medium text-zinc-800 dark:text-zinc-200">{value}</span>;
 }
 
 function NotRecorded({ href }: { href: string }) {

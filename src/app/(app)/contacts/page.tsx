@@ -2,7 +2,9 @@ import Link from "next/link";
 import { can } from "@/server/auth/context";
 import { requireAuth } from "@/server/auth/session";
 import { listCarrierOptions, listLines } from "@/server/services/carriers";
-import { listContacts, listTerritories } from "@/server/services/contacts";
+import { listContacts, listTerritories, mainContacts } from "@/server/services/contacts";
+import { MainContactsCard } from "@/components/main-contacts";
+import { NotFoundError } from "@/server/errors";
 import { FreshnessBadge } from "@/components/freshness";
 import { ButtonLink, inputClass } from "@/components/ui";
 import { CONTACT_ROLES, contactRoleLabel } from "@/lib/contact-roles";
@@ -21,6 +23,8 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
     listTerritories(ctx),
   ]);
   const states = territories.filter((t) => t.stateCode);
+  // A carrier picked in the filter: its main contacts first (marketing rep, claims, billing).
+  const main = params.organizationId ? await mainContacts(ctx, params.organizationId).catch((e) => { if (e instanceof NotFoundError) return null; throw e; }) : null;
   const pages = Math.max(1, Math.ceil(result.total / result.pageSize));
   const pageHref = (p: number) => `/contacts?${new URLSearchParams({ ...(Object.fromEntries(Object.entries(params).filter(([, v]) => v)) as Record<string, string>), page: String(p) })}`;
 
@@ -86,6 +90,8 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
           Contacts are due for review {result.cadenceDays} days after they were last confirmed.
         </p>
       </form>
+
+      {main && <MainContactsCard data={main} showCarrier addHref={can(ctx, "contact.write") ? `/carriers/${main.carrier.id}?tab=contacts#add-contact` : undefined} />}
 
       <p className="text-sm text-zinc-600 dark:text-zinc-400" aria-live="polite">{result.total} {result.total === 1 ? "contact" : "contacts"}</p>
 

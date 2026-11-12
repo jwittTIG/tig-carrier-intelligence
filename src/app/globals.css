@@ -300,12 +300,4 @@ input[type="checkbox"], input[type="radio"] {
   accent-color: var(--color-orange-500);
 }
 
-/* A record name that is the whole cell is a link by context: underline only on hover. */
-main td > a:first-child:not([class*="bg-"]):not([class*="border"]),
-main li > a:first-child:only-child:not([class*="bg-"]):not([class*="border"]) {
-  text-decoration-line: none;
-}
-main td > a:first-child:not([class*="bg-"]):not([class*="border"]):hover,
-main li > a:first-child:only-child:not([class*="bg-"]):not([class*="border"]):hover {
-  text-decoration-line: underline;
-}
+

@@ -427,3 +427,59 @@ export async function addContactActivity(ctx: AuthContext, contactId: string, in
     return row;
   });
 }
+
+// ───────────────────────────── Main contacts ─────────────────────────────
+
+/** The contact types each "Main contacts" row shows (Josh, 2026-11-12). */
+export const MAIN_CONTACT_GROUPS = [
+  { key: "marketing", label: "Marketing rep", empty: "No marketing rep on file", roles: ["MARKETING_REP"] },
+  { key: "claims", label: "Claims", empty: "No claims contact on file", roles: ["CLAIMS_ADJUSTER", "CLAIMS_MANAGER", "CLAIMS"] },
+  { key: "billing", label: "Billing", empty: "No billing contact on file", roles: ["BILLING"] },
+] as const satisfies readonly { key: string; label: string; empty: string; roles: readonly ContactRole[] }[];
+
+export type MainContact = { assignmentId: string; contactId: string; name: string; role: ContactRole; title: string | null; email: string | null; officePhone: string | null; mobilePhone: string | null; territory: string | null };
+
+/**
+ * A carrier's main contacts: its current, active marketing reps, claims contacts and billing
+ * contacts, plus the carrier's own claims and billing phone lines. Every group is returned,
+ * empty or not, so the page can say what isn't on file.
+ */
+export async function mainContacts(ctx: AuthContext, organizationId: string) {
+  assertCan(ctx, "contact.read");
+  if (!z.uuid().safeParse(organizationId).success) throw new NotFoundError("Carrier not found.");
+  const org = await prisma.organization.findUnique({ where: { id: organizationId }, select: { id: true, displayName: true, type: true, claimsPhone: true, billingPhone: true } });
+  if (!org || org.type === "AGENCY") throw new NotFoundError("Carrier not found.");
+  const today = todayUtc();
+  const rows = await prisma.contactAssignment.findMany({
+    where: {
+      organizationId,
+      role: { in: MAIN_CONTACT_GROUPS.flatMap((g) => [...g.roles]) },
+      contact: { archivedAt: null, status: "ACTIVE" },
+      ...currentAssignment(today),
+    },
+    orderBy: [{ contact: { lastName: "asc" } }, { contact: { firstName: "asc" } }],
+    include: { contact: true, territory: { select: { name: true } } },
+  });
+  const toCard = (a: (typeof rows)[number]): MainContact => ({
+    assignmentId: a.id,
+    contactId: a.contact.id,
+    name: `${a.contact.firstName} ${a.contact.lastName}`,
+    role: a.role,
+    title: a.title,
+    email: a.contact.email,
+    officePhone: a.contact.officePhone,
+    mobilePhone: a.contact.mobilePhone,
+    territory: a.territory?.name ?? null,
+  });
+  return {
+    carrier: { id: org.id, name: org.displayName },
+    groups: MAIN_CONTACT_GROUPS.map((g) => ({
+      key: g.key,
+      label: g.label,
+      empty: g.empty,
+      contacts: rows.filter((a) => (g.roles as readonly ContactRole[]).includes(a.role)).map(toCard),
+      /** The carrier's own line for this group (from its details), if recorded. */
+      line: g.key === "claims" ? org.claimsPhone : g.key === "billing" ? org.billingPhone : null,
+    })),
+  };
+}
