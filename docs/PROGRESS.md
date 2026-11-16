@@ -5,6 +5,9 @@
 
 Milestone 8 (Ask the guides) works with Josh's key (two real questions at $1.76 and $1.77 with the whole-PDF read).
 
+## Dashboard count cards removed (2026-11-16)
+Josh asked to remove the five count cards at the top of the Dashboard (waiting for review, your submissions, appetite overdue, stale contacts, inbox emails). Removed, along with the counts behind them. Approvals, Contacts and Inbox pages are unchanged. Tested: lint, typecheck, unit/integration, build, all e2e.
+
 ## Ask answer more prominent; SnapShot agency code beside the name (built 2026-11-16)
 Josh: "When we return a result on the Ask the Guides section, let's make the Answer more prominent. On the carrier snapshot, let's put the agency code to the right of the carrier name and portal link."
 - Ask result page: the question is now a small heading; the answer is a colored panel (green Yes, red No, amber Refer, gray otherwise) with the verdict in large type, the answer text at reading size, and a "Based on N passages from the guide" link down to the citations. The page-text note, disclaimer and "check the full guide" stay below in small text.

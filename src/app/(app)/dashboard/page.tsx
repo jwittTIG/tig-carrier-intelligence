@@ -9,7 +9,6 @@ import { RightMenus } from "@/components/right-tabs";
 import { CarrierSnapshot } from "@/components/carrier-snapshot";
 import { ActionForm } from "@/components/action-form";
 import { askAction } from "../ask/actions";
-import { Icon } from "@/components/icons";
 import { PageHeader, Section, buttonBase, buttonClass, fmtDate, fmtDateTime, inputClass, label } from "@/components/ui";
 import { LineOptions } from "@/components/line-picker";
 
@@ -36,15 +35,6 @@ export default async function DashboardPage() {
     <div className="flex flex-col gap-6 xl:flex-row xl:items-start">
       <div className="flex min-w-0 flex-1 flex-col gap-6">
         <PageHeader title="Dashboard" description={`Welcome back, ${firstName}. Your carriers, markets and follow-ups at a glance.`} />
-
-        {/* Metric strip: one bordered bar, quiet until something needs attention. */}
-        <ul aria-label="Work waiting" className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-200 shadow-xs lg:grid-cols-5 dark:border-zinc-800 dark:bg-zinc-800">
-          <Metric href="/approvals" title="Waiting for your review" value={d.pending} icon="approvals" />
-          <Metric href="/approvals" title="Your submissions waiting" value={d.mySubmissions} icon="documents" />
-          <Metric href="/approvals" title="Appetite overdue for review" value={d.overdueAppetiteCount} icon="markets" />
-          <Metric href="/contacts?freshness=stale" title="Contacts stale or never confirmed" value={d.staleContacts} icon="contacts" />
-          <Metric href="/inbox?status=NEW" title="Inbox emails to handle" value={d.inboxWaiting} icon="inbox" />
-        </ul>
 
         {(canAsk || canFind) && (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -153,23 +143,6 @@ export default async function DashboardPage() {
         </aside>
       )}
     </div>
-  );
-}
-
-function Metric({ href, title, value, icon }: { href: string; title: string; value: number; icon: string }) {
-  return (
-    <li className="bg-white last:col-span-2 lg:last:col-span-1 dark:bg-zinc-900">
-      <Link href={href} className="group flex h-full flex-col gap-2 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-        <span className="flex items-center justify-between gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-400">
-          <span className="line-clamp-2">{title}</span>
-          <Icon name={icon} className={`h-4 w-4 shrink-0 ${value > 0 ? "text-orange-500" : "text-zinc-400"}`} />
-        </span>
-        <span className="flex items-baseline gap-2">
-          <span className="text-2xl font-semibold tracking-tight text-blue-700 tabular-nums dark:text-zinc-100">{value}</span>
-          {value > 0 && <span className="text-xs font-medium text-orange-700 dark:text-orange-300">Needs attention</span>}
-        </span>
-      </Link>
-    </li>
   );
 }
 

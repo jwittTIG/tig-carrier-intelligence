@@ -3,7 +3,6 @@ import { addDays } from "@/lib/dates";
 import { assertCan, can, type AuthContext } from "@/server/auth/context";
 import { prisma } from "@/server/db/client";
 import { parse } from "@/server/validation";
-import { numberSetting, SETTING } from "./settings";
 
 /** Global search (P0-08) and the dashboard (PRD screen 1). Only real queries, no sample numbers. */
 
@@ -54,7 +53,6 @@ export async function globalSearch(ctx: AuthContext, q: unknown) {
 export async function dashboard(ctx: AuthContext) {
   assertCan(ctx, "carrier.read");
   const now = new Date();
-  const contactDays = await numberSetting(SETTING.contactReviewDays);
 
   const myCarriers = await prisma.organization.findMany({
     where: { ownerUserId: ctx.userId, archivedAt: null },
@@ -70,12 +68,6 @@ export async function dashboard(ctx: AuthContext) {
         take: 20,
       })
     : [];
-  const overdueAppetiteCount = can(ctx, "appetite.read") ? await prisma.appetiteProfile.count({ where: { status: "APPROVED", nextReviewAt: { lte: now } } }) : 0;
-  const staleContacts = can(ctx, "contact.read")
-    ? await prisma.contact.count({ where: { archivedAt: null, status: "ACTIVE", OR: [{ verifiedAt: null }, { verifiedAt: { lte: addDays(now, -contactDays) } }] } })
-    : 0;
-  const pending = can(ctx, "change_request.review") ? await prisma.changeRequest.count({ where: { status: "PENDING", proposedById: { not: ctx.userId } } }) : 0;
-  const mySubmissions = await prisma.changeRequest.count({ where: { status: "PENDING", proposedById: ctx.userId } });
   const recentAppetite = can(ctx, "appetite.read")
     ? await prisma.appetiteProfile.findMany({
         where: { status: "APPROVED", approvedAt: { gte: addDays(now, -30) } },
@@ -84,6 +76,5 @@ export async function dashboard(ctx: AuthContext) {
         include: { carrierProduct: { include: { writingCompany: { select: { id: true, displayName: true } }, product: { select: { name: true } } } }, approvedBy: { select: { name: true } } },
       })
     : [];
-  const inboxWaiting = can(ctx, "inbox.read") ? await prisma.inboundMessage.count({ where: { status: "NEW", senderStatus: "ACCEPTED" } }) : 0;
-  return { myCarriers, myOverdueAppetite, overdueAppetiteCount, staleContacts, pending, mySubmissions, recentAppetite, inboxWaiting };
+  return { myCarriers, myOverdueAppetite, recentAppetite };
 }
