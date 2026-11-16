@@ -50,6 +50,28 @@ export function CarrierSnapshot({ carriers }: { carriers: { id: string; name: st
                   Portal <span aria-hidden="true">↗</span><span className="sr-only"> (opens in a new tab)</span>
                 </a>
               )}
+              {/* Agency code beside the name (Josh, 2026-11-16). */}
+              <div className="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm sm:ml-auto dark:border-zinc-700 dark:bg-zinc-800/60">
+                <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Agency code</span>
+                {s.codes === null ? (
+                  <span className="text-zinc-600 dark:text-zinc-400">No access to codes</span>
+                ) : s.codes.length === 0 ? (
+                  <NotRecorded href={`/carriers/${s.id}?tab=codes`} />
+                ) : (
+                  <ul className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    {s.codes.map((c) => (
+                      <li key={`${c.type}-${c.value}-${c.producer}`} title={`${CODE_TYPE[c.type] ?? c.type}${c.producer ? ` · ${c.producer}` : ""} · ${c.lines.join(", ")}`}>
+                        <span className="font-mono text-base font-semibold text-zinc-900 dark:text-zinc-100">{c.value}</span>{" "}
+                        <span className="text-xs text-zinc-600 dark:text-zinc-400">
+                          {CODE_TYPE[c.type] ?? c.type}
+                          {c.producer && ` · ${c.producer}`}
+                          {s.codes!.length > 1 && ` · ${c.lines.length > 2 ? `${c.lines.length} lines` : c.lines.join(", ")}`}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
             <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
               <Item label="Main phone"><Phone value={s.phones.main} carrierId={s.id} /></Item>
@@ -73,26 +95,6 @@ export function CarrierSnapshot({ carriers }: { carriers: { id: string; name: st
                 )}
               </Item>
             </dl>
-            <div className="text-sm">
-              <h3 className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Agency code</h3>
-              {s.codes === null ? (
-                <p className="text-zinc-600 dark:text-zinc-400">No access to codes</p>
-              ) : s.codes.length === 0 ? (
-                <NotRecorded href={`/carriers/${s.id}?tab=codes`} />
-              ) : (
-                <ul className="mt-1 flex flex-col gap-1">
-                  {s.codes.map((c) => (
-                    <li key={`${c.type}-${c.value}-${c.producer}`}>
-                      <span className="font-mono text-base font-semibold">{c.value}</span>{" "}
-                      <span className="text-zinc-600 dark:text-zinc-400">
-                        {CODE_TYPE[c.type] ?? c.type}
-                        {c.producer && ` · ${c.producer}`} · {c.lines.length > 3 ? `${c.lines.length} lines` : c.lines.join(", ")}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
           </div>
         )}
       </div>
