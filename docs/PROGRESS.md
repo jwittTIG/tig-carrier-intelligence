@@ -5,6 +5,13 @@
 
 Milestone 8 (Ask the guides) works with Josh's key (two real questions at $1.76 and $1.77 with the whole-PDF read).
 
+## Lines required when adding a carrier; personal and commercial groups (built 2026-11-16)
+Josh: "When we add a carrier, let's have the Products this company writes be mandatory to fill in at the time of adding. Let's also group Personal Lines products in one group and commercial lines products in another group."
+- Lines of business now have a segment (PERSONAL or COMMERCIAL; new column with a check). Personal: Personal Homeowners, Personal Auto, Personal Umbrella, Flood. Commercial: everything else, including Specialty / Other P&C and Surety. (Flood is the judgment call; easy to move.)
+- New carrier form: **Products this company writes** as checkboxes in a Personal lines and a Commercial lines box. An insurer can't be created without at least one line (checked on the server; carrier and lines saved together, or not at all). MGAs, wholesalers and other intermediaries don't write lines and can't be given any (same rule as before on the channels tab). Carriers created by import or by code are unchanged.
+- Grouped everywhere lines or products are picked: the Writing companies & channels tab, Market Finder (line and product), Dashboard Find a market, Carriers and Contacts filters, contact specialties and commission schedules.
+- Tested (ran and saw pass): 4 integration tests (segments, the check, insurer with lines, insurer without lines refused with nothing saved, intermediaries, a bad line saves nothing); e2e (groups on the form, the required message, lines added with the carrier, grouped Market Finder dropdown, axe). Nine existing browser tests now tick a line when they add a carrier.
+
 ## Guide upload on the Appetite tab; names read from documents (built 2026-11-16)
 Josh: "Let's have it to where you can still upload on the appetite tab. I don't want to have to type in the name either - you should extract it from the document."
 - Carrier → Appetite tab → **Upload a guide**: the PDF, its type (Underwriting guidelines / Appetite guide), the product it covers (picked automatically when the carrier has one line), and **Draft appetite from it now** (ticked; the AI read runs in the background, about $1.50–3). The guide's line shows "AI is reading…", then "Ready for review".

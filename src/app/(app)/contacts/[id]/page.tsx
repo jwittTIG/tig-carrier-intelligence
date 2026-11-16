@@ -23,6 +23,7 @@ import {
 } from "../actions";
 import { ContactFields } from "../contact-fields";
 import { CONTACT_ROLES, contactRoleLabel } from "@/lib/contact-roles";
+import { ProductOptions } from "@/components/line-picker";
 
 const ACTIVITY_TYPES = ["NOTE", "CALL", "MEETING", "EMAIL", "VISIT", "OTHER"];
 
@@ -143,7 +144,7 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
                     <ActionForm action={addSpecialtyAction.bind(null, id, a.id)} submitLabel="Add specialty" className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                       <Field label="Product" htmlFor={`p-${a.id}`}>
                         <select id={`p-${a.id}`} name="productId" required className={inputClass}>
-                          {products.map((p) => <option key={p.id} value={p.id}>{p.line.name}: {p.name}</option>)}
+                          <ProductOptions products={products} />
                         </select>
                       </Field>
                       <Field label="Industry code (optional)" htmlFor={`i-${a.id}`} hint="e.g. NAICS 238160"><input id={`i-${a.id}`} name="industryCode" maxLength={40} className={inputClass} /></Field>

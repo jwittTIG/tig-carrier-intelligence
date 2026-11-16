@@ -11,6 +11,7 @@ import { ActionForm } from "@/components/action-form";
 import { askAction } from "../ask/actions";
 import { Icon } from "@/components/icons";
 import { PageHeader, Section, buttonBase, buttonClass, fmtDate, fmtDateTime, inputClass, label } from "@/components/ui";
+import { LineOptions } from "@/components/line-picker";
 
 export const metadata = { title: "Dashboard" };
 
@@ -74,7 +75,7 @@ export default async function DashboardPage() {
                     <label htmlFor="fmLine" className="text-[13px] font-medium text-zinc-700 dark:text-zinc-200">Line</label>
                     <select id="fmLine" name="lineId" required defaultValue="" className={inputClass}>
                       <option value="" disabled>Choose a line…</option>
-                      {lines.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+                      <LineOptions lines={lines} />
                     </select>
                   </div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

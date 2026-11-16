@@ -469,6 +469,8 @@ model LineOfBusiness {
   parentId  String?          @map("parent_id") @db.Uuid
   sortOrder Int              @default(0) @map("sort_order")
   active    Boolean          @default(true)
+  /// PERSONAL or COMMERCIAL: how lines are grouped in pickers (Josh, 2026-11-16).
+  segment   String           @default("COMMERCIAL")
   parent    LineOfBusiness?  @relation("LineParent", fields: [parentId], references: [id], onDelete: Restrict)
   children  LineOfBusiness[] @relation("LineParent")
   products  InsuranceProduct[]

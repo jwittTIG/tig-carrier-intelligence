@@ -9,6 +9,7 @@ import { OutcomeBadge } from "@/components/m4";
 import { Badge, Section, fmtDate, inputClass, label } from "@/components/ui";
 import { ConditionList, RiskAttributeInputs, firstValues } from "./risk";
 import { contactRoleLabel } from "@/lib/contact-roles";
+import { LineOptions, ProductOptions } from "@/components/line-picker";
 
 export const metadata = { title: "Market Finder" };
 
@@ -50,14 +51,14 @@ export default async function MarketsPage({ searchParams }: PageProps<"/markets"
             Line
             <select name="lineId" defaultValue={params.lineId ?? ""} className={inputClass}>
               <option value="">—</option>
-              {lines.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+              <LineOptions lines={lines} />
             </select>
           </label>
           <label className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">
             or product
             <select name="productId" defaultValue={params.productId ?? ""} className={inputClass}>
               <option value="">—</option>
-              {products.map((p) => <option key={p.id} value={p.id}>{p.line.name}: {p.name}</option>)}
+              <ProductOptions products={products} />
             </select>
           </label>
           <label className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">

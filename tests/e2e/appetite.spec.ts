@@ -16,16 +16,18 @@ test("upload a guide, draft appetite, submit, and have someone else approve it",
   await page.getByRole("link", { name: "New carrier" }).click();
   await page.getByLabel("Display name").fill(name);
   await page.getByLabel("Legal name").fill(`${name} Insurance Company`);
+  // The line it writes is ticked when the carrier is added; the product is named after the line.
+  await page.getByRole("checkbox", { name: "General Liability", exact: true }).check();
   await page.getByRole("button", { name: "Create carrier" }).click();
   await expect(page.getByRole("heading", { name })).toBeVisible();
   const carrierUrl = page.url().split("?")[0];
   await page.getByRole("link", { name: "Writing companies & channels" }).click();
-  // Tick the line it writes; the product is named after the line.
   const productLabel = "General Liability: General Liability";
-  await page.getByRole("checkbox", { name: "General Liability", exact: true }).check();
-  await page.getByRole("button", { name: "Add lines" }).click();
-  await expect(page.getByText("Added General Liability.")).toBeVisible();
   await expect(page.getByRole("checkbox", { name: "General Liability (added)" })).toBeDisabled();
+  // More lines can still be added later.
+  await page.getByRole("checkbox", { name: "Workers' Compensation", exact: true }).check();
+  await page.getByRole("button", { name: "Add lines" }).click();
+  await expect(page.getByText("Added Workers' Compensation.")).toBeVisible();
 
   // Draft a profile with one rule; upload the guide straight into its sources; submit.
   await page.getByRole("link", { name: "Appetite", exact: true }).click();

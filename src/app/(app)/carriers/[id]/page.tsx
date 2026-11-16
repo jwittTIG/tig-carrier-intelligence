@@ -10,6 +10,7 @@ import { followAction } from "../../notifications/actions";
 import { ActionForm } from "@/components/action-form";
 import { Badge, ButtonLink, Field, Section, buttonBase, buttonClass, fmtDate, fmtDateTime, inputClass, label } from "@/components/ui";
 import { Icon } from "@/components/icons";
+import { LineCheckboxes } from "@/components/line-picker";
 import { IDENTIFIER_TYPES, identifierLabel } from "@/lib/contact-roles";
 import {
   addActivityAction,
@@ -393,20 +394,11 @@ async function Channels({ carrier, write }: { carrier: Carrier; write: boolean }
           </ul>
           {write && writes && (
             <ActionForm action={addProductAction.bind(null, id)} submitLabel="Add lines" className="flex flex-col gap-3">
-              <fieldset className="flex flex-col gap-2">
-                <legend className="text-sm font-medium">Lines this carrier writes</legend>
-                <div className="grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
-                  {lines.map((l) => {
-                    const has = carrier.carrierProducts.some((cp) => !cp.archivedAt && !cp.programName && cp.product.line.name === l.name && cp.product.code === l.code);
-                    return (
-                      <label key={l.id} className={`flex items-center gap-2 text-sm ${has ? "text-zinc-600 dark:text-zinc-400" : ""}`}>
-                        <input type="checkbox" name="lineIds" value={l.id} defaultChecked={has} disabled={has} className="h-4 w-4 accent-blue-700" />
-                        {l.name}{has && <span className="text-xs"> (added)</span>}
-                      </label>
-                    );
-                  })}
-                </div>
-              </fieldset>
+              <LineCheckboxes
+                lines={lines}
+                legend="Lines this carrier writes"
+                added={new Set(lines.filter((l) => carrier.carrierProducts.some((cp) => !cp.archivedAt && !cp.programName && cp.product.line.name === l.name && cp.product.code === l.code)).map((l) => l.id))}
+              />
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <Field label="Product name (optional)" htmlFor="productName" hint="Only for a specific product, e.g. Contractors GL, with one line ticked. Leave blank to add each line as is.">
                   <input id="productName" name="productName" maxLength={120} className={inputClass} />

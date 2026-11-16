@@ -24,6 +24,7 @@ test("sign in, create a carrier, find it, archive it", async ({ page }) => {
   await page.getByLabel("Legal name").fill(`${name} Insurance Company`);
   await page.getByLabel("Type").selectOption("INSURER");
   await page.getByLabel("Carrier portal site").fill("https://agents.example.invalid/login");
+  await page.getByRole("checkbox", { name: "Personal Homeowners", exact: true }).check(); // lines are required for an insurer
   await page.getByRole("button", { name: "Create carrier" }).click();
   await expect(page.getByRole("heading", { name })).toBeVisible();
   // The portal site becomes a login button that opens in a new tab.

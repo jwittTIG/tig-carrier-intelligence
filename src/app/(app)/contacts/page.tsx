@@ -8,6 +8,7 @@ import { NotFoundError } from "@/server/errors";
 import { FreshnessBadge } from "@/components/freshness";
 import { ButtonLink, inputClass } from "@/components/ui";
 import { CONTACT_ROLES, contactRoleLabel } from "@/lib/contact-roles";
+import { LineOptions } from "@/components/line-picker";
 
 export const metadata = { title: "Contacts" };
 
@@ -55,7 +56,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
           Line
           <select name="lineId" defaultValue={params.lineId ?? ""} className={inputClass}>
             <option value="">Any</option>
-            {lines.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+            <LineOptions lines={lines} />
           </select>
         </label>
         <label className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">

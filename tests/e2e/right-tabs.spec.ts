@@ -15,6 +15,7 @@ async function signInAndCreateCarrier(page: Page, name: string, portal?: string)
   await page.getByLabel("Display name").fill(name);
   await page.getByLabel("Legal name").fill(`${name} Insurance Company`);
   if (portal) await page.getByLabel("Carrier portal site").fill(portal);
+  await page.getByRole("checkbox", { name: "Personal Homeowners", exact: true }).check(); // lines are required for an insurer
   await page.getByRole("button", { name: "Create carrier" }).click();
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 }

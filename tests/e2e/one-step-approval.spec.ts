@@ -17,13 +17,10 @@ test("review the AI's rules by group and approve the draft in one step", async (
   await page.goto("/carriers/new");
   await page.getByLabel("Display name").fill(name);
   await page.getByLabel("Legal name").fill(`${name} Insurance Company`);
+  await page.getByRole("checkbox", { name: "Personal Homeowners", exact: true }).check(); // lines are required for an insurer
   await page.getByRole("button", { name: "Create carrier" }).click();
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
   const carrierUrl = page.url().split("?")[0];
-  await page.goto(`${carrierUrl}?tab=channels`);
-  await page.getByRole("checkbox", { name: "Personal Homeowners", exact: true }).check();
-  await page.getByRole("button", { name: "Add lines" }).click();
-  await expect(page.getByText("Added Personal Homeowners.")).toBeVisible();
 
   await page.goto(`${carrierUrl}?tab=documents`);
   await page.getByLabel("Title").fill(`${name} HO guide`);
@@ -59,6 +56,12 @@ test("review the AI's rules by group and approve the draft in one step", async (
   await expect(page.getByText("3 of 4 items selected")).toBeVisible();
   const axe = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
   expect(axe.violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => v.id)).toEqual([]);
+
+  // A reason that's too short is refused, and nothing ticked or unticked is lost.
+  await page.getByLabel("Reason for approving (recorded)").fill("ok");
+  await page.getByRole("button", { name: "Create and approve" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: /reason/ })).toBeVisible();
+  await expect(page.getByText("3 of 4 items selected")).toBeVisible();
 
   // One step: create and approve, with the reason D14 asks for.
   await page.getByLabel("Reason for approving (recorded)").fill("Checked the AI draft page by page against the guide");

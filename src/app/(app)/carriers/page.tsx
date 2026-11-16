@@ -4,6 +4,7 @@ import { requireAuth } from "@/server/auth/session";
 import { CARRIER_TYPES, listCarrierOptions, listCarriers, listLines } from "@/server/services/carriers";
 import { listActiveUsers } from "@/server/services/users";
 import { Badge, ButtonLink, inputClass, label } from "@/components/ui";
+import { LineOptions } from "@/components/line-picker";
 
 export const metadata = { title: "Carriers" };
 
@@ -43,7 +44,7 @@ export default async function CarriersPage({ searchParams }: PageProps<"/carrier
           Line
           <select name="lineId" defaultValue={params.lineId ?? ""} className={inputClass}>
             <option value="">Any</option>
-            {lines.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+            <LineOptions lines={lines} />
           </select>
         </label>
         <label className="flex flex-col gap-1.5 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">

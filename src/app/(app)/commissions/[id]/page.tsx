@@ -11,6 +11,7 @@ import { listSources } from "@/server/services/sources";
 import { ActionForm } from "@/components/action-form";
 import { AddSourceForm, DecisionPanel, SourcesList, StatusBadge } from "@/components/m4";
 import { Badge, Field, Section, fmtDate, fmtDateTime, inputClass, label } from "@/components/ui";
+import { ProductOptions } from "@/components/line-picker";
 import {
   addScheduleAction,
   addTierAction,
@@ -160,7 +161,7 @@ export default async function AgreementPage({ params }: PageProps<"/commissions/
             <ActionForm action={addScheduleAction.bind(null, id)} submitLabel="Add draft schedule" className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-4">
               <Field label="Product" htmlFor="sProd">
                 <select id="sProd" name="productId" defaultValue={ch.carrierProduct.productId} className={inputClass}>
-                  {products.map((p) => <option key={p.id} value={p.id}>{p.line.name}: {p.name}</option>)}
+                  <ProductOptions products={products} />
                 </select>
               </Field>
               <Field label="Transaction" htmlFor="sTx"><select id="sTx" name="transactionType" className={inputClass}>{TX.map((t) => <option key={t} value={t}>{label(t)}</option>)}</select></Field>

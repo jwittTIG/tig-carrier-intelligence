@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useActionState, useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from "react";
+import { createContext, startTransition, useActionState, useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { ActionState } from "@/server/actions/run";
 import { Badge, buttonBase, buttonClass, inputClass, label } from "@/components/ui";
 
@@ -26,7 +26,17 @@ export function ReviewForm({ action, children, canApproveOwn, defaultEffective }
   const ids = { date: useId(), reason: useId() };
 
   return (
-    <form ref={form} action={formAction} onChange={recount} className="flex flex-col gap-4 pb-4">
+    <form
+      ref={form}
+      onChange={recount}
+      // Not React's form action: that clears the form even when approval fails, undoing the ticks.
+      onSubmit={(e) => {
+        e.preventDefault();
+        const data = new FormData(e.currentTarget, (e.nativeEvent as SubmitEvent).submitter);
+        startTransition(() => formAction(data));
+      }}
+      className="flex flex-col gap-4 pb-4"
+    >
       <Recount.Provider value={recount}>{children}</Recount.Provider>
       <div className="sticky bottom-0 z-20 -mx-4 border-t border-zinc-200 bg-white/95 px-4 py-3 shadow-[0_-8px_20px_-12px_rgb(15_23_42/0.25)] backdrop-blur sm:mx-0 sm:rounded-2xl sm:border dark:border-zinc-700 dark:bg-zinc-900/95">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end">

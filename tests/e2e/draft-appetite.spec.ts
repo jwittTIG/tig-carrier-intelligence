@@ -16,16 +16,10 @@ test("draft appetite from a guide, review it, approve it, and find markets with 
   await page.goto("/carriers/new");
   await page.getByLabel("Display name").fill(name);
   await page.getByLabel("Legal name").fill(`${name} Insurance Company`);
+  await page.getByRole("checkbox", { name: "Personal Homeowners", exact: true }).check(); // lines are required for an insurer
   await page.getByRole("button", { name: "Create carrier" }).click();
   await expect(page.getByRole("heading", { name })).toBeVisible();
   const carrierUrl = page.url().split("?")[0];
-
-  // It writes homeowners.
-  await page.goto(`${carrierUrl}?tab=channels`);
-  await page.getByRole("checkbox", { name: "Personal Homeowners", exact: true }).check();
-  await page.getByRole("button", { name: "Add lines" }).click();
-  await expect(page.getByText("Added Personal Homeowners.")).toBeVisible();
-
   // Upload its guide.
   await page.goto(`${carrierUrl}?tab=documents`);
   await page.getByLabel("Title").fill(`${name} HO guide`);

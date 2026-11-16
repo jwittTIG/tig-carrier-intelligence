@@ -11,6 +11,7 @@ test("carrier overview: fixed name, edit on request, logo, identifier and contac
   await page.goto("/carriers/new");
   await page.getByLabel("Display name").fill(name);
   await page.getByLabel("Legal name").fill(`${name} Insurance Company`);
+  await page.getByRole("checkbox", { name: "Personal Homeowners", exact: true }).check(); // lines are required for an insurer
   await page.getByRole("button", { name: "Create carrier" }).click();
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 

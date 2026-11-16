@@ -141,12 +141,12 @@ export async function listCarrierOptions(ctx: AuthContext, opts: { types?: Organ
 
 export async function listLines(ctx: AuthContext) {
   assertCan(ctx, "carrier.read");
-  return prisma.lineOfBusiness.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" }, select: { id: true, name: true, code: true } });
+  return prisma.lineOfBusiness.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" }, select: { id: true, name: true, code: true, segment: true } });
 }
 
 export async function listProducts(ctx: AuthContext) {
   assertCan(ctx, "carrier.read");
-  return prisma.insuranceProduct.findMany({ orderBy: [{ line: { sortOrder: "asc" } }, { name: "asc" }], select: { id: true, name: true, line: { select: { name: true } } } });
+  return prisma.insuranceProduct.findMany({ orderBy: [{ line: { sortOrder: "asc" } }, { name: "asc" }], select: { id: true, name: true, line: { select: { name: true, segment: true } } } });
 }
 
 export async function listActivity(ctx: AuthContext, carrierId: string) {
@@ -410,7 +410,11 @@ const linesSchema = z
 export async function addCarrierLines(ctx: AuthContext, carrierId: string, input: unknown) {
   assertCan(ctx, "carrier.write");
   const data = parse(linesSchema, input);
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction((tx) => addLinesIn(tx, ctx, carrierId, data));
+}
+
+async function addLinesIn(tx: Prisma.TransactionClient, ctx: AuthContext, carrierId: string, data: z.infer<typeof linesSchema>) {
+  {
     const carrier = await findCarrier(tx, carrierId);
     if (!["INSURER", "OTHER"].includes(carrier.type)) throw new ValidationError("Only an insurer (writing company) can write a product. Add intermediaries as channels.");
     const lines = await tx.lineOfBusiness.findMany({ where: { id: { in: [...new Set(data.lineIds)] }, active: true } });
@@ -433,6 +437,29 @@ export async function addCarrierLines(ctx: AuthContext, carrierId: string, input
       added.push(product.name);
     }
     return { added, skipped };
+  }
+}
+
+/**
+ * The New carrier form (Josh, 2026-11-16): an insurer must be added with the lines it writes.
+ * The carrier and its lines are saved together, or not at all. Intermediaries (MGAs, wholesalers…)
+ * don't write products, so lines don't apply to them.
+ */
+export async function createCarrierWithLines(ctx: AuthContext, input: unknown) {
+  assertCan(ctx, "carrier.write");
+  const data = parse(createSchema, input);
+  const raw = (input ?? {}) as { lineIds?: unknown };
+  const lineIds = (Array.isArray(raw.lineIds) ? raw.lineIds : []).filter((v): v is string => typeof v === "string" && v !== "");
+  const writes = ["INSURER", "OTHER"].includes(data.type);
+  if (data.type === "INSURER" && lineIds.length === 0) throw new ValidationError("Pick at least one line this carrier writes (Personal or Commercial).");
+  if (!writes && lineIds.length) throw new ValidationError("Only an insurer (writing company) writes lines. Leave the lines unticked for an MGA, wholesaler or other intermediary.");
+  return prisma.$transaction(async (tx) => {
+    await checkParent(tx, null, data.parentId);
+    await checkOwner(tx, data.ownerUserId);
+    const org = await tx.organization.create({ data: { ...data, parentId: data.parentId ?? null, ownerUserId: data.ownerUserId ?? null, website: data.website ?? null, portalUrl: data.portalUrl ?? null, mainPhone: data.mainPhone ?? null, billingPhone: data.billingPhone ?? null, claimsPhone: data.claimsPhone ?? null } });
+    await recordAudit(tx, ctx, { action: "carrier.create", entityType: "organization", entityId: org.id, after: org });
+    if (lineIds.length) await addLinesIn(tx, ctx, org.id, parse(linesSchema, { lineIds }));
+    return org;
   });
 }
 

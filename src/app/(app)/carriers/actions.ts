@@ -14,7 +14,7 @@ export async function createCarrierAction(_s: ActionState, form: FormData): Prom
   let id = "";
   const result = await runAction(async () => {
     const ctx = await requireAuth();
-    id = (await carriers.createCarrier(ctx, formObject(form))).id;
+    id = (await carriers.createCarrierWithLines(ctx, { ...formObject(form), lineIds: form.getAll("lineIds").filter((v) => typeof v === "string") })).id;
   });
   if (result?.error) return result;
   redirect(page(id));

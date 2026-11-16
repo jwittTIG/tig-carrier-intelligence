@@ -23,6 +23,8 @@ const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url 
 
 // ── P&C line taxonomy (PRD "Scope") ──
 type LineSeed = { code: string; name: string; parent?: string };
+/** Personal lines; every other line is commercial (lines_of_business.segment). */
+export const PERSONAL_LINES = new Set(["PERSONAL_HOME","PERSONAL_AUTO","PERSONAL_UMBRELLA","FLOOD"]);
 export const LINES: LineSeed[] = [
   { code: "COMMERCIAL_PROPERTY", name: "Commercial Property" },
   { code: "HABITATIONAL", name: "Habitational", parent: "COMMERCIAL_PROPERTY" },
@@ -83,7 +85,7 @@ async function seedReference() {
     const row = await prisma.lineOfBusiness.upsert({
       where: { code: line.code },
       update: { name: line.name, parentId, sortOrder: i * 10 },
-      create: { code: line.code, name: line.name, parentId, sortOrder: i * 10 },
+      create: { code: line.code, name: line.name, parentId, sortOrder: i * 10, segment: PERSONAL_LINES.has(line.code) ? "PERSONAL" : "COMMERCIAL" },
     });
     lineIds.set(line.code, row.id);
   }
