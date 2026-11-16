@@ -5,6 +5,13 @@
 
 Milestone 8 (Ask the guides) works with Josh's key (two real questions at $1.76 and $1.77 with the whole-PDF read).
 
+## One-step appetite approval and easier rule review (built 2026-11-16, N27)
+Josh: "I feel like the appetite approval process is a little clunky." He picked: too many steps, and reviewing 50+ rules is hard. He kept the typed reason.
+- AI draft review page: a bar fixed to the bottom shows how many items are selected, an Effective from date (from the guide), the reason (admins) or a note (staff), and the buttons **Create and approve** (admins), **Create and submit for approval** (staff) and **Create draft from selected**. Approve or submit goes straight to the appetite version.
+- Rules: grouped by outcome (Prohibited, Referral, Accepted, Preferred, Unknown) with counts, collapse, All/None per group, a search box, "Only ones to check" (the AI is under 80% sure), and Select all/none.
+- Safety: a missing or short reason, or a non-admin trying to approve their own work, stops it before anything is created. If approval can't finish, the draft stays and the message says what's missing.
+- Tested (ran and saw pass): 5 integration tests (admin approve with reason recorded; reason/permission checked first with nothing created; staff submit; chosen effective date; missing date keeps the draft; draft only); e2e (groups, filter, search, group None, live count, axe, Create and approve lands on the approved version). Found and fixed a render loop in the count while testing.
+
 ## Dashboard menus on navy (built 2026-11-12)
 Josh: "Let's make the background of the carrier portals and carrier contacts boxes navy blue (just need it to pop from the other sections)" (relayed by the main session). These are the two right-hand menus on the Dashboard titled Carrier portals and Carrier contacts (not the Main contacts card on the Contacts pages).
 - Both boxes are TIG navy (#142B49) with a soft shadow; in dark mode a brighter navy (#1D3A63) with a light outline so they still stand out from the dark page.

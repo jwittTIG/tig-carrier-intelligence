@@ -5,9 +5,9 @@ import { requireAuth } from "@/server/auth/session";
 import { NotFoundError } from "@/server/errors";
 import { getExtraction, isStalled } from "@/server/services/extractions";
 import { ActionForm } from "@/components/action-form";
-import { OutcomeBadge } from "@/components/m4";
 import { Badge, Section, fmtDateTime, label } from "@/components/ui";
 import { applyExtractionAction, retrySkippedAction } from "../actions";
+import { ReviewForm, RulesReview } from "../review-form";
 
 export const metadata = { title: "Review AI draft" };
 
@@ -32,7 +32,7 @@ function Evidence({ versionId, item }: { versionId: string; item: { page: number
 function Pick({ name, index, children }: { name: string; index: number; children: React.ReactNode }) {
   return (
     <li className="flex gap-3 border-t border-zinc-100 py-2 first:border-0 dark:border-zinc-800">
-      <input type="checkbox" name={name} value={index} defaultChecked id={`${name}-${index}`} className="mt-1 h-4 w-4 shrink-0 accent-blue-700" />
+      <input type="checkbox" name={name} value={index} defaultChecked data-pick id={`${name}-${index}`} className="mt-1 shrink-0" />
       <label htmlFor={`${name}-${index}`} className="flex min-w-0 flex-col gap-1 text-sm">{children}</label>
     </li>
   );
@@ -53,6 +53,8 @@ export default async function ExtractionPage({ params }: PageProps<"/extractions
   const result = ex.result as { profileId: string; added: { riskDetails: number; rules: number; limits: number; requirements: number }; skipped: { kind: string; summary: string; reason: string }[]; replaced?: { rules: number; limits: number; requirements: number }; keptHandRules?: number } | null;
   const replacedAny = !!result?.replaced && result.replaced.rules + result.replaced.limits + result.replaced.requirements > 0;
   const write = can(ctx, "appetite.write") && ex.status === "READY";
+  // An admin may approve their own work in one step, with a reason (D14).
+  const canApproveOwn = write && ctx.roles.includes("ADMIN") && can(ctx, "appetite.approve") && can(ctx, "change_request.review");
   const labels = new Map([...ex.carrierProduct.product.attributeDefinitions.map((a) => [a.key, a.label] as const), ...(p?.attributes ?? []).map((a) => [a.key, a.label] as const)]);
 
   return (
@@ -112,7 +114,7 @@ export default async function ExtractionPage({ params }: PageProps<"/extractions
             {p.states.length > 0 && <p className="text-xs text-zinc-600 dark:text-zinc-400">States: {p.states.join(", ")}</p>}
           </Section>
 
-          <Proposals write={write} action={applyExtractionAction.bind(null, ex.id)}>
+          <Proposals write={write} action={applyExtractionAction.bind(null, ex.id)} canApproveOwn={canApproveOwn} defaultEffective={p.effectiveDate && /^\d{4}-\d{2}-\d{2}$/.test(p.effectiveDate) ? p.effectiveDate : ""}>
             <fieldset disabled={!write} className="flex flex-col gap-4">
               <Section title={`Risk details (${p.attributes.length})`}>
                 <p className="text-xs text-zinc-600 dark:text-zinc-400">The questions the rules ask about a risk (e.g. roof covering). Ones this product already has are reused.</p>
@@ -127,18 +129,20 @@ export default async function ExtractionPage({ params }: PageProps<"/extractions
                 )}
               </Section>
 
-              <Section title={`Rules (${p.rules.length})`}>
+              <Section title={`Rules (${p.rules.length})`} description="Grouped by outcome. Untick anything the guide doesn't say; use the filters to focus on the ones marked Check this.">
                 {p.rules.length === 0 ? <p className="text-sm">None.</p> : (
-                  <ul>{p.rules.map((r, i) => (
-                    <Pick key={i} name="rules" index={i}>
-                      <span className="flex flex-wrap items-center gap-2">
-                        <OutcomeBadge outcome={r.outcome} />
-                        <span>{r.attributeKey ? <>If <strong>{labels.get(r.attributeKey) ?? r.attributeKey}</strong> {OPS[r.operator ?? ""] ?? r.operator} {r.value ?? ""}</> : "Any risk"}{r.states.length > 0 && ` · ${r.states.join(", ")}`}{r.naics.length > 0 && ` · NAICS ${r.naics.join(", ")}`}</span>
-                      </span>
-                      <span>{r.summary}</span>
-                      <Evidence versionId={vid} item={r} />
-                    </Pick>
-                  ))}</ul>
+                  <RulesReview
+                    rules={p.rules.map((r, i) => ({
+                      index: i,
+                      outcome: r.outcome,
+                      condition: `${r.attributeKey ? `If ${labels.get(r.attributeKey) ?? r.attributeKey} ${OPS[r.operator ?? ""] ?? r.operator ?? ""} ${r.value ?? ""}`.trim() : "Any risk"}${r.states.length > 0 ? ` · ${r.states.join(", ")}` : ""}${r.naics.length > 0 ? ` · NAICS ${r.naics.join(", ")}` : ""}`,
+                      summary: r.summary,
+                      page: r.page,
+                      quote: r.quote,
+                      confidence: r.confidence,
+                      href: `/api/v1/document-versions/${vid}/download?view=1#page=${r.page}`,
+                    }))}
+                  />
                 )}
               </Section>
 
@@ -172,7 +176,7 @@ export default async function ExtractionPage({ params }: PageProps<"/extractions
 }
 
 /** Inside a form only while it can still be applied; afterwards the list is read-only (no dead button). */
-function Proposals({ write, action, children }: { write: boolean; action: Parameters<typeof ActionForm>[0]["action"]; children: React.ReactNode }) {
+function Proposals({ write, action, children, canApproveOwn, defaultEffective }: { write: boolean; action: Parameters<typeof ActionForm>[0]["action"]; children: React.ReactNode; canApproveOwn: boolean; defaultEffective: string }) {
   if (!write) return <div className="flex flex-col gap-4">{children}</div>;
-  return <ActionForm action={action} submitLabel="Create draft from selected" pendingLabel="Creating the draft…" className="flex flex-col gap-4">{children}</ActionForm>;
+  return <ReviewForm action={action} canApproveOwn={canApproveOwn} defaultEffective={defaultEffective}>{children}</ReviewForm>;
 }
