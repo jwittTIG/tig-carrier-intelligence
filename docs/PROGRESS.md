@@ -5,6 +5,13 @@
 
 Milestone 8 (Ask the guides) works with Josh's key (two real questions at $1.76 and $1.77 with the whole-PDF read).
 
+## Guide upload on the Appetite tab; names read from documents (built 2026-11-16)
+Josh: "Let's have it to where you can still upload on the appetite tab. I don't want to have to type in the name either - you should extract it from the document."
+- Carrier → Appetite tab → **Upload a guide**: the PDF, its type (Underwriting guidelines / Appetite guide), the product it covers (picked automatically when the carrier has one line), and **Draft appetite from it now** (ticked; the AI read runs in the background, about $1.50–3). The guide's line shows "AI is reading…", then "Ready for review".
+- No name to type, here or anywhere else (Documents tab, Documents page, Sources upload; Title is optional there). The name comes from the PDF's own title when it is a real one (not a file name like "tna_pg.pdf"), else the largest text at the top of page 1 (dates removed, a wrapped second line joined), else the file name tidied. When a guide is filed under a carrier and its name doesn't mention the carrier, the carrier goes first ("Liberty Mutual (Safeco) – Auto Product Guide"). Rename it any time on the document page.
+- Checked against Josh's nine stored guide PDFs: e.g. "TN Quantum Homeowners 2.0 Manual", "Auto Product Guide", "Homeowners Product Guide", "Tennessee RV & Advantage Personal Auto", "Encompass Insurance Company" (the weakest: that guide's first page only names the company).
+- Tested (ran and saw pass): 6 unit tests (own title, heading lines, wrapping, file names, carrier prefix); 5 integration tests (real PDFs with and without their own title, typed title wins, CSV file name, queued read becomes ready, refusals for another carrier's product, restricted documents and missing permission); e2e (upload on the Appetite tab with no name, read starts, Ready for review, axe).
+
 ## One-step appetite approval and easier rule review (built 2026-11-16, N27)
 Josh: "I feel like the appetite approval process is a little clunky." He picked: too many steps, and reviewing 50+ rules is hard. He kept the typed reason.
 - AI draft review page: a bar fixed to the bottom shows how many items are selected, an Effective from date (from the guide), the reason (admins) or a note (staff), and the buttons **Create and approve** (admins), **Create and submit for approval** (staff) and **Create draft from selected**. Approve or submit goes straight to the appetite version.

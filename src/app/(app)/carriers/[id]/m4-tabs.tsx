@@ -12,7 +12,7 @@ import { GuideAppetiteRow } from "../../extractions/guide-appetite";
 import { ActionForm } from "@/components/action-form";
 import { StatusBadge } from "@/components/m4";
 import { Badge, Field, Section, fmtDate, fmtDateTime, inputClass, label } from "@/components/ui";
-import { createAgreementAction, createProfileAction, deleteDraftAction } from "../../m4-actions";
+import { createAgreementAction, createProfileAction, deleteDraftAction, uploadGuideAction } from "../../m4-actions";
 import { UploadForm } from "../../documents/upload-form";
 
 type Carrier = { id: string; carrierProducts: { id: string; archivedAt: Date | null; product: { name: string }; channels: { id: string; archivedAt: Date | null; distributionType: string; intermediary: { displayName: string } | null }[] }[] };
@@ -28,11 +28,12 @@ export async function AppetiteTab({ carrier }: { carrier: Carrier }) {
   const guides = canRead ? (await listGuides(ctx, carrier.id)).filter((g) => g.readable) : [];
   const states = guides.length ? await guideAppetite(ctx, guides) : new Map();
   const targets = products.map((p) => ({ id: p.id, label: p.product.name }));
+  const canUpload = can(ctx, "document.write");
   return (
     <>
-    {(guides.length > 0 || canWrite) && (
+    {(guides.length > 0 || canWrite || canUpload) && (
       <Section title="Appetite from guides (AI)">
-        {guides.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">Upload a PDF appetite guide or underwriting guidelines on the Documents tab first.</p>}
+        {guides.length === 0 && <p className="text-sm text-zinc-600 dark:text-zinc-400">No guides yet. Upload the carrier&apos;s appetite guide or underwriting guidelines below.</p>}
         {guides.length > 0 && (
           <>
             <p className="text-xs text-zinc-600 dark:text-zinc-400">Each guide is drafted into its product&apos;s appetite once. Upload a new version on the guide&apos;s page and AI reads it automatically; its draft replaces what the earlier version drafted (hand-added rules are kept).</p>
@@ -44,6 +45,36 @@ export async function AppetiteTab({ carrier }: { carrier: Carrier }) {
               ))}
             </ul>
           </>
+        )}
+        {canUpload && (
+          <div id="upload-guide" className="scroll-mt-20 rounded-xl border border-dashed border-zinc-300 bg-zinc-50/60 p-4 dark:border-zinc-700 dark:bg-zinc-800/30">
+            <h3 className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-100">Upload a guide</h3>
+            <p className="mb-3 text-xs text-zinc-600 dark:text-zinc-400">PDF. The name is read from the document (rename it later on its page if you like).</p>
+            <ActionForm action={uploadGuideAction.bind(null, carrier.id)} submitLabel="Upload" pendingLabel="Uploading…" className="grid grid-cols-1 gap-3 md:grid-cols-[1.5fr_1fr_1fr] md:items-end">
+              <Field label="Guide (PDF)" htmlFor="guideFile">
+                <input id="guideFile" name="file" type="file" required accept="application/pdf,.pdf" />
+              </Field>
+              <Field label="Type" htmlFor="guideType">
+                <select id="guideType" name="documentType" defaultValue="UNDERWRITING_GUIDELINES" className={inputClass}>
+                  <option value="UNDERWRITING_GUIDELINES">Underwriting guidelines</option>
+                  <option value="APPETITE_GUIDE">Appetite guide</option>
+                </select>
+              </Field>
+              <Field label="Product it covers" htmlFor="guideProduct">
+                <select id="guideProduct" name="carrierProductId" defaultValue={targets.length === 1 ? targets[0].id : ""} className={inputClass}>
+                  <option value="">Decide later</option>
+                  {targets.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+                </select>
+              </Field>
+              {canWrite && targets.length > 0 && (
+                <label className="flex items-center gap-2 text-[13px] text-zinc-700 md:col-span-3 dark:text-zinc-200">
+                  <input type="checkbox" name="draftNow" defaultChecked />
+                  Draft appetite from it now (AI reads it in the background; about $1.50–3 for a long guide)
+                </label>
+              )}
+            </ActionForm>
+            {targets.length === 0 && <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">To draft appetite from it, add the lines this carrier writes on the Writing companies &amp; channels tab.</p>}
+          </div>
         )}
       </Section>
     )}

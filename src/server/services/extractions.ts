@@ -120,6 +120,27 @@ export async function queueAutoDraft(ctx: AuthContext, documentVersionId: string
   });
 }
 
+/**
+ * A guide just uploaded on the Appetite tab with "Draft appetite from it now" (Josh, 2026-11-16):
+ * queues its read for the chosen product, to run after the upload responds. Unlike the first read
+ * started by hand, the person doesn't wait; the Appetite tab shows "AI is reading…".
+ */
+export async function queueExtraction(ctx: AuthContext, input: unknown): Promise<string> {
+  assertCan(ctx, "appetite.write");
+  assertCan(ctx, "document.read");
+  const { documentVersionId, carrierProductId } = parse(startSchema, input);
+  const target = await readable(documentVersionId, carrierProductId); // restricted, non-PDF, AI off: refused here
+  const carrierOk = await prisma.recordSource.count({ where: { recordType: "ORGANIZATION", recordId: target.cp.writingCompanyId, documentVersion: { documentId: target.version.documentId } } });
+  if (!carrierOk) throw new ValidationError("That product belongs to a different carrier than the guide.");
+  return prisma.$transaction(async (tx) => {
+    const row = await tx.guideExtraction.create({
+      data: { documentVersionId, carrierProductId, status: "RUNNING", model: target.extractor.mode === "dev" ? "dev-reader" : "claude-opus-5-5", promptVersion: EXTRACT_PROMPT_VERSION, createdById: ctx.userId },
+    });
+    await recordAudit(tx, ctx, { action: "appetite.extraction.queue", entityType: "guide_extraction", entityId: row.id, after: { id: row.id, documentVersionId, carrierProductId, started: "on upload" } });
+    return row.id;
+  });
+}
+
 /** Runs a queued read (after the upload's response has gone). Safe to call twice. */
 export async function runQueuedExtraction(ctx: AuthContext, id: string) {
   const row = await prisma.guideExtraction.findUnique({ where: { id } });

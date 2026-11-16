@@ -7,6 +7,7 @@ import { prisma } from "@/server/db/client";
 import { ForbiddenError, NotFoundError, ValidationError } from "@/server/errors";
 import { ALLOWED_TYPES, inspectUpload, scanUpload } from "@/server/storage/inspect";
 import { SIGNED_URL_TTL_MS, storage } from "@/server/storage";
+import { titleFromFile } from "@/server/storage/title";
 import { optionalId, optionalText, parse, requiredText } from "@/server/validation";
 import { numberSetting } from "./settings";
 import { addSource, writePermissionFor } from "./sources";
@@ -40,24 +41,39 @@ async function storeFile(ctx: AuthContext, file: UploadedFile) {
 }
 
 const metaSchema = z.object({
-  title: requiredText(200),
+  /** Optional: read from the file itself when left blank (titleFromFile). */
+  title: optionalText(200),
   documentType: z.enum(DocumentType),
   classification: z.enum(Classification).default("INTERNAL"),
   organizationId: optionalId,
 });
 
-/** Creates a document with version 1. Optionally files it under a carrier. */
+/**
+ * A title read from the file names the carrier, so generic headings ("Product Guide") still say
+ * whose guide it is: "Liberty Mutual – Product Guide". Left alone if it already names the carrier.
+ */
+export function withCarrier(title: string, carrierName: string | null): string {
+  if (!carrierName) return title;
+  const first = carrierName.toLowerCase().split(/[\s(]+/).filter((w) => w.length >= 3)[0];
+  if (first && title.toLowerCase().includes(first)) return title;
+  return `${carrierName} – ${title}`.slice(0, 200);
+}
+
+/** Creates a document with version 1. Optionally files it under a carrier. The title is read from the file when left blank. */
 export async function uploadDocument(ctx: AuthContext, input: unknown, file: UploadedFile) {
   assertCan(ctx, "document.write");
   const meta = parse(metaSchema, input);
   if (meta.classification === "RESTRICTED") assertCan(ctx, "commission.read");
+  let carrierName: string | null = null;
   if (meta.organizationId) {
     const org = await prisma.organization.findUnique({ where: { id: meta.organizationId } });
     if (!org || org.type === "AGENCY") throw new ValidationError("Carrier not found.");
+    carrierName = org.displayName;
   }
   const stored = await storeFile(ctx, file);
+  const title = meta.title ?? withCarrier(await titleFromFile(file.name, file.bytes, stored.mimeType), carrierName);
   return prisma.$transaction(async (tx) => {
-    const doc = await tx.document.create({ data: { title: meta.title, documentType: meta.documentType, classification: meta.classification, ownerUserId: ctx.userId } });
+    const doc = await tx.document.create({ data: { title, documentType: meta.documentType, classification: meta.classification, ownerUserId: ctx.userId } });
     const version = await tx.documentVersion.create({
       data: { documentId: doc.id, versionNumber: 1, objectKey: stored.key, sha256: stored.sha256, mimeType: stored.mimeType, sizeBytes: BigInt(stored.sizeBytes), uploadedById: ctx.userId },
     });
@@ -100,8 +116,9 @@ export async function uploadAsSource(ctx: AuthContext, input: unknown, file: Upl
   assertCan(ctx, writePermissionFor(data.recordType));
   const target = await sourceTarget(data.recordType, data.recordId);
   if (target.classification === "RESTRICTED") assertCan(ctx, "commission.read");
-  const title = (data.title ?? file.name.replace(/\.[^.]+$/, "")).slice(0, 200).trim() || file.name;
   const stored = await storeFile(ctx, file);
+  const carrier = await prisma.organization.findUnique({ where: { id: target.organizationId }, select: { displayName: true } });
+  const title = data.title ?? withCarrier(await titleFromFile(file.name, file.bytes, stored.mimeType), carrier?.displayName ?? null);
   return prisma.$transaction(async (tx) => {
     const doc = await tx.document.create({ data: { title, documentType: target.documentType, classification: target.classification, ownerUserId: ctx.userId } });
     const version = await tx.documentVersion.create({

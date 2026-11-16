@@ -8,7 +8,9 @@ const TYPES = ["APPETITE_GUIDE", "BULLETIN", "UNDERWRITING_GUIDELINES", "AGREEME
 export function UploadForm({ organizationId, returnTo, carriers }: { organizationId?: string; returnTo?: string; carriers?: { id: string; displayName: string }[] }) {
   return (
     <ActionForm action={uploadDocumentAction.bind(null, returnTo ?? null)} submitLabel="Upload" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-      <Field label="Title" htmlFor="docTitle"><input id="docTitle" name="title" required maxLength={200} className={inputClass} /></Field>
+      <Field label="Title (optional)" htmlFor="docTitle" hint="Leave blank to use the document's own title.">
+        <input id="docTitle" name="title" maxLength={200} className={inputClass} />
+      </Field>
       <Field label="Type" htmlFor="docType">
         <select id="docType" name="documentType" className={inputClass}>{TYPES.map((t) => <option key={t} value={t}>{label(t)}</option>)}</select>
       </Field>

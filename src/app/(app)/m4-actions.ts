@@ -11,7 +11,7 @@ import * as app from "@/server/services/appetite";
 import { approveProfileNow, decide } from "@/server/services/approvals";
 import * as com from "@/server/services/commissions";
 import * as docs from "@/server/services/documents";
-import { queueAutoDraft, runQueuedExtraction } from "@/server/services/extractions";
+import { queueAutoDraft, queueExtraction, runQueuedExtraction } from "@/server/services/extractions";
 import { addSource } from "@/server/services/sources";
 
 /** Server actions for Milestone 4 screens: documents, appetite, commissions, approvals. */
@@ -304,5 +304,28 @@ export async function closeOutProfileAction(id: string, carrierId: string, _s: A
     revalidatePath(`/appetite/${id}`);
     revalidatePath(`/carriers/${carrierId}`);
     return "Closed out.";
+  });
+}
+
+/**
+ * Upload a guide on a carrier's Appetite tab (Josh, 2026-11-16). The name is read from the
+ * document. With a product and "Draft appetite from it now", the AI read starts in the background.
+ */
+export async function uploadGuideAction(carrierId: string, _s: ActionState, form: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    const ctx = await requireAuth();
+    const f = formObject(form);
+    const res = await docs.uploadDocument(ctx, { documentType: f.documentType, classification: "INTERNAL", organizationId: carrierId }, await fileFrom(form));
+    revalidatePath(`/carriers/${carrierId}`);
+    const productId = typeof f.carrierProductId === "string" ? f.carrierProductId : "";
+    if (!productId || form.get("draftNow") !== "on") return `Uploaded “${res.document.title}”.`;
+    try {
+      const queued = await queueExtraction(ctx, { documentVersionId: res.version.id, carrierProductId: productId });
+      after(() => runQueuedExtraction(ctx, queued));
+      return `Uploaded “${res.document.title}”. AI is reading it now (a few minutes); its line below shows when the draft is ready for review.`;
+    } catch (e) {
+      if (e instanceof ValidationError) return `Uploaded “${res.document.title}”, but the AI read didn't start: ${e.message}`;
+      throw e;
+    }
   });
 }
