@@ -25,6 +25,7 @@ test("adding an insurer needs at least one line; lines are grouped personal and 
   await commercial.getByRole("checkbox", { name: "Commercial Auto", exact: true }).check();
   await page.getByRole("button", { name: "Create carrier" }).click();
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+  await page.getByText("More", { exact: true }).click(); // managing the carrier is under More
   await page.getByRole("link", { name: "Writing companies & channels" }).click();
   await expect(page.getByRole("checkbox", { name: "Personal Auto (added)" })).toBeDisabled();
   await expect(page.getByRole("checkbox", { name: "Commercial Auto (added)" })).toBeDisabled();

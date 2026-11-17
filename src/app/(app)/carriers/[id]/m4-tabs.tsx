@@ -14,6 +14,7 @@ import { StatusBadge } from "@/components/m4";
 import { Badge, Field, Section, fmtDate, fmtDateTime, inputClass, label } from "@/components/ui";
 import { createAgreementAction, createProfileAction, deleteDraftAction, uploadGuideAction } from "../../m4-actions";
 import { UploadForm } from "../../documents/upload-form";
+import { showControl } from "@/server/auth/view";
 
 type Carrier = { id: string; carrierProducts: { id: string; archivedAt: Date | null; product: { name: string }; channels: { id: string; archivedAt: Date | null; distributionType: string; intermediary: { displayName: string } | null }[] }[] };
 
@@ -22,13 +23,13 @@ export async function AppetiteTab({ carrier }: { carrier: Carrier }) {
   const profiles = await listProfilesForCarrier(ctx, carrier.id);
   const products = carrier.carrierProducts.filter((p) => !p.archivedAt);
   const canRead = can(ctx, "document.read");
-  const canWriteAppetite = can(ctx, "appetite.write");
-  const canApprove = canWriteAppetite && can(ctx, "appetite.approve");
-  const canWrite = aiStatus().mode !== "off" && can(ctx, "appetite.write") && canRead;
+  const canWriteAppetite = (await showControl(ctx, "appetite.write"));
+  const canApprove = canWriteAppetite && (await showControl(ctx, "appetite.approve"));
+  const canWrite = aiStatus().mode !== "off" && (await showControl(ctx, "appetite.write")) && canRead;
   const guides = canRead ? (await listGuides(ctx, carrier.id)).filter((g) => g.readable) : [];
   const states = guides.length ? await guideAppetite(ctx, guides) : new Map();
   const targets = products.map((p) => ({ id: p.id, label: p.product.name }));
-  const canUpload = can(ctx, "document.write");
+  const canUpload = (await showControl(ctx, "document.write"));
   return (
     <>
     {(guides.length > 0 || canWrite || canUpload) && (
@@ -114,7 +115,7 @@ export async function AppetiteTab({ carrier }: { carrier: Carrier }) {
           </tbody>
         </table></div>
       )}
-      {can(ctx, "appetite.write") && products.length > 0 && (
+      {(await showControl(ctx, "appetite.write")) && products.length > 0 && (
         <ActionForm action={createProfileAction.bind(null, carrier.id)} submitLabel="Start appetite profile" showOk={false} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Field label="Product" htmlFor="apProd">
             <select id="apProd" name="carrierProductId" className={inputClass}>{products.map((p) => <option key={p.id} value={p.id}>{p.product.name}</option>)}</select>
@@ -161,7 +162,7 @@ export async function CommissionsTab({ carrierId }: { carrierId: string }) {
           </li>
         ))}
       </ul>
-      {can(ctx, "commission.write") && channels.length > 0 && entities.length > 0 && (
+      {(await showControl(ctx, "commission.write")) && channels.length > 0 && entities.length > 0 && (
         <ActionForm action={createAgreementAction.bind(null, carrierId)} submitLabel="Add agreement" showOk={false} className="grid grid-cols-1 gap-3 sm:grid-cols-4">
           <Field label="Channel" htmlFor="caCh"><select id="caCh" name="marketChannelId" className={inputClass}>{channels.map((c) => <option key={c.id} value={c.id}>{channelLabel(c)}</option>)}</select></Field>
           <Field label="Agency entity" htmlFor="caEnt"><select id="caEnt" name="agencyEntityId" className={inputClass}>{entities.map((e) => <option key={e.id} value={e.id}>{e.organization.displayName}</option>)}</select></Field>
@@ -194,7 +195,7 @@ export async function DocumentsTab({ carrierId }: { carrierId: string }) {
           ))}
         </ul>
       )}
-      {can(ctx, "document.write") && <UploadForm organizationId={carrierId} returnTo={`/carriers/${carrierId}`} />}
+      {(await showControl(ctx, "document.write")) && <UploadForm organizationId={carrierId} returnTo={`/carriers/${carrierId}`} />}
     </Section>
   );
 }

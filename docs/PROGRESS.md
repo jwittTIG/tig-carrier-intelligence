@@ -5,6 +5,14 @@
 
 Milestone 8 (Ask the guides) works with Josh's key (two real questions at $1.76 and $1.77 with the whole-PDF read).
 
+## Service-first layout; Admin tools switch (built 2026-11-16)
+Josh: "I want this platform to be more user friendly from an insurance service person's standpoint and less like it's geared for the admin of the agency." His answers: service staff come for carrier phone & portal, Find a market and Ask the guides; carrier page = service card + More; admin pages behind an Admin tools switch.
+- **Admin tools switch** in the top bar (only for people who can edit or approve something). Off by default, saved per browser (cookie `tci-admin`). Off: the sidebar is Dashboard, Market Finder, Ask the guides, Carriers, Contacts, Documents, Notifications; edit, upload, approve and "add it" controls are hidden. On: an "Admin tools" sidebar group (Inbox, Approvals, Setup) and every edit control. Presentation only: every server action still checks permissions (src/server/auth/view.ts).
+- **Dashboard:** Carrier SnapShot first, then Ask the guides and Find a market. Carriers you own / appetite overdue / approved recently show only with Admin tools on.
+- **Carrier page** opens on a **Service card**: claims, billing and main phones and agency code tiles, main contacts (marketing rep, claims, billing), what they write (personal and commercial, approved appetite links to its rules), Ask about this carrier with its guides on file. Tabs: Service card, Contacts, Appetite, Documents; **More** holds Details (the old Overview), Codes & portals, Writing companies & channels, Commissions, Updates, Activity, Change history. "?edit=1" and saving details go to Details. Our own agency entity has no card.
+- Next.js 16.4.3 → 16.4.6 (and eslint-config-next), Josh OK 2026-11-17: `next dev` refused to start over advisory GHSA-mfr8-8qww-v76h (moderate; use cache via unstable_cache, which this app does not use). Production audit now 0; 7 moderate remain in dev-only lint tooling.
+- Tested (ran and saw pass): lint, typecheck, unit/integration, build, all e2e. Browser tests run with Admin tools on (tests/support/admin-tools-on.json); new service-view.spec.ts starts with it off (nav, no edit controls, service card, More, switch on/off, axe). Screenshots checked on Josh's data (Travelers).
+
 ## Dashboard count cards removed (2026-11-16)
 Josh asked to remove the five count cards at the top of the Dashboard (waiting for review, your submissions, appetite overdue, stale contacts, inbox emails). Removed, along with the counts behind them. Approvals, Contacts and Inbox pages are unchanged. Tested: lint, typecheck, unit/integration, build, all e2e.
 

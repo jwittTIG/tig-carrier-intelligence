@@ -10,6 +10,7 @@ import { GuideAppetiteRow } from "../../extractions/guide-appetite";
 import { ActionForm } from "@/components/action-form";
 import { Badge, Field, Section, fmtDateTime, inputClass, label } from "@/components/ui";
 import { archiveDocumentAction, updateDocumentAction, uploadVersionAction } from "../../m4-actions";
+import { showControl } from "@/server/auth/view";
 
 const TYPES = ["APPETITE_GUIDE", "BULLETIN", "UNDERWRITING_GUIDELINES", "AGREEMENT", "COMMISSION_SCHEDULE", "APPLICATION", "OTHER"];
 
@@ -27,10 +28,10 @@ export default async function DocumentPage({ params }: PageProps<"/documents/[id
     if (e instanceof NotFoundError || e instanceof ForbiddenError) notFound();
     throw e;
   }
-  const write = can(ctx, "document.write");
+  const write = (await showControl(ctx, "document.write"));
   const latest = [...doc.versions].sort((a, b) => b.versionNumber - a.versionNumber)[0];
   const isGuide = ["APPETITE_GUIDE", "UNDERWRITING_GUIDELINES"].includes(doc.documentType) && doc.status === "ACTIVE" && doc.classification !== "RESTRICTED" && latest?.mimeType === "application/pdf";
-  const canDraft = isGuide && aiStatus().mode !== "off" && can(ctx, "appetite.write");
+  const canDraft = isGuide && aiStatus().mode !== "off" && (await showControl(ctx, "appetite.write"));
   const [targets, states] = await Promise.all([
     canDraft ? draftTargets(ctx, doc.id) : Promise.resolve([]),
     isGuide && can(ctx, "appetite.read") ? guideAppetite(ctx, [{ documentId: doc.id, documentVersionId: latest.id }]) : Promise.resolve(null),

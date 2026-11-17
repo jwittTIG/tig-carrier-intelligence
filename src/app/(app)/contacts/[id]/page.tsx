@@ -24,6 +24,7 @@ import {
 import { ContactFields } from "../contact-fields";
 import { CONTACT_ROLES, contactRoleLabel } from "@/lib/contact-roles";
 import { ProductOptions } from "@/components/line-picker";
+import { showControl } from "@/server/auth/view";
 
 const ACTIVITY_TYPES = ["NOTE", "CALL", "MEETING", "EMAIL", "VISIT", "OTHER"];
 
@@ -47,7 +48,7 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
     if (e instanceof NotFoundError) notFound();
     throw e;
   }
-  const write = can(ctx, "contact.write");
+  const write = (await showControl(ctx, "contact.write"));
   const [carriers, channels, territories, products, others, activity, history] = await Promise.all([
     listCarrierOptions(ctx),
     listAllChannels(ctx),

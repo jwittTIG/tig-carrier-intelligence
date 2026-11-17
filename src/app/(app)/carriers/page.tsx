@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { can } from "@/server/auth/context";
 import { requireAuth } from "@/server/auth/session";
 import { CARRIER_TYPES, listCarrierOptions, listCarriers, listLines } from "@/server/services/carriers";
 import { listActiveUsers } from "@/server/services/users";
 import { Badge, ButtonLink, inputClass, label } from "@/components/ui";
 import { LineOptions } from "@/components/line-picker";
+import { showControl } from "@/server/auth/view";
 
 export const metadata = { title: "Carriers" };
 
@@ -25,7 +25,7 @@ export default async function CarriersPage({ searchParams }: PageProps<"/carrier
     <>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="page-title">Carriers</h1>
-        {can(ctx, "carrier.write") && <ButtonLink href="/carriers/new">New carrier</ButtonLink>}
+        {(await showControl(ctx, "carrier.write")) && <ButtonLink href="/carriers/new">New carrier</ButtonLink>}
       </div>
 
       <form method="get" className="grid grid-cols-1 gap-3 rounded-2xl border border-zinc-200 bg-white shadow-xs p-3 sm:grid-cols-3 lg:grid-cols-6 dark:border-zinc-700 dark:bg-zinc-900" role="search">

@@ -5,6 +5,7 @@ import { listCarrierOptions, listLines, listPortalLinks } from "@/server/service
 import { listTerritories } from "@/server/services/contacts";
 import { aiStatus, listAskableCarriers } from "@/server/services/guides";
 import { dashboard } from "@/server/services/overview";
+import { adminToolsOn } from "@/server/auth/view";
 import { RightMenus } from "@/components/right-tabs";
 import { CarrierSnapshot } from "@/components/carrier-snapshot";
 import { ActionForm } from "@/components/action-form";
@@ -19,8 +20,9 @@ export default async function DashboardPage() {
   const canCarriers = can(ctx, "carrier.read");
   const canAsk = can(ctx, "guides.ask") && can(ctx, "document.read");
   const canFind = can(ctx, "appetite.read") && canCarriers;
+  const admin = await adminToolsOn();
   const [d, portals, carriers, askable, lines, territories] = await Promise.all([
-    dashboard(ctx),
+    admin ? dashboard(ctx) : Promise.resolve(null),
     canCarriers ? listPortalLinks(ctx) : Promise.resolve(null),
     canCarriers ? listCarrierOptions(ctx) : Promise.resolve(null),
     canAsk ? listAskableCarriers(ctx) : Promise.resolve([]),
@@ -34,7 +36,13 @@ export default async function DashboardPage() {
   return (
     <div className="flex flex-col gap-6 xl:flex-row xl:items-start">
       <div className="flex min-w-0 flex-1 flex-col gap-6">
-        <PageHeader title="Dashboard" description={`Welcome back, ${firstName}. Your carriers, markets and follow-ups at a glance.`} />
+        <PageHeader title="Dashboard" description={`Welcome back, ${firstName}. Look up a carrier, find a market or ask the guides.`} />
+
+        {carriers && (
+          <Section title="Carrier SnapShot" description="Main, billing and claims numbers, portal, agency code and marketing rep: everything for a client call.">
+            <CarrierSnapshot carriers={carrierList} canAdd={admin && (can(ctx, "carrier.write") || can(ctx, "contact.write") || can(ctx, "appointment.write"))} />
+          </Section>
+        )}
 
         {(canAsk || canFind) && (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -91,17 +99,12 @@ export default async function DashboardPage() {
           </div>
         )}
 
-        {carriers && (
-          <Section title="Carrier SnapShot" description="Phone numbers, marketing rep and agency code for one carrier.">
-            <CarrierSnapshot carriers={carrierList} />
-          </Section>
-        )}
-
+        {admin && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <Section title="Carriers you own">
-            {d.myCarriers.length === 0 ? <Empty>You aren&apos;t the relationship owner for any carrier.</Empty> : (
+            {d!.myCarriers.length === 0 ? <Empty>You aren&apos;t the relationship owner for any carrier.</Empty> : (
               <ul className="-my-2 divide-y divide-zinc-100 text-sm dark:divide-zinc-800">
-                {d.myCarriers.map((c) => (
+                {d!.myCarriers.map((c) => (
                   <li key={c.id} className="flex items-center justify-between gap-2 py-2">
                     <Link href={`/carriers/${c.id}`} className="font-medium text-zinc-900 dark:text-zinc-100">{c.displayName}</Link>
                     <span className="text-xs text-zinc-600 dark:text-zinc-400">{label(c.type)}</span>
@@ -111,9 +114,9 @@ export default async function DashboardPage() {
             )}
           </Section>
           <Section title="Your appetite overdue for review">
-            {d.myOverdueAppetite.length === 0 ? <Empty>Nothing overdue.</Empty> : (
+            {d!.myOverdueAppetite.length === 0 ? <Empty>Nothing overdue.</Empty> : (
               <ul className="-my-2 divide-y divide-zinc-100 text-sm dark:divide-zinc-800">
-                {d.myOverdueAppetite.map((p) => (
+                {d!.myOverdueAppetite.map((p) => (
                   <li key={p.id} className="flex flex-col py-2">
                     <Link href={`/appetite/${p.id}`} className="font-medium text-zinc-900 dark:text-zinc-100">{p.carrierProduct.writingCompany.displayName} · {p.carrierProduct.product.name} v{p.version}</Link>
                     <span className="text-xs text-zinc-600 dark:text-zinc-400">Due {fmtDate(p.nextReviewAt)}</span>
@@ -123,9 +126,9 @@ export default async function DashboardPage() {
             )}
           </Section>
           <Section title="Approved in the last 30 days">
-            {d.recentAppetite.length === 0 ? <Empty>No appetite approved recently.</Empty> : (
+            {d!.recentAppetite.length === 0 ? <Empty>No appetite approved recently.</Empty> : (
               <ul className="-my-2 divide-y divide-zinc-100 text-sm dark:divide-zinc-800">
-                {d.recentAppetite.map((p) => (
+                {d!.recentAppetite.map((p) => (
                   <li key={p.id} className="flex flex-col py-2">
                     <Link href={`/appetite/${p.id}`} className="font-medium text-zinc-900 dark:text-zinc-100">{p.carrierProduct.writingCompany.displayName} · {p.carrierProduct.product.name} v{p.version}</Link>
                     <span className="text-xs text-zinc-600 dark:text-zinc-400">{p.approvedBy?.name} · {fmtDateTime(p.approvedAt!)}</span>
@@ -135,6 +138,7 @@ export default async function DashboardPage() {
             )}
           </Section>
         </div>
+        )}
       </div>
 
       {(portals || carriers) && (

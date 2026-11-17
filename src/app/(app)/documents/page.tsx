@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { can } from "@/server/auth/context";
 import { requireAuth } from "@/server/auth/session";
 import { listCarrierOptions } from "@/server/services/carriers";
 import { listDocuments } from "@/server/services/documents";
 import { Badge, Section, fmtDateTime, inputClass, label } from "@/components/ui";
 import { UploadForm } from "./upload-form";
+import { showControl } from "@/server/auth/view";
 
 export const metadata = { title: "Documents" };
 
@@ -18,7 +18,7 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/docume
   return (
     <>
       <h1 className="page-title">Documents</h1>
-      {can(ctx, "document.write") && (
+      {(await showControl(ctx, "document.write")) && (
         <Section title="Upload a document">
           <UploadForm carriers={carriers} />
           <p className="text-xs text-zinc-600 dark:text-zinc-400">Files are checked by content, scanned, and stored privately. Downloads use links that expire after 5 minutes.</p>

@@ -29,20 +29,27 @@ import {
 } from "../actions";
 import { CarrierFields } from "../carrier-fields";
 import { CodesTab } from "./codes-tab";
+import { ServiceCard } from "./service-card";
 import { ContactsTab } from "./contacts-tab";
 import { AppetiteTab, CommissionsTab, DocumentsTab, UpdatesTab } from "./m4-tabs";
+import { showControl } from "@/server/auth/view";
 
+/**
+ * Service staff land on the service card; the tabs they use stay in view and managing the
+ * carrier sits under "More" (Josh, 2026-11-16). "more: true" tabs are in the More menu.
+ */
 const TABS = [
-  { key: "overview", name: "Overview" },
-  { key: "channels", name: "Writing companies & channels" },
-  { key: "contacts", name: "Contacts" },
-  { key: "codes", name: "Codes & portals" },
-  { key: "appetite", name: "Appetite" },
-  { key: "commissions", name: "Commissions" },
-  { key: "documents", name: "Documents" },
-  { key: "updates", name: "Updates" },
-  { key: "activity", name: "Activity" },
-  { key: "history", name: "Change history" },
+  { key: "card", name: "Service card", more: false },
+  { key: "contacts", name: "Contacts", more: false },
+  { key: "appetite", name: "Appetite", more: false },
+  { key: "documents", name: "Documents", more: false },
+  { key: "overview", name: "Details", more: true },
+  { key: "codes", name: "Codes & portals", more: true },
+  { key: "channels", name: "Writing companies & channels", more: true },
+  { key: "commissions", name: "Commissions", more: true },
+  { key: "updates", name: "Updates", more: true },
+  { key: "activity", name: "Activity", more: true },
+  { key: "history", name: "Change history", more: true },
 ] as const;
 type Tab = (typeof TABS)[number]["key"];
 
@@ -69,7 +76,6 @@ export default async function CarrierPage({ params, searchParams }: PageProps<"/
   const ctx = await requireAuth();
   const { id } = await params;
   const sp = await searchParams;
-  const tab: Tab = TABS.some((t) => t.key === sp.tab) ? (sp.tab as Tab) : "overview";
   let carrier;
   try {
     carrier = await getCarrier(ctx, id);
@@ -77,7 +83,14 @@ export default async function CarrierPage({ params, searchParams }: PageProps<"/
     if (e instanceof NotFoundError) notFound();
     throw e;
   }
-  const write = can(ctx, "carrier.write");
+  // Our own agency entity has no service card; "?edit=1" opens Details for editing.
+  const hasCard = carrier.type !== "AGENCY";
+  const tab: Tab = TABS.some((t) => t.key === sp.tab) && (sp.tab !== "card" || hasCard) ? (sp.tab as Tab) : sp.edit === "1" || !hasCard ? "overview" : "card";
+  const tabs = TABS.filter((t) => (t.key !== "commissions" || can(ctx, "commission.read")) && (t.key !== "card" || hasCard));
+  const tabHref = (key: string) => (key === (hasCard ? "card" : "overview") ? `/carriers/${id}` : `/carriers/${id}?tab=${key}`);
+  const tabClass = (on: boolean) => `whitespace-nowrap border-b-2 px-3 pb-2.5 pt-1 text-[13px] font-medium ${on ? "border-orange-500 text-blue-700 dark:text-white" : "border-transparent text-zinc-600 hover:border-zinc-300 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:text-zinc-100"}`;
+  const inMore = tabs.find((t) => t.more && t.key === tab);
+  const write = (await showControl(ctx, "carrier.write"));
   const following = carrier.type !== "AGENCY" && (await isFollowing(ctx, id));
   const logo = await carrierLogoUrl(ctx, carrier);
   const editing = tab === "overview" && sp.edit === "1" && write;
@@ -112,19 +125,32 @@ export default async function CarrierPage({ params, searchParams }: PageProps<"/
         </div>
       </div>
 
-      <nav aria-label="Carrier sections" className="-mt-2 flex gap-1 overflow-x-auto border-b border-zinc-200 [scrollbar-width:none] dark:border-zinc-800">
-        {TABS.filter((t) => t.key !== "commissions" || can(ctx, "commission.read")).map((t) => (
-          <Link
-            key={t.key}
-            href={t.key === "overview" ? `/carriers/${id}` : `/carriers/${id}?tab=${t.key}`}
-            aria-current={tab === t.key ? "page" : undefined}
-            className={`whitespace-nowrap border-b-2 px-3 pb-2.5 pt-1 text-[13px] font-medium ${tab === t.key ? "border-orange-500 text-blue-700 dark:text-white" : "border-transparent text-zinc-600 hover:border-zinc-300 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:text-zinc-100"}`}
-          >
-            {t.name}
-          </Link>
-        ))}
+      <nav aria-label="Carrier sections" className="-mt-2 flex items-end gap-1 border-b border-zinc-200 dark:border-zinc-800">
+        <div className="flex min-w-0 gap-1 overflow-x-auto [scrollbar-width:none]">
+          {tabs.filter((t) => !t.more).map((t) => (
+            <Link key={t.key} href={tabHref(t.key)} aria-current={tab === t.key ? "page" : undefined} className={tabClass(tab === t.key)}>
+              {t.name}
+            </Link>
+          ))}
+        </div>
+        <details className="group relative shrink-0">
+          <summary className={`flex cursor-pointer list-none items-center gap-1 [&::-webkit-details-marker]:hidden ${tabClass(!!inMore)}`}>
+            {inMore ? <>More: {inMore.name}</> : "More"}
+            <Icon name="chevron" className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+          </summary>
+          <ul className="absolute right-0 z-20 mt-1 w-64 rounded-xl border border-zinc-200 bg-white p-1.5 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+            {tabs.filter((t) => t.more).map((t) => (
+              <li key={t.key}>
+                <Link href={tabHref(t.key)} aria-current={tab === t.key ? "page" : undefined} className={`flex min-h-8 items-center rounded-lg px-2.5 text-[13px] hover:bg-zinc-100 dark:hover:bg-zinc-800 ${tab === t.key ? "font-semibold text-blue-700 dark:text-white" : "text-zinc-700 dark:text-zinc-200"}`}>
+                  {t.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </details>
       </nav>
 
+      {tab === "card" && <ServiceCard carrier={carrier} />}
       {tab === "overview" && <Overview carrier={carrier} write={write} editing={editing} hasLogo={!!logo} />}
       {tab === "channels" && <Channels carrier={carrier} write={write} />}
       {tab === "contacts" && <ContactsTab carrierId={id} />}
@@ -175,7 +201,7 @@ async function Overview({ carrier, write, editing, hasLogo }: { carrier: Carrier
                 owners={owners}
               />
             </ActionForm>
-            <Link href={`/carriers/${id}`} className="text-sm hover:underline">Cancel</Link>
+            <Link href={`/carriers/${id}?tab=overview`} className="text-sm hover:underline">Cancel</Link>
           </>
         ) : (
           <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-[max-content_1fr]">

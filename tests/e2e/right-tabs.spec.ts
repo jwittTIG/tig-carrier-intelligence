@@ -53,6 +53,8 @@ test("Carrier portals menu opens downward with a carrier's sign-in link", async 
   // With a logo, the logo is the main part of the button (Josh, 2026-11-12); the name stays, smaller.
   await page.goto("/carriers");
   await page.getByRole("link", { name, exact: true }).click();
+  await page.getByText("More", { exact: true }).click(); // managing the carrier is under More
+  await page.getByRole("link", { name: "Details" }).click();
   await page.getByLabel("Image").setInputFiles({ name: "logo.png", mimeType: "image/png", buffer: PNG });
   await page.getByRole("button", { name: "Upload logo" }).click();
   await expect(page.getByText("Logo saved.")).toBeVisible();
@@ -117,6 +119,7 @@ test("Carrier SnapShot: phones entered on the carrier, marketing rep, and missin
   const name = `E2E Snap ${Date.now()}`;
   await signInAndCreateCarrier(page, name);
   const carrierUrl = page.url().split("?")[0];
+  await page.goto(`${carrierUrl}?tab=overview`);
   await page.getByRole("link", { name: "Edit details" }).click();
   await page.getByLabel("Main phone").fill("800-555-0100");
   await page.getByLabel("Claims phone").fill("800-555-0102");

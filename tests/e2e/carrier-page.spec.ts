@@ -15,6 +15,10 @@ test("carrier overview: fixed name, edit on request, logo, identifier and contac
   await page.getByRole("button", { name: "Create carrier" }).click();
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 
+  // The carrier opens on the service card; Details is under More (Josh, 2026-11-16).
+  await page.getByText("More", { exact: true }).click(); // managing the carrier is under More
+  await page.getByRole("link", { name: "Details" }).click();
+
   // Details are read-only until "Edit details".
   await expect(page.getByLabel("Display name")).toHaveCount(0);
   await page.getByRole("link", { name: "Edit details" }).click();

@@ -22,6 +22,7 @@ import {
   updateAgreementAction,
   withdrawCommissionAction,
 } from "../../m4-actions";
+import { showControl } from "@/server/auth/view";
 
 const TX = ["NEW", "RENEWAL", "ENDORSEMENT", "OTHER"];
 
@@ -39,7 +40,8 @@ export default async function AgreementPage({ params }: PageProps<"/commissions/
     throw e;
   }
   const [products, territories, versions, sources] = await Promise.all([listProducts(ctx), listTerritories(ctx), listCitableVersions(ctx), listSources(ctx, "COMMISSION_AGREEMENT", id)]);
-  const write = can(ctx, "commission.write");
+  const write = (await showControl(ctx, "commission.write"));
+  const canRetire = await showControl(ctx, "commission.approve");
   const path = `/commissions/${id}`;
   const ch = a.marketChannel;
   const agreementPending = a.pending.find((p) => p.recordType === "COMMISSION_AGREEMENT");
@@ -101,7 +103,7 @@ export default async function AgreementPage({ params }: PageProps<"/commissions/
         )}
         <h3 className="text-sm font-medium">Other sources</h3>
         <SourcesList sources={sources} />
-        {write && <AddSourceForm returnTo={path} recordType="COMMISSION_AGREEMENT" recordId={id} versions={versions} uploadLabel={can(ctx, "document.write") ? "Upload a document" : undefined} />}
+        {write && <AddSourceForm returnTo={path} recordType="COMMISSION_AGREEMENT" recordId={id} versions={versions} uploadLabel={(await showControl(ctx, "document.write")) ? "Upload a document" : undefined} />}
       </Section>
 
       <Section title="Schedules" actions={<a href={`/api/v1/commission-schedules?agreementId=${id}&format=csv`} className="text-sm text-blue-800 hover:underline dark:text-blue-300">Download CSV</a>}>
@@ -143,7 +145,7 @@ export default async function AgreementPage({ params }: PageProps<"/commissions/
               {s.pending?.proposedById === ctx.userId && (
                 <ActionForm action={withdrawCommissionAction.bind(null, id, "COMMISSION_SCHEDULE", s.id)} submitLabel="Withdraw submission" variant="secondary">{null}</ActionForm>
               )}
-              {s.status === "APPROVED" && can(ctx, "commission.approve") && (
+              {s.status === "APPROVED" && canRetire && (
                 <details>
                   <summary className="cursor-pointer text-xs text-blue-800 dark:text-blue-300">Retire this schedule</summary>
                   <ActionForm action={retireScheduleAction.bind(null, id, s.id)} submitLabel="Retire" variant="danger" className="mt-2 flex flex-wrap items-end gap-2">

@@ -29,7 +29,7 @@ export async function updateCarrierAction(id: string, _s: ActionState, form: For
     revalidatePath(page(id));
   });
   if (result?.error) return result;
-  redirect(page(id)); // back to the read-only view
+  redirect(`${page(id)}?tab=overview`); // back to the read-only Details
 }
 
 export async function setArchivedAction(id: string, archived: boolean, _s: ActionState): Promise<ActionState> {

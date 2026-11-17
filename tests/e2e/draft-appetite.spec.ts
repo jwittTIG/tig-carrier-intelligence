@@ -18,7 +18,7 @@ test("draft appetite from a guide, review it, approve it, and find markets with 
   await page.getByLabel("Legal name").fill(`${name} Insurance Company`);
   await page.getByRole("checkbox", { name: "Personal Homeowners", exact: true }).check(); // lines are required for an insurer
   await page.getByRole("button", { name: "Create carrier" }).click();
-  await expect(page.getByRole("heading", { name })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
   const carrierUrl = page.url().split("?")[0];
   // Upload its guide.
   await page.goto(`${carrierUrl}?tab=documents`);

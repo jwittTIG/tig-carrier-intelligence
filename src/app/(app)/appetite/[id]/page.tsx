@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { can } from "@/server/auth/context";
 import { requireAuth } from "@/server/auth/session";
 import { NotFoundError } from "@/server/errors";
 import { getProfile } from "@/server/services/appetite";
@@ -29,6 +28,7 @@ import {
   verifyProfileAction,
   withdrawProfileAction,
 } from "../../m4-actions";
+import { showControl } from "@/server/auth/view";
 
 const OUTCOMES = ["PREFERRED", "ACCEPTED", "REFERRAL", "PROHIBITED", "UNKNOWN"];
 const OPERATORS = ["EQ", "NEQ", "LT", "LTE", "GT", "GTE", "BETWEEN", "IN", "NOT_IN", "EXISTS"];
@@ -70,8 +70,8 @@ export default async function AppetiteProfilePage({ params, searchParams }: Page
     listActiveUsers(ctx),
     listSources(ctx, "APPETITE_PROFILE", id),
   ]);
-  const write = can(ctx, "appetite.write");
-  const approver = write && can(ctx, "appetite.approve") && can(ctx, "change_request.review");
+  const write = (await showControl(ctx, "appetite.write"));
+  const approver = write && (await showControl(ctx, "appetite.approve")) && (await showControl(ctx, "change_request.review"));
   const canApproveOwn = approver && ctx.roles.includes("ADMIN");
   // What a draft still needs before it can be approved (shown as a checklist).
   const ready = [
@@ -262,7 +262,7 @@ export default async function AppetiteProfilePage({ params, searchParams }: Page
 
       <Section title="Sources">
         <SourcesList sources={sources} />
-        {draft && write && <AddSourceForm returnTo={path} recordType="APPETITE_PROFILE" recordId={id} versions={versions} uploadLabel={can(ctx, "document.write") ? "Upload the appetite guide" : undefined} />}
+        {draft && write && <AddSourceForm returnTo={path} recordType="APPETITE_PROFILE" recordId={id} versions={versions} uploadLabel={(await showControl(ctx, "document.write")) ? "Upload the appetite guide" : undefined} />}
       </Section>
 
       {p.status === "APPROVED" && (

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { can } from "@/server/auth/context";
 import { requireAuth } from "@/server/auth/session";
 import { listContactsForCarrier, listTerritories, mainContacts } from "@/server/services/contacts";
 import { MainContactsCard } from "@/components/main-contacts";
@@ -8,10 +7,11 @@ import { addContactToCarrierAction } from "../../contacts/actions";
 import { FreshnessBadge } from "@/components/freshness";
 import { Badge, Field, Section, inputClass } from "@/components/ui";
 import { CONTACT_ROLES, contactRoleLabel } from "@/lib/contact-roles";
+import { showControl } from "@/server/auth/view";
 
 export async function ContactsTab({ carrierId }: { carrierId: string }) {
   const ctx = await requireAuth();
-  const write = can(ctx, "contact.write");
+  const write = (await showControl(ctx, "contact.write"));
   const [rows, territories, main] = await Promise.all([listContactsForCarrier(ctx, carrierId), write ? listTerritories(ctx) : Promise.resolve([]), mainContacts(ctx, carrierId)]);
   const current = rows.filter((r) => r.current);
   const past = rows.filter((r) => !r.current);

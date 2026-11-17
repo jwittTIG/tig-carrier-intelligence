@@ -19,8 +19,9 @@ test("upload a guide, draft appetite, submit, and have someone else approve it",
   // The line it writes is ticked when the carrier is added; the product is named after the line.
   await page.getByRole("checkbox", { name: "General Liability", exact: true }).check();
   await page.getByRole("button", { name: "Create carrier" }).click();
-  await expect(page.getByRole("heading", { name })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
   const carrierUrl = page.url().split("?")[0];
+  await page.getByText("More", { exact: true }).click(); // managing the carrier is under More
   await page.getByRole("link", { name: "Writing companies & channels" }).click();
   const productLabel = "General Liability: General Liability";
   await expect(page.getByRole("checkbox", { name: "General Liability (added)" })).toBeDisabled();

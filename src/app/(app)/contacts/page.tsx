@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { can } from "@/server/auth/context";
 import { requireAuth } from "@/server/auth/session";
 import { listCarrierOptions, listLines } from "@/server/services/carriers";
 import { listContacts, listTerritories, mainContacts } from "@/server/services/contacts";
@@ -9,6 +8,7 @@ import { FreshnessBadge } from "@/components/freshness";
 import { ButtonLink, inputClass } from "@/components/ui";
 import { CONTACT_ROLES, contactRoleLabel } from "@/lib/contact-roles";
 import { LineOptions } from "@/components/line-picker";
+import { showControl } from "@/server/auth/view";
 
 export const metadata = { title: "Contacts" };
 
@@ -33,7 +33,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
     <>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="page-title">Contacts</h1>
-        {can(ctx, "contact.write") && <ButtonLink href="/contacts/new">New contact</ButtonLink>}
+        {(await showControl(ctx, "contact.write")) && <ButtonLink href="/contacts/new">New contact</ButtonLink>}
       </div>
 
       <form method="get" role="search" className="grid grid-cols-1 gap-3 rounded-2xl border border-zinc-200 bg-white shadow-xs p-3 sm:grid-cols-3 lg:grid-cols-6 dark:border-zinc-700 dark:bg-zinc-900">
@@ -92,7 +92,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
         </p>
       </form>
 
-      {main && <MainContactsCard data={main} showCarrier addHref={can(ctx, "contact.write") ? `/carriers/${main.carrier.id}?tab=contacts#add-contact` : undefined} />}
+      {main && <MainContactsCard data={main} showCarrier addHref={(await showControl(ctx, "contact.write")) ? `/carriers/${main.carrier.id}?tab=contacts#add-contact` : undefined} />}
 
       <p className="text-sm text-zinc-600 dark:text-zinc-400" aria-live="polite">{result.total} {result.total === 1 ? "contact" : "contacts"}</p>
 

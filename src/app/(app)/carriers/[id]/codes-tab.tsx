@@ -1,17 +1,17 @@
-import { can } from "@/server/auth/context";
 import { requireAuth } from "@/server/auth/session";
 import { channelLabel, codeTargets, listAgencyEntities, listCodesForCarrier, listPortals } from "@/server/services/appointments";
 import { listActiveUsers } from "@/server/services/users";
 import { ActionForm } from "@/components/action-form";
 import { Badge, Field, Section, inputClass, label } from "@/components/ui";
 import { addCodesAction, addPortalAction, removePortalAction, updateCodeAction } from "../appointment-actions";
+import { showControl } from "@/server/auth/view";
 
 const CODE_TYPES = ["MASTER", "PRODUCER", "SUB_CODE", "LOCATION", "OTHER"];
 
 /** Agency codes and portal links for a carrier: a reference only. Appointments are managed by corporate. */
 export async function CodesTab({ carrierId }: { carrierId: string }) {
   const ctx = await requireAuth();
-  const write = can(ctx, "appointment.write");
+  const write = (await showControl(ctx, "appointment.write"));
   const [codes, targets, entities, portals, users] = await Promise.all([
     listCodesForCarrier(ctx, carrierId),
     codeTargets(ctx, carrierId),

@@ -40,7 +40,7 @@ test("follow a carrier, then get notified when an email is filed under it", asyn
   await signIn(page, "DEMO Producer");
   await page.goto("/carriers");
   await page.getByRole("link", { name: "DEMO Summit Mutual", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "DEMO Summit Mutual" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "DEMO Summit Mutual" })).toBeVisible();
   if (await page.getByRole("button", { name: "Follow", exact: true }).isVisible()) {
     await page.getByRole("button", { name: "Follow", exact: true }).click();
   }

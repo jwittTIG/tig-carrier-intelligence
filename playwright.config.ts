@@ -30,7 +30,9 @@ export default defineConfig({
   workers: 1,
   timeout: 120_000,
   expect: { timeout: 20_000 },
-  use: { baseURL: `http://localhost:${port}` },
+  // Most specs manage data, so they start with the Admin tools switch on; service-view.spec.ts
+  // starts with it off, as staff see the app by default.
+  use: { baseURL: `http://localhost:${port}`, storageState: "tests/support/admin-tools-on.json" },
   webServer: {
     command: `npx next dev -p ${port}`,
     url: `http://localhost:${port}/api/health`,

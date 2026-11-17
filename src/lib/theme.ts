@@ -9,3 +9,10 @@ export const modeOf = (v: string | undefined | null): Mode => (v === "dark" ? "d
 
 /** Sidebar collapsed to icons (cookie, so the page renders it right the first time). */
 export const SIDEBAR_COOKIE = "tci-sidebar";
+
+/**
+ * Admin tools switch (Josh, 2026-11-16): off by default, so everyone sees the service layout.
+ * On, it shows approvals, inbox, setup and the edit, upload and approve controls. It only
+ * changes what is shown: the server still checks every permission on every action.
+ */
+export const ADMIN_COOKIE = "tci-admin";

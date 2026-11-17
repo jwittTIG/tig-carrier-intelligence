@@ -17,7 +17,7 @@ test("upload a guide, ask about the carrier, and see the cited answer", async ({
   await page.getByLabel("Legal name").fill(`${name} Insurance Company`);
   await page.getByRole("checkbox", { name: "Personal Homeowners", exact: true }).check(); // lines are required for an insurer
   await page.getByRole("button", { name: "Create carrier" }).click();
-  await expect(page.getByRole("heading", { name })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
   await page.getByRole("link", { name: "Documents", exact: true }).nth(1).click();
   await page.getByLabel("Title").fill(`${name} homeowners guide`);
   await page.getByLabel("Type").selectOption("UNDERWRITING_GUIDELINES");

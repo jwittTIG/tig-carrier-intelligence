@@ -9,6 +9,7 @@ import { MODE_COOKIE, SIDEBAR_COOKIE, modeOf } from "@/lib/theme";
 import { Icon } from "@/components/icons";
 import { AppShell, type NavGroup, type NavItem } from "@/components/app-shell";
 import { SETUP_PATHS, setupItems } from "./setup/items";
+import { adminToolsOn, hasAdminTools } from "@/server/auth/view";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const ctx = await requireAuth();
@@ -17,6 +18,9 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   const jar = await cookies();
   const mode = modeOf(jar.get(MODE_COOKIE)?.value);
   const collapsed = jar.get(SIDEBAR_COOKIE)?.value === "collapsed";
+  // Service layout by default; admin pages only with the Admin tools switch on (Josh, 2026-11-16).
+  const adminAllowed = hasAdminTools(ctx);
+  const admin = adminAllowed && (await adminToolsOn());
   async function signOut() {
     "use server";
     await devSignOut();
@@ -43,14 +47,19 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
     },
     {
       label: "Activity",
-      items: [
-        ...only(can(ctx, "inbox.read"), { href: "/inbox", label: "Inbox", icon: "inbox" }),
-        ...only(can(ctx, "change_request.review"), { href: "/approvals", label: "Approvals", icon: "approvals" }),
-        { href: "/notifications", label: "Notifications", icon: "bell", badge: unread },
-      ],
+      items: [{ href: "/notifications", label: "Notifications", icon: "bell", badge: unread }],
     },
-    // Industry codes, Import, Users and Audit log live on Setup.
-    ...(setupItems(ctx).length ? [{ label: "Admin", items: [{ href: "/setup", label: "Setup", icon: "setup", match: SETUP_PATHS }] }] : []),
+    // Admin tools: inbox, approvals and Setup (industry codes, import, users, audit log).
+    ...(admin
+      ? [{
+          label: "Admin tools",
+          items: [
+            ...only(can(ctx, "inbox.read"), { href: "/inbox", label: "Inbox", icon: "inbox" }),
+            ...only(can(ctx, "change_request.review"), { href: "/approvals", label: "Approvals", icon: "approvals" }),
+            ...only(setupItems(ctx).length > 0, { href: "/setup", label: "Setup", icon: "setup", match: SETUP_PATHS }),
+          ],
+        }]
+      : []),
   ].filter((g) => g.items.length);
 
   const initials = ctx.name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("");
@@ -73,6 +82,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         groups={groups}
         user={{ name: ctx.name, initials, role }}
         mode={mode}
+        adminTools={adminAllowed ? admin : null}
         collapsedInitial={collapsed}
         signOut={dev ? <form action={signOut}>{signOutButton}</form> : <SignOutButton>{signOutButton}</SignOutButton>}
       >

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { setModeAction, setSidebarAction } from "@/app/theme-actions";
+import { setAdminToolsAction, setModeAction, setSidebarAction } from "@/app/theme-actions";
 import type { Mode } from "@/lib/theme";
 import { Icon } from "./icons";
 
@@ -16,7 +16,7 @@ type User = { name: string; initials: string; role: string };
  * to icons, a slim top bar (page name, search, theme toggle, user menu), and the workspace.
  * On phones the sidebar slides in from the left.
  */
-export function AppShell({ groups, user, signOut, collapsedInitial, mode, children }: { groups: NavGroup[]; user: User; signOut: React.ReactNode; collapsedInitial: boolean; mode: Mode; children: React.ReactNode }) {
+export function AppShell({ groups, user, signOut, collapsedInitial, mode, adminTools, children }: { groups: NavGroup[]; user: User; signOut: React.ReactNode; collapsedInitial: boolean; mode: Mode; adminTools: boolean | null; children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(collapsedInitial);
   const [mobileOpen, setMobileOpen] = useState(false);
   const path = usePathname();
@@ -124,12 +124,47 @@ export function AppShell({ groups, user, signOut, collapsedInitial, mode, childr
           <Link href="/search" aria-label="Search" className="ml-auto flex h-8 w-8 items-center justify-center rounded-lg text-zinc-600 hover:bg-zinc-100 md:hidden dark:text-zinc-300 dark:hover:bg-zinc-800">
             <Icon name="search" className="h-4 w-4" />
           </Link>
+          {adminTools !== null && <AdminToolsSwitch key={String(adminTools)} on={adminTools} />}
           <ThemeToggle mode={mode} />
           <UserMenu user={user} signOut={signOut} />
         </header>
         <main className="mx-auto flex w-full max-w-[1440px] min-w-0 flex-1 flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>
       </div>
     </div>
+  );
+}
+
+/**
+ * Admin tools on/off (only for people who can edit or approve something). Off: the service
+ * layout. On: approvals, inbox, setup and the edit, upload and approve controls appear.
+ */
+function AdminToolsSwitch({ on }: { on: boolean }) {
+  const [checked, setChecked] = useState(on);
+  const [pending, start] = useTransition();
+  const router = useRouter();
+  const flip = () => {
+    const next = !checked;
+    setChecked(next);
+    start(async () => {
+      await setAdminToolsAction(next);
+      router.refresh();
+    });
+  };
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={flip}
+      disabled={pending}
+      title={checked ? "Hide the admin tools" : "Show approvals, inbox, setup and editing"}
+      className={`flex h-8 shrink-0 items-center gap-2 rounded-lg border px-2.5 text-[13px] font-medium disabled:opacity-70 ${checked ? "border-orange-300 bg-orange-50 text-orange-900 dark:border-orange-700 dark:bg-orange-950/60 dark:text-orange-200" : "border-zinc-200 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"}`}
+    >
+      <span aria-hidden="true" className={`relative inline-block h-4 w-7 rounded-full transition-colors ${checked ? "bg-orange-500" : "bg-zinc-300 dark:bg-zinc-600"}`}>
+        <span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-[left] ${checked ? "left-3.5" : "left-0.5"}`} />
+      </span>
+      Admin tools
+    </button>
   );
 }
 

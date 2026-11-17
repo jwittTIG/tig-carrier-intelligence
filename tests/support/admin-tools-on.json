@@ -1,0 +1,6 @@
+{
+  "cookies": [
+    { "name": "tci-admin", "value": "on", "domain": "localhost", "path": "/", "expires": -1, "httpOnly": false, "secure": false, "sameSite": "Lax" }
+  ],
+  "origins": []
+}

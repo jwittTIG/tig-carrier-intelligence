@@ -10,7 +10,7 @@ const CODE_TYPE: Record<string, string> = { MASTER: "Master", PRODUCER: "Produce
 const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("");
 
 /** Dashboard: pick a carrier, see its main, billing and claims numbers, marketing rep and agency codes. */
-export function CarrierSnapshot({ carriers }: { carriers: { id: string; name: string }[] }) {
+export function CarrierSnapshot({ carriers, canAdd = false }: { carriers: { id: string; name: string }[]; /** Show "add it" links (Admin tools on). */ canAdd?: boolean }) {
   const id = useId();
   const [carrierId, setCarrierId] = useState("");
   const [result, setResult] = useState<{ ok: true; snapshot: Snapshot } | { ok: false; error: string } | null>(null);
@@ -56,7 +56,7 @@ export function CarrierSnapshot({ carriers }: { carriers: { id: string; name: st
                 {s.codes === null ? (
                   <span className="text-zinc-600 dark:text-zinc-400">No access to codes</span>
                 ) : s.codes.length === 0 ? (
-                  <NotRecorded href={`/carriers/${s.id}?tab=codes`} />
+                  <NotRecorded href={canAdd ? `/carriers/${s.id}?tab=codes` : null} />
                 ) : (
                   <ul className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     {s.codes.map((c) => (
@@ -74,14 +74,14 @@ export function CarrierSnapshot({ carriers }: { carriers: { id: string; name: st
               </div>
             </div>
             <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
-              <Item label="Main phone"><Phone value={s.phones.main} carrierId={s.id} /></Item>
-              <Item label="Billing phone"><Phone value={s.phones.billing} carrierId={s.id} /></Item>
-              <Item label="Claims phone"><Phone value={s.phones.claims} carrierId={s.id} /></Item>
+              <Item label="Main phone"><Phone value={s.phones.main} addHref={canAdd ? `/carriers/${s.id}?edit=1` : null} /></Item>
+              <Item label="Billing phone"><Phone value={s.phones.billing} addHref={canAdd ? `/carriers/${s.id}?edit=1` : null} /></Item>
+              <Item label="Claims phone"><Phone value={s.phones.claims} addHref={canAdd ? `/carriers/${s.id}?edit=1` : null} /></Item>
               <Item label="Marketing rep">
                 {s.reps === null ? (
                   <span className="text-zinc-600 dark:text-zinc-400">No access to contacts</span>
                 ) : s.reps.length === 0 ? (
-                  <NotRecorded href={`/carriers/${s.id}?tab=contacts`} />
+                  <NotRecorded href={canAdd ? `/carriers/${s.id}?tab=contacts` : null} />
                 ) : (
                   <ul className="flex flex-col gap-1">
                     {s.reps.map((r) => (
@@ -111,13 +111,14 @@ function Item({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-function Phone({ value, carrierId }: { value: string | null; carrierId: string }) {
-  if (!value) return <NotRecorded href={`/carriers/${carrierId}?edit=1`} />;
+export function Phone({ value, addHref }: { value: string | null; addHref: string | null }) {
+  if (!value) return <NotRecorded href={addHref} />;
   // A note such as "See CL/PL" is shown as text; only real numbers are tap-to-call.
   return isDialable(value) ? <a href={`tel:${value}`} className="inline-flex min-h-6 items-center text-base font-medium text-blue-800 hover:underline dark:text-blue-300">{value}</a> : <span className="text-base font-medium text-zinc-800 dark:text-zinc-200">{value}</span>;
 }
 
-function NotRecorded({ href }: { href: string }) {
+export function NotRecorded({ href }: { href: string | null }) {
+  if (!href) return <span className="text-zinc-600 dark:text-zinc-400">Not recorded</span>;
   return (
     <span className="text-zinc-600 dark:text-zinc-400">
       Not recorded · <Link href={href} className="inline-flex min-h-6 items-center text-blue-800 hover:underline dark:text-blue-300">add it</Link>
