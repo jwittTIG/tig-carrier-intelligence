@@ -30,6 +30,8 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          // On the web (Render serves HTTPS only), browsers must always use HTTPS.
+          ...(process.env.NODE_ENV === "production" ? [{ key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" }] : []),
         ],
       },
     ];

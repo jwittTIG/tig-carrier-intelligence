@@ -1,0 +1,60 @@
+# Render Blueprint (DECISIONS D8a, D11a, D24; 2026-11-18). Setup steps: docs/DEPLOY.md.
+# Secrets marked "sync: false" are typed into the Render dashboard by Josh, never committed.
+services:
+  - type: web
+    name: tig-carrier-intelligence
+    runtime: node
+    plan: starter            # a persistent disk needs a paid instance
+    region: ohio
+    branch: main
+    autoDeploy: true
+    buildCommand: npm ci && npm run build
+    # Apply database migrations, then start. (Never seeds: data is moved once with scripts/move-to-render.ts.)
+    startCommand: npx prisma migrate deploy && npm start
+    healthCheckPath: /api/health
+    disk:
+      name: files
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tci-db
+          property: connectionString
+      - key: DATABASE_POOL_MAX
+        value: "5"
+      # Sign-in: Microsoft 365 through Clerk (D9), TIG accounts only.
+      - key: AUTH_DRIVER
+        value: clerk
+      - key: ALLOWED_EMAIL_DOMAINS
+        value: tigknoxville.com
+      - key: NEXT_PUBLIC_CLERK_SIGN_IN_URL
+        value: /sign-in
+      - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      # Files on the private disk (D11a); download links signed with a generated secret.
+      - key: STORAGE_DRIVER
+        value: disk
+      - key: STORAGE_DISK_DIR
+        value: /var/data/files
+      - key: STORAGE_SIGNING_SECRET
+        generateValue: true
+      # No virus scanner yet; staff-only uploads with content type checks (D24).
+      - key: UPLOAD_SCANNER
+        value: none
+      # Ask the guides (D12).
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # Email intake stays off until docs/EMAIL_SETUP.md is done (MAIL_INTAKE_DRIVER unset; CRON_SECRET unset).
+
+databases:
+  - name: tci-db
+    databaseName: tci
+    plan: basic-256mb        # paid: daily backups and point-in-time restore
+    region: ohio
+    postgresMajorVersion: "17"
+    ipAllowList: []          # no outside connections except during the one-time data move (docs/DEPLOY.md)

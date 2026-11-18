@@ -4,12 +4,13 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 /**
- * Private object storage (DECISIONS D11). Files are stored by object key only and are
- * reached through short-lived signed URLs issued after a permission check.
+ * Private object storage (DECISIONS D11a). Files are stored by object key only and are
+ * reached through short-lived signed URLs issued after a permission check (/api/v1/files).
  *
- * - `dev`: DEVELOPMENT ONLY. Writes to DEV_STORAGE_DIR; signed URLs point at
- *   /api/v1/files. Refuses to run when NODE_ENV=production.
- * - `r2`: Cloudflare R2. Not built yet: needs an R2 bucket and keys.
+ * - `disk`: production. A private persistent disk (Render, D8a) at STORAGE_DISK_DIR, an
+ *   absolute path outside the app folder. Render's daily disk snapshots are the backup.
+ * - `dev`: DEVELOPMENT ONLY. Writes to DEV_STORAGE_DIR (default .data/storage). Refuses to
+ *   run when NODE_ENV=production.
  */
 export interface ObjectStorage {
   readonly driver: string;
@@ -57,9 +58,9 @@ export function verifyToken(token: string, now: number = Date.now()): Signed | n
   }
 }
 
-class DevLocalStorage implements ObjectStorage {
-  readonly driver = "dev";
-  constructor(private readonly root: string) {}
+/** Files on a local or attached disk, one file per object key, never overwritten. */
+class DiskStorage implements ObjectStorage {
+  constructor(readonly driver: "dev" | "disk", private readonly root: string) {}
   private file(key: string) {
     assertValidKey(key);
     return path.join(this.root, ...key.split("/"));
@@ -83,10 +84,20 @@ export function storage(): ObjectStorage {
   const driver = process.env.STORAGE_DRIVER;
   if (driver === "dev") {
     if (process.env.NODE_ENV === "production") throw new Error("STORAGE_DRIVER=dev is refused when NODE_ENV=production");
-    return new DevLocalStorage(path.resolve(process.env.DEV_STORAGE_DIR ?? ".data/storage"));
+    return new DiskStorage("dev", path.resolve(process.env.DEV_STORAGE_DIR ?? ".data/storage"));
   }
-  if (driver === "r2") throw new Error("R2 storage is not configured yet (DECISIONS D11): needs a bucket and keys");
+  if (driver === "disk") return new DiskStorage("disk", diskRoot());
   throw new Error("STORAGE_DRIVER must be set (see .env.example)");
+}
+
+/** STORAGE_DISK_DIR: required for `disk`, absolute, and never inside the app folder (which deploys replace). */
+export function diskRoot(dir = process.env.STORAGE_DISK_DIR, appDir = process.cwd()): string {
+  if (!dir) throw new Error("STORAGE_DISK_DIR must be set for STORAGE_DRIVER=disk");
+  if (!path.isAbsolute(dir)) throw new Error("STORAGE_DISK_DIR must be an absolute path (the disk's mount path)");
+  const root = path.resolve(dir);
+  const rel = path.relative(path.resolve(appDir), root);
+  if (rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel))) throw new Error("STORAGE_DISK_DIR must be outside the app folder");
+  return root;
 }
 
 /** How long a download link works. */

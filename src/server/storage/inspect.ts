@@ -47,11 +47,18 @@ export async function inspectUpload(filename: string, bytes: Uint8Array, maxByte
 }
 
 /**
- * Malware scanning hook. DEVELOPMENT STUB: only recognizes the EICAR test string.
- * Refuses to run in production until a real scanner is configured.
+ * Malware scanning hook. There is no real scanner yet:
+ * - development: a stub that only recognizes the EICAR test string;
+ * - production: refused unless UPLOAD_SCANNER=none, Josh's decision D24 (2026-11-18): only
+ *   signed-in staff upload, and every file's type is checked by content above. Each upload
+ *   then records scanner "none (D24)", so unscanned files can be found if a scanner is added.
  */
-export async function scanUpload(bytes: Uint8Array): Promise<{ clean: boolean; scanner: string }> {
-  if (process.env.NODE_ENV === "production") throw new Error("No malware scanner is configured for production");
+export async function scanUpload(bytes: Uint8Array, env: { NODE_ENV?: string; UPLOAD_SCANNER?: string } = process.env): Promise<{ clean: boolean; scanner: string }> {
   const text = Buffer.from(bytes.subarray(0, 512)).toString("latin1");
-  return { clean: !text.includes("EICAR-STANDARD-ANTIVIRUS-TEST-FILE"), scanner: "dev-stub" };
+  const eicar = text.includes("EICAR-STANDARD-ANTIVIRUS-TEST-FILE");
+  if (env.NODE_ENV === "production") {
+    if (env.UPLOAD_SCANNER !== "none") throw new Error("No malware scanner is configured for production (set UPLOAD_SCANNER=none per DECISIONS D24)");
+    return { clean: !eicar, scanner: "none (D24)" };
+  }
+  return { clean: !eicar, scanner: "dev-stub" };
 }
