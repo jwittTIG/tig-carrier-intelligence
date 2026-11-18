@@ -6,7 +6,7 @@
 Milestone 8 (Ask the guides) works with Josh's key (two real questions at $1.76 and $1.77 with the whole-PDF read).
 
 ## On GitHub (2026-11-18; D10)
-Josh created the private repository **github.com/jwittTIG/tig-carrier-intelligence**; Claude added it as origin and pushed main (Josh signed in through the browser). Checked first: no keys, secrets, real contact details or documents anywhere in the history. CI (.github/workflows/ci.yml: lint, typecheck, tests, build on real Postgres 17) runs on every push; first result not seen yet (Josh: GitHub → Actions). Next: DEPLOY.md step 2 (Clerk, Microsoft sign-in tested locally).
+Josh created the private repository **github.com/jwittTIG/tig-carrier-intelligence**; Claude added it as origin and pushed main (Josh signed in through the browser). Checked first: no keys, secrets, real contact details or documents anywhere in the history. CI (.github/workflows/ci.yml: lint, typecheck, tests, build on real Postgres 17) runs on every push; first run passed (Josh saw the green tick in GitHub Actions, 2026-11-18). Next: DEPLOY.md step 2 (Clerk, Microsoft sign-in tested locally).
 
 ## Ready for Render (built 2026-11-18; D8a, D11a, D24)
 Josh: "I am ready to deploy this to the web. Can we use Render?" Then: Render disk for files, no virus scan for now (staff uploads only), carriers.tigknoxville.com; "Yes, start".
