@@ -1,4 +1,4 @@
-# Not yet run: the repo has no GitHub remote (DECISIONS D6).
+# Runs on every push to main and every pull request (GitHub: jwittTIG/tig-carrier-intelligence, D10).
 name: ci
 on:
   push:
