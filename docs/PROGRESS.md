@@ -5,6 +5,9 @@
 
 Milestone 8 (Ask the guides) works with Josh's key (two real questions at $1.76 and $1.77 with the whole-PDF read).
 
+## Appetite page: Admin tools hint; conflicts are a note (2026-11-18)
+Josh on the web: "I can't approve the appetites for Travelers. It says Possible Conflicts and lists a bunch." Cause: the Admin tools switch is saved per browser and per site, so it was off on the Render site and the approve controls were hidden; the red conflicts box (informational only; never blocked approval) looked like the reason. Now: a hint "turn on Admin tools" when someone who can edit or approve has it off; conflicts are a collapsed amber note that says they don't stop approval. Tested: lint, typecheck, unit/integration, e2e appetite, draft-appetite, one-step, service-view, a11y.
+
 ## Live on Render (2026-11-18; DEPLOY.md steps 3–5)
 Josh created the Render account and the Blueprint (web service tig-carrier-intelligence, disk, Postgres tci-db, region Ohio) and typed the Clerk development keys and the Anthropic key into Render himself. App at **https://tig-carrier-intelligence.onrender.com**. Claude checked: /api/health ok with the database, sign-in page loads, HSTS and X-Frame-Options sent.
 - Data: Josh ran `npm run data:move` with Render's External Database URL in his own PowerShell (never shared): dry run showed 52 tables / 7,023 rows and an empty target at the same 14 migrations; --commit finished. Josh signed in on Render with Microsoft and confirmed the carriers look right. His IP allow-list entry was to be removed afterwards.

@@ -29,6 +29,7 @@ import {
   withdrawProfileAction,
 } from "../../m4-actions";
 import { showControl } from "@/server/auth/view";
+import { can } from "@/server/auth/context";
 
 const OUTCOMES = ["PREFERRED", "ACCEPTED", "REFERRAL", "PROHIBITED", "UNKNOWN"];
 const OPERATORS = ["EQ", "NEQ", "LT", "LTE", "GT", "GTE", "BETWEEN", "IN", "NOT_IN", "EXISTS"];
@@ -73,6 +74,8 @@ export default async function AppetiteProfilePage({ params, searchParams }: Page
   const write = (await showControl(ctx, "appetite.write"));
   const approver = write && (await showControl(ctx, "appetite.approve")) && (await showControl(ctx, "change_request.review"));
   const canApproveOwn = approver && ctx.roles.includes("ADMIN");
+  // Can edit or approve, but the Admin tools switch is off (it's saved per browser and per site).
+  const toolsHidden = !write && can(ctx, "appetite.write");
   // What a draft still needs before it can be approved (shown as a checklist).
   const ready = [
     { ok: !!p.ownerUserId, text: "An owner", fix: "set it in Draft settings" },
@@ -105,11 +108,20 @@ export default async function AppetiteProfilePage({ params, searchParams }: Page
 
       {p.pending && <DecisionPanel ctx={ctx} cr={p.pending} permission="appetite.approve" returnTo={path} />}
 
+      {toolsHidden && (draft || p.status === "APPROVED") && (
+        <p role="status" className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-800 dark:bg-blue-950/60 dark:text-blue-100">
+          {draft ? "To edit or approve this draft" : "To start a new version or close this one out"}, turn on <strong>Admin tools</strong> in the top bar.
+        </p>
+      )}
+
       {p.conflicts.length > 0 && (
-        <div role="alert" className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm dark:border-red-800 dark:bg-red-950">
-          <strong>Possible conflicts:</strong>
-          <ul className="list-disc pl-5">{p.conflicts.map((c) => <li key={`${c.a}-${c.b}`}>Rules {ruleIdx.get(c.a)} and {ruleIdx.get(c.b)}: {c.reason}.</li>)}</ul>
-        </div>
+        <details className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-700 dark:bg-amber-950/60">
+          <summary className="cursor-pointer">
+            <strong>{p.conflicts.length} possible {p.conflicts.length === 1 ? "conflict" : "conflicts"} to look over</strong>
+            <span className="text-zinc-700 dark:text-zinc-300">: rules with different outcomes that could apply to the same risk. Usually fine (a general rule plus exceptions); they don&apos;t stop approval.</span>
+          </summary>
+          <ul className="mt-2 list-disc pl-5">{p.conflicts.map((c) => <li key={`${c.a}-${c.b}`}>Rules {ruleIdx.get(c.a)} and {ruleIdx.get(c.b)}: {c.reason}.</li>)}</ul>
+        </details>
       )}
 
       <Section title="Versions">
