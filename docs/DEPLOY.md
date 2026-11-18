@@ -69,6 +69,7 @@ The guides, documents and logos (about 16 MB) live in `.data\storage`. They go t
 3. **DNS:** whoever manages tigknoxville.com's DNS adds Render's CNAME and Clerk's records. Wait until Render and Clerk both show them as verified.
 4. **Microsoft Entra** (portal.azure.com → App registrations, needs a TIG Microsoft 365 admin): register "TIG Carrier Intelligence", accounts in this organizational directory only, with the redirect URI Clerk shows for its Microsoft connection. Put the app's client ID and a client secret into Clerk's Microsoft settings (in Clerk, not anywhere else). Sign-in then uses TIG's own Microsoft tenant.
 5. In Render, replace the two Clerk keys with the **production** keys; the service redeploys.
+   **Before signing in:** Claude clears each user's link to the old (development) Clerk sign-in in Render's database, so the first production sign-in links again by email (`linkIdentityOnFirstSignIn`). Otherwise existing users would be refused ("no access"), because Clerk production gives everyone new IDs.
 6. Sign in at https://carriers.tigknoxville.com.
 
 ## 8. Before relying on it: test a restore (Josh, with Claude)

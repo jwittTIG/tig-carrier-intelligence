@@ -5,6 +5,13 @@
 
 Milestone 8 (Ask the guides) works with Josh's key (two real questions at $1.76 and $1.77 with the whole-PDF read).
 
+## Live on Render (2026-11-18; DEPLOY.md steps 3–5)
+Josh created the Render account and the Blueprint (web service tig-carrier-intelligence, disk, Postgres tci-db, region Ohio) and typed the Clerk development keys and the Anthropic key into Render himself. App at **https://tig-carrier-intelligence.onrender.com**. Claude checked: /api/health ok with the database, sign-in page loads, HSTS and X-Frame-Options sent.
+- Data: Josh ran `npm run data:move` with Render's External Database URL in his own PowerShell (never shared): dry run showed 52 tables / 7,023 rows and an empty target at the same 14 migrations; --commit finished. Josh signed in on Render with Microsoft and confirmed the carriers look right. His IP allow-list entry was to be removed afterwards.
+- Files: Josh created an SSH key, added it to Render, and copied .data/storage (documents, logos; about 16 MB) to /var/data/files with scp. Logos show and guides open on the web.
+- **This PC's database is no longer the real one.** Enter data on the web only.
+- Still to do: DEPLOY.md step 6 (Ask the guides and an upload on the web), step 7 (carriers.tigknoxville.com, Clerk production, Entra; clear Clerk development links first), step 8 (restore test). D12 data-retention check (Josh).
+
 ## Microsoft 365 sign-in works locally (2026-11-18; D9, DEPLOY.md step 2)
 Josh created the Clerk application (Consumer, Microsoft only) and put its development keys and AUTH_DRIVER=clerk in .env.local himself (Claude checked only that they were filled in). Tested (ran and saw it work): Josh signed in at localhost:3001 with his tigknoxville.com Microsoft account and landed on the Dashboard as Admin; his user was linked on first sign-in (audit user.first_sign_in). Clerk uses its shared Microsoft credentials in development; TIG's own Entra registration comes at DEPLOY.md step 7. Also tested (2026-11-18): Josh signed in with a personal (non-TIG) Microsoft account and was not let in; no user was created or linked (still 2 users, 1 linked, one user.first_sign_in). Automated tests still use AUTH_DRIVER=dev (set by the test setup).
 
